@@ -1,0 +1,5 @@
+{
+  "name": "SmartReceipt - AI Expense Tracker",
+  "description": "Automated receipt processing and expense tracking application using Gemini AI for OCR and data extraction.",
+  "requestFramePermissions": []
+}
