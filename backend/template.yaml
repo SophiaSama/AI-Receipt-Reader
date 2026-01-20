@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SmartReceiptReader Backend - Serverless API with Mistral AI
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs18.x
+    MemorySize: 512
+    Environment:
+      Variables:
+        DYNAMODB_TABLE_NAME: !Ref ReceiptsTable
+        S3_BUCKET_NAME: !Ref ImagesBucket
+        MISTRAL_API_KEY: !Ref MistralApiKey
+
+Parameters:
+  MistralApiKey:
+    Type: String
+    Description: Mistral AI API Key
+    NoEcho: true
+
+Resources:
+  # API Gateway
+  ReceiptApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+        AllowOrigin: "'*'"
+
+  # Lambda Functions
+  ProcessReceiptFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/processReceipt.handler
+      CodeUri: .
+      Description: Process receipt image with Mistral AI OCR
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReceiptsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+      Events:
+        ProcessReceipt:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ReceiptApi
+            Path: /api/process
+            Method: POST
+
+  ManualSaveFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/manualSave.handler
+      CodeUri: .
+      Description: Manual receipt entry save
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReceiptsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+      Events:
+        ManualSave:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ReceiptApi
+            Path: /api/receipts/manual
+            Method: POST
+
+  GetReceiptsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/getReceipts.handler
+      CodeUri: .
+      Description: Get all receipts
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReceiptsTable
+      Events:
+        GetReceipts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ReceiptApi
+            Path: /api/receipts
+            Method: GET
+
+  DeleteReceiptFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/deleteReceipt.handler
+      CodeUri: .
+      Description: Delete receipt and S3 image
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReceiptsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+      Events:
+        DeleteReceipt:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ReceiptApi
+            Path: /api/receipts/{id}
+            Method: DELETE
+
+  # DynamoDB Table
+  ReceiptsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: smart-receipts
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # S3 Bucket
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'smart-receipt-images-${AWS::AccountId}'
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+            AllowedOrigins:
+              - '*'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  ImagesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImagesBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub '${ImagesBucket.Arn}/*'
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ReceiptApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  
+  ReceiptsTableName:
+    Description: DynamoDB table name
+    Value: !Ref ReceiptsTable
+  
+  ImagesBucketName:
+    Description: S3 bucket name
+    Value: !Ref ImagesBucket
