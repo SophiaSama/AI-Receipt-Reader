@@ -16,6 +16,11 @@
 
 ---
 
+## Demo
+
+![alt image](AddReceiptUI.png)
+![alt image](HistoryUI.png)
+
 ## 📖 Overview
 
 SmartReceipt is a modern, cloud-native expense tracking application that uses **Mistral AI** to automatically extract and structure receipt data. Simply upload a receipt image, and let AI handle the rest - no manual data entry required!
@@ -36,6 +41,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 ## ✨ Features
 
 ### 🎨 Frontend
+
 - **Modern React UI** with TypeScript
 - **Responsive Design** - Works on desktop and mobile
 - **Real-time Processing** - See results instantly
@@ -44,6 +50,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - **Drag & Drop Upload** - Easy image handling
 
 ### 🚀 Backend
+
 - **Serverless Architecture** - AWS Lambda or Vercel Functions
 - **Mistral AI Integration** - Vision API for OCR + LLM for parsing
 - **AWS Services** - DynamoDB + S3 for storage
@@ -52,6 +59,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - **CORS Enabled** - Ready for frontend integration
 
 ### 🔒 Production Ready
+
 - ✅ Environment-based configuration
 - ✅ Error handling and validation
 - ✅ TypeScript for type safety
@@ -144,6 +152,7 @@ notepad .env
 ```
 
 **Add your Mistral API key:**
+
 ```bash
 MISTRAL_API_KEY=your_actual_mistral_api_key_here
 USE_LOCAL_STORAGE=true
@@ -170,7 +179,7 @@ npm run dev
 
 ### 5️⃣ Open Application
 
-Navigate to: **http://localhost:3000**
+Navigate to: **<http://localhost:3000>**
 
 ---
 
@@ -227,13 +236,16 @@ SmartReceiptReader/
 ## 🔌 API Endpoints
 
 ### `POST /api/process`
+
 Process receipt image with AI
 
 **Request:**
+
 - Content-Type: `multipart/form-data`
 - Body: `file` (image)
 
 **Response:**
+
 ```json
 {
   "id": "uuid",
@@ -248,18 +260,22 @@ Process receipt image with AI
 ```
 
 ### `POST /api/receipts/manual`
+
 Save manual receipt entry
 
 **Request:**
+
 - Content-Type: `multipart/form-data`
 - Body: `metadata` (JSON string), `file` (optional)
 
 ### `GET /api/receipts`
+
 Get all receipts
 
 **Response:** Array of receipt objects
 
 ### `DELETE /api/receipts/:id`
+
 Delete receipt and image
 
 **Response:** 204 No Content
@@ -284,6 +300,7 @@ sam deploy --guided
 ```
 
 **What Gets Created Automatically:**
+
 - ✅ 4 Lambda Functions (Process, Manual, Get, Delete)
 - ✅ API Gateway with endpoints
 - ✅ DynamoDB Table
@@ -291,12 +308,14 @@ sam deploy --guided
 - ✅ IAM Roles & Permissions
 
 **Configure During Deployment:**
+
 - Stack name: `smart-receipt-stack`
 - AWS Region: `ap-southeast-1` (or your preferred region)
 - Mistral API Key: Your key
 - Confirm changes: Y
 
 **After deployment:**
+
 - Note the API Gateway endpoint URL from outputs
 - Update frontend to use production API (if needed)
 
@@ -316,11 +335,13 @@ vercel
 ```
 
 **Prerequisites:**
+
 1. ✅ Create IAM user with DynamoDB + S3 permissions
 2. ✅ Create DynamoDB table: `smart-receipts`
 3. ✅ Create S3 bucket: `smart-receipt-images-{account-id}`
 
 **Environment Variables in Vercel Dashboard:**
+
 - `MISTRAL_API_KEY` - Your Mistral API key
 - `USE_LOCAL_STORAGE` - `false` (use AWS services)
 - `AWS_REGION` - `ap-southeast-1` (your AWS region)
@@ -336,6 +357,7 @@ vercel
 ## 🛠️ Technology Stack
 
 ### Frontend
+
 - **React 19.2** - UI framework
 - **TypeScript 5.8** - Type safety
 - **Vite 6.2** - Build tool & dev server
@@ -343,6 +365,7 @@ vercel
 - **Tailwind CSS** - Styling (utility-first)
 
 ### Backend
+
 - **Node.js 18+** - Runtime
 - **Express 4.18** - Local development server
 - **TypeScript 5.3** - Type safety
@@ -352,6 +375,7 @@ vercel
 - **Multer** - File upload handling
 
 ### Infrastructure
+
 - **AWS Lambda** - Serverless compute
 - **AWS API Gateway** - REST API
 - **AWS DynamoDB** - NoSQL database
@@ -375,12 +399,14 @@ Detailed documentation is available in these files:
 ## 🎮 Usage Examples
 
 ### Upload Receipt
+
 1. Click "Add Receipt" area or drag & drop image
 2. Wait for AI processing (~3-5 seconds)
 3. Review extracted data
 4. Receipt appears in history
 
 ### Manual Entry
+
 1. Click "Add Manually" button
 2. Fill in merchant, date, total
 3. Optionally add items
@@ -388,12 +414,14 @@ Detailed documentation is available in these files:
 5. Click "Save Receipt"
 
 ### Filter Receipts
+
 1. Use search box for merchant names
 2. Set amount range (min/max)
 3. Select date range
 4. Click "Clear Filters" to reset
 
 ### Export Data
+
 1. Click "Export CSV" button
 2. CSV file downloads automatically
 3. Open in Excel or Google Sheets
@@ -427,6 +455,7 @@ npm run build
 ### Local Storage Mode
 
 For development without AWS:
+
 ```bash
 # In backend/.env
 USE_LOCAL_STORAGE=true
@@ -437,6 +466,7 @@ This uses in-memory storage - data is lost on server restart.
 ### Mock AI Mode
 
 For development without Mistral API key:
+
 ```bash
 # In backend/.env
 MISTRAL_API_KEY=your_mistral_api_key_here
@@ -450,21 +480,25 @@ Backend will return mock OCR results.
 ## 🐛 Troubleshooting
 
 ### Frontend loads but API fails
+
 - ✅ Check backend is running on port 3001
 - ✅ Verify Vite proxy in `vite.config.ts`
 - ✅ Check browser console for errors
 
 ### Images not loading
+
 - ✅ Verify S3 bucket CORS configuration
 - ✅ Check S3 bucket policy allows public read
 - ✅ In local mode: images stored in memory
 
 ### AI processing fails
+
 - ✅ Verify Mistral API key is correct
 - ✅ Check API quota/limits
 - ✅ View backend logs for details
 
 ### Data doesn't persist
+
 - ✅ Check `USE_LOCAL_STORAGE` setting
 - ✅ For production: use AWS services
 - ✅ Verify DynamoDB table exists
@@ -514,9 +548,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Need help? Check these resources:
 
 - 📖 [Documentation](#-documentation)
-- 🐛 [Issue Tracker](https://github.com/your-repo/issues)
-- 💬 [Discussions](https://github.com/your-repo/discussions)
-- 📧 Email: wang.ruiping0720@gmail.com
+- 🐛 [Issue Tracker](https://github.com/SophiaSama/SmartReceiptReader/issues)
+- 💬 [Discussions](https://github.com/SophiaSama/SmartReceiptReader/discussions)
+- 📧 Email: <wang.ruiping0720@gmail.com>
 
 ---
 
@@ -538,10 +572,10 @@ Need help? Check these resources:
 
 ## 📊 Stats
 
-![GitHub Stars](https://img.shields.io/github/stars/your-repo?style=social)
-![GitHub Forks](https://img.shields.io/github/forks/your-repo?style=social)
-![GitHub Issues](https://img.shields.io/github/issues/your-repo)
-![GitHub Pull Requests](https://img.shields.io/github/issues-pr/your-repo)
+![GitHub Stars](https://img.shields.io/github/stars/SophiaSama/SmartReceiptReader?style=social)
+![GitHub Forks](https://img.shields.io/github/forks/SophiaSama/SmartReceiptReader?style=social)
+![GitHub Issues](https://img.shields.io/github/issues/SophiaSama/SmartReceiptReader)
+![GitHub Pull Requests](https://img.shields.io/github/issues-pr/SophiaSama/SmartReceiptReader)
 
 ---
 
@@ -549,7 +583,7 @@ Need help? Check these resources:
 
 **Built with ❤️ using Mistral AI, React, and AWS**
 
-Made by [Your Name](https://github.com/SophiaSama) | January 2026
+Made by [Ruiping Wang](https://github.com/SophiaSama) | January 2026
 
 [⬆ Back to Top](#-smartreceipt---ai-powered-expense-tracker)
 

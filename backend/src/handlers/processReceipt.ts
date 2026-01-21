@@ -35,6 +35,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         const file = parsed.files[0];
+        // Validate file type
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+        if (!allowedMimeTypes.includes(file.contentType)) {
+            return badRequest(`Invalid file type: ${file.contentType}. Only JPEG, PNG, and WebP images are supported.`);
+        }
+
         console.log(`Processing file: ${file.filename}, type: ${file.contentType}, size: ${file.content.length} bytes`);
 
         // Step 1: Upload to S3
@@ -82,6 +88,12 @@ export const processReceiptHandler = async (
     filename: string,
     contentType: string
 ): Promise<ReceiptData> => {
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    if (!allowedMimeTypes.includes(contentType)) {
+        throw new Error(`Invalid file type: ${contentType}. Only JPEG, PNG, and WebP images are supported.`);
+    }
+
     // Step 1: Upload to S3/local storage
     const imageUrl = await uploadImage(fileBuffer, filename, contentType);
 

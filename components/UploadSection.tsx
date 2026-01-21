@@ -24,7 +24,12 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onFileSelect, stat
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileSelect(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      if (!file.type.match('image.*')) {
+        alert("Only image files are allowed");
+        return;
+      }
+      onFileSelect(file);
     }
   }, [onFileSelect]);
 
