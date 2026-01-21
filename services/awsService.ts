@@ -16,23 +16,37 @@ export const processAndSaveReceipt = async (file: File): Promise<ReceiptData> =>
     body: formData,
   });
 
+  console.log('Upload response status:', response.status);
+
   if (!response.ok) {
-    let errorMessage = `Server processing failed: ${response.statusText}`;
+    let errorMessage = `Server processing failed: ${response.statusText} (${response.status})`;
+
     try {
-      const errorData = await response.json();
-      if (errorData.error) {
-        errorMessage = `Error: ${errorData.error}`;
+      // Read text ONCE to avoid "Body is disturbed" error
+      const errorText = await response.text();
+      console.log('Raw backend error response:', errorText);
+
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error) {
+          errorMessage = `Error: ${errorData.error}`;
+        }
+      } catch (jsonError) {
+        // If not JSON, use the text directly (truncated)
+        if (errorText) errorMessage += ` - ${errorText.substring(0, 200)}`;
       }
-    } catch (e) {
-      // Could not parse JSON error response, stick with default
-      const text = await response.text();
-      if (text) errorMessage += ` - ${text.substring(0, 100)}`;
+    } catch (readError) {
+      console.error('Failed to read error response body:', readError);
     }
+
+    console.error('Final error message throwing:', errorMessage);
     throw new Error(errorMessage);
   }
 
   // The backend returns the final saved ReceiptData object after OCR and DB save
-  return await response.json();
+  const data = await response.json();
+  console.log('Upload successful, received data:', data);
+  return data;
 };
 
 /**
@@ -49,14 +63,22 @@ export const saveManualReceiptToDB = async (receipt: Partial<ReceiptData>, file?
   });
 
   if (!response.ok) {
-    let errorMessage = `Manual save failed: ${response.statusText}`;
+    let errorMessage = `Manual save failed: ${response.statusText} (${response.status})`;
+
     try {
-      const errorData = await response.json();
-      if (errorData.error) errorMessage = `Error: ${errorData.error}`;
-    } catch (e) {
-      const text = await response.text();
-      if (text) errorMessage += ` - ${text.substring(0, 100)}`;
+      const errorText = await response.text();
+      console.log('Raw manual save error response:', errorText);
+
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error) errorMessage = `Error: ${errorData.error}`;
+      } catch (jsonError) {
+        if (errorText) errorMessage += ` - ${errorText.substring(0, 200)}`;
+      }
+    } catch (readError) {
+      console.error('Failed to read error response body:', readError);
     }
+
     throw new Error(errorMessage);
   }
 
