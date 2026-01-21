@@ -27,3 +27,6 @@ dist-ssr
 backend/.env
 backend/dist
 .aws-sam
+
+# Local Documents
+REVIEW_SUMMARY.md
