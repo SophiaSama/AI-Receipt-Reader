@@ -46,7 +46,12 @@ app.get('/images/*', (req: Request, res: Response) => {
  */
 app.post('/api/process', upload.single('file'), async (req: Request, res: Response) => {
     try {
+        console.log('Received process request');
+        console.log('Headers:', req.headers['content-type']);
+        console.log('File present:', !!req.file);
+
         if (!req.file) {
+            console.error('No file in request. Multer failed or empty.');
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
