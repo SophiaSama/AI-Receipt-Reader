@@ -5,7 +5,7 @@ Description: SmartReceiptReader Backend - Serverless API with Mistral AI
 Globals:
   Function:
     Timeout: 30
-    Runtime: nodejs18.x
+    Runtime: nodejs20.x
     MemorySize: 512
     Environment:
       Variables:

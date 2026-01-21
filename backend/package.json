@@ -1,6 +1,10 @@
 {
     "name": "smart-receipt-backend",
     "version": "1.0.0",
+    "engines": {
+        "node": ">=20.0.0",
+        "npm": ">=10.0.0"
+    },
     "description": "Serverless backend for SmartReceiptReader with Mistral AI integration",
     "main": "dist/local/server.js",
     "scripts": {

@@ -10,7 +10,10 @@
         },
         {
             "src": "backend/dist/local/server.js",
-            "use": "@vercel/node"
+            "use": "@vercel/node",
+            "config": {
+                "runtime": "nodejs20.x"
+            }
         }
     ],
     "rewrites": [
