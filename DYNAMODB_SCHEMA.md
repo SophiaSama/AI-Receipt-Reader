@@ -56,7 +56,7 @@ Each receipt item in DynamoDB follows this exact format:
   "merchantName": "Whole Foods Market",
   "date": "2026-01-21",
   "total": 87.45,
-  "currency": "USD",
+  "currency": "SGD",
   "items": [
     {
       "description": "Organic Bananas 2lb",
@@ -126,8 +126,9 @@ Each receipt item in DynamoDB follows this exact format:
 
 ### `currency` (String, Required)
 - **Type:** String (ISO 4217 currency code)
-- **Default:** `"USD"`
+- **Default:** `"SGD"`
 - **Examples:**
+  - `"SGD"` (Singapore Dollar)
   - `"USD"` (US Dollar)
   - `"EUR"` (Euro)
   - `"GBP"` (British Pound)
@@ -375,7 +376,7 @@ function validateReceiptData(data: Partial<ReceiptData>): boolean {
   merchantName: string        // REQUIRED
   date: string (YYYY-MM-DD)   // REQUIRED
   total: number               // REQUIRED
-  currency: string            // REQUIRED (default: "USD")
+  currency: string            // REQUIRED (default: "SGD")
   items: Array<{              // REQUIRED (can be empty [])
     description: string,
     price: number
