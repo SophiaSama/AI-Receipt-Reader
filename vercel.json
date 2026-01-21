@@ -9,18 +9,18 @@
             }
         },
         {
-            "src": "backend/local/server.ts",
+            "src": "backend/dist/local/server.js",
             "use": "@vercel/node"
         }
     ],
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "backend/local/server.ts"
+            "destination": "backend/dist/local/server.js"
         },
         {
             "source": "/images/(.*)",
-            "destination": "backend/local/server.ts"
+            "destination": "backend/dist/local/server.js"
         },
         {
             "source": "/(.*)",

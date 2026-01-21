@@ -147,8 +147,10 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`
+// Start server only if not running in serverless environment
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║           SmartReceipt Backend Server                     ║
 ╠═══════════════════════════════════════════════════════════╣
@@ -163,7 +165,9 @@ app.listen(PORT, () => {
 ║    DELETE /api/receipts/:id    - Delete receipt           ║
 ║    GET    /api/health          - Health check             ║
 ╚═══════════════════════════════════════════════════════════╝
-  `);
-});
+    `);
+    });
+}
 
 export default app;
+

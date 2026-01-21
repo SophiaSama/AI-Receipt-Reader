@@ -34,8 +34,8 @@ Resources:
   ProcessReceiptFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: dist/src/handlers/processReceipt.handler
-      CodeUri: .
+      Handler: src/handlers/processReceipt.handler
+      CodeUri: ./dist
       Description: Process receipt image with Mistral AI OCR
       Policies:
         - DynamoDBCrudPolicy:
@@ -53,8 +53,8 @@ Resources:
   ManualSaveFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: dist/src/handlers/manualSave.handler
-      CodeUri: .
+      Handler: src/handlers/manualSave.handler
+      CodeUri: ./dist
       Description: Manual receipt entry save
       Policies:
         - DynamoDBCrudPolicy:
@@ -72,8 +72,8 @@ Resources:
   GetReceiptsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: dist/src/handlers/getReceipts.handler
-      CodeUri: .
+      Handler: src/handlers/getReceipts.handler
+      CodeUri: ./dist
       Description: Get all receipts
       Policies:
         - DynamoDBReadPolicy:
@@ -89,8 +89,8 @@ Resources:
   DeleteReceiptFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: dist/src/handlers/deleteReceipt.handler
-      CodeUri: .
+      Handler: src/handlers/deleteReceipt.handler
+      CodeUri: ./dist
       Description: Delete receipt and S3 image
       Policies:
         - DynamoDBCrudPolicy:
