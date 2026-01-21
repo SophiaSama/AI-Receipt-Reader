@@ -118,7 +118,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/SophiaSama/SmartReceiptReader.git
 cd SmartReceiptReader
 
 # Install frontend dependencies
@@ -240,7 +240,7 @@ Process receipt image with AI
   "merchantName": "Whole Foods",
   "date": "2026-01-21",
   "total": 87.45,
-  "currency": "USD",
+  "currency": "SGD",
   "items": [...],
   "imageUrl": "https://...",
   "createdAt": 1737475200000
@@ -268,6 +268,9 @@ Delete receipt and image
 
 ## 🌐 Deployment
 
+> **💡 Important:** You do NOT need to manually create Lambda functions! SAM automates everything.  
+> See **[AWS_DEPLOYMENT_GUIDE.md](./AWS_DEPLOYMENT_GUIDE.md)** for detailed instructions.
+
 ### Deploy to AWS Lambda
 
 ```bash
@@ -275,22 +278,34 @@ Delete receipt and image
 cd backend
 npm run build
 
-# Deploy with SAM CLI
+# Deploy with SAM CLI (creates all resources automatically)
 sam build
 sam deploy --guided
 ```
 
-**Configure:**
+**What Gets Created Automatically:**
+- ✅ 4 Lambda Functions (Process, Manual, Get, Delete)
+- ✅ API Gateway with endpoints
+- ✅ DynamoDB Table
+- ✅ S3 Bucket
+- ✅ IAM Roles & Permissions
+
+**Configure During Deployment:**
 - Stack name: `smart-receipt-stack`
-- AWS Region: `us-east-1`
+- AWS Region: `ap-southeast-1` (or your preferred region)
 - Mistral API Key: Your key
 - Confirm changes: Y
 
 **After deployment:**
-- Note the API Gateway endpoint URL
-- Update frontend to use production API
+- Note the API Gateway endpoint URL from outputs
+- Update frontend to use production API (if needed)
+
+📚 **[Read Full AWS Deployment Guide →](./AWS_DEPLOYMENT_GUIDE.md)**
 
 ### Deploy to Vercel
+
+> **🔐 Important:** Vercel needs AWS IAM credentials to access DynamoDB and S3.  
+> See **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** for IAM policy setup.
 
 ```bash
 # Install Vercel CLI
@@ -300,14 +315,21 @@ npm install -g vercel
 vercel
 ```
 
-**Configure Environment Variables in Vercel Dashboard:**
+**Prerequisites:**
+1. ✅ Create IAM user with DynamoDB + S3 permissions
+2. ✅ Create DynamoDB table: `smart-receipts`
+3. ✅ Create S3 bucket: `smart-receipt-images-{account-id}`
+
+**Environment Variables in Vercel Dashboard:**
 - `MISTRAL_API_KEY` - Your Mistral API key
-- `USE_LOCAL_STORAGE` - `false`
-- `AWS_REGION` - `us-east-1`
+- `USE_LOCAL_STORAGE` - `false` (use AWS services)
+- `AWS_REGION` - `ap-southeast-1` (your AWS region)
+- `AWS_ACCESS_KEY_ID` - IAM user access key
+- `AWS_SECRET_ACCESS_KEY` - IAM user secret key
 - `S3_BUCKET_NAME` - Your S3 bucket name
 - `DYNAMODB_TABLE_NAME` - `smart-receipts`
-- `AWS_ACCESS_KEY_ID` - Your AWS key
-- `AWS_SECRET_ACCESS_KEY` - Your AWS secret
+
+📚 **[Read Full Vercel Deployment Guide →](./VERCEL_DEPLOYMENT_GUIDE.md)**
 
 ---
 
@@ -494,7 +516,7 @@ Need help? Check these resources:
 - 📖 [Documentation](#-documentation)
 - 🐛 [Issue Tracker](https://github.com/your-repo/issues)
 - 💬 [Discussions](https://github.com/your-repo/discussions)
-- 📧 Email: your-email@example.com
+- 📧 Email: wang.ruiping0720@gmail.com
 
 ---
 
@@ -527,7 +549,7 @@ Need help? Check these resources:
 
 **Built with ❤️ using Mistral AI, React, and AWS**
 
-Made by [Your Name](https://github.com/your-profile) | January 2026
+Made by [Your Name](https://github.com/SophiaSama) | January 2026
 
 [⬆ Back to Top](#-smartreceipt---ai-powered-expense-tracker)
 

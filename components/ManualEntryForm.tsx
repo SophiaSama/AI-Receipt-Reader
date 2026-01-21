@@ -12,7 +12,7 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
     merchantName: '',
     date: new Date().toISOString().split('T')[0],
     total: 0,
-    currency: 'USD',
+    currency: 'SGD',
   });
   const [items, setItems] = useState<LineItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
@@ -82,8 +82,8 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
               value={formData.currency}
               onChange={e => setFormData({ ...formData, currency: e.target.value })}
             >
-              <option value="USD">USD ($)</option>
               <option value="SGD">SGD (S$)</option>
+              <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
               <option value="GBP">GBP (£)</option>
               <option value="JPY">JPY (¥)</option>

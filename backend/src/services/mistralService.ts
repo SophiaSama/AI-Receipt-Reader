@@ -67,7 +67,7 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
   "merchantName": "Store name",
   "date": "YYYY-MM-DD",
   "total": 0.00,
-  "currency": "USD",
+  "currency": "SGD",
   "items": [{"description": "Item name", "price": 0.00}]
 }
 
@@ -75,7 +75,7 @@ Rules:
 - merchantName: The name of the store/merchant
 - date: Format as YYYY-MM-DD. If unclear, use today's date
 - total: The final total amount as a number
-- currency: Default to "USD" if not specified
+- currency: Default to "SGD" if not specified
 - items: Array of purchased items with description and price`,
                 },
                 {
@@ -93,7 +93,7 @@ Rules:
             merchantName: parsed.merchantName || 'Unknown Merchant',
             date: parsed.date || new Date().toISOString().split('T')[0],
             total: typeof parsed.total === 'number' ? parsed.total : 0,
-            currency: parsed.currency || 'USD',
+            currency: parsed.currency || 'SGD',
             items: Array.isArray(parsed.items) ? parsed.items : [],
         };
     } catch (error) {
@@ -137,7 +137,7 @@ const mockStructuredResponse = (rawText: string): MistralStructuredResult => {
         merchantName: 'Demo Grocery Store',
         date: new Date().toISOString().split('T')[0],
         total: total,
-        currency: 'USD',
+        currency: 'SGD',
         items: [
             { description: 'Milk 2% Gallon', price: 4.99 },
             { description: 'Bread Whole Wheat', price: 3.49 },

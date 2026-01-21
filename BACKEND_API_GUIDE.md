@@ -39,7 +39,7 @@ This is the primary endpoint for automated scanning.
   "merchantName": "Store Name",
   "date": "YYYY-MM-DD",
   "total": 12.50,
-  "currency": "USD",
+  "currency": "SGD",
   "items": [{"description": "Item", "price": 5.00}],
   "imageUrl": "https://...",
   "createdAt": 1700000000000
