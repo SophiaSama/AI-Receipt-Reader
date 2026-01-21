@@ -109,8 +109,9 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- AWS Account (for production) or local development mode
+- **Node.js 20.x LTS** or higher ([Download here](https://nodejs.org/))
+- npm 10.x or higher (comes with Node.js)
+- AWS Account (for production deployment)
 - Mistral AI API Key ([Get one here](https://console.mistral.ai/))
 
 ### 1️⃣ Clone & Install
@@ -346,7 +347,6 @@ Detailed documentation is available in these files:
 - **[DYNAMODB_SCHEMA.md](./DYNAMODB_SCHEMA.md)** - Database schema & format
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment checklist & troubleshooting
 - **[backend/CONFIGURATION.md](./backend/CONFIGURATION.md)** - Environment setup
-- **[REVIEW_SUMMARY.md](./REVIEW_SUMMARY.md)** - Code review findings
 
 ---
 
