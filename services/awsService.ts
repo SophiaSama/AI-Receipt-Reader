@@ -17,7 +17,18 @@ export const processAndSaveReceipt = async (file: File): Promise<ReceiptData> =>
   });
 
   if (!response.ok) {
-    throw new Error(`Server processing failed: ${response.statusText}`);
+    let errorMessage = `Server processing failed: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.error) {
+        errorMessage = `Error: ${errorData.error}`;
+      }
+    } catch (e) {
+      // Could not parse JSON error response, stick with default
+      const text = await response.text();
+      if (text) errorMessage += ` - ${text.substring(0, 100)}`;
+    }
+    throw new Error(errorMessage);
   }
 
   // The backend returns the final saved ReceiptData object after OCR and DB save
@@ -38,7 +49,15 @@ export const saveManualReceiptToDB = async (receipt: Partial<ReceiptData>, file?
   });
 
   if (!response.ok) {
-    throw new Error(`Manual save failed: ${response.statusText}`);
+    let errorMessage = `Manual save failed: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.error) errorMessage = `Error: ${errorData.error}`;
+    } catch (e) {
+      const text = await response.text();
+      if (text) errorMessage += ` - ${text.substring(0, 100)}`;
+    }
+    throw new Error(errorMessage);
   }
 
   return await response.json();

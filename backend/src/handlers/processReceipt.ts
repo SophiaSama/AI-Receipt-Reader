@@ -76,7 +76,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return success(receipt);
     } catch (error: any) {
         console.error('Error processing receipt:', error);
-        return serverError(error.message || 'Internal server error during receipt processing');
+        return serverError(`Internal server error during receipt processing: ${error.message}`);
     }
 };
 
