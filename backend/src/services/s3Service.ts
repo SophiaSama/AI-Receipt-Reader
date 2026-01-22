@@ -36,7 +36,6 @@ export const uploadImage = async (
         Key: key,
         Body: fileBuffer,
         ContentType: contentType,
-        ACL: 'public-read', // Make image publicly accessible
     });
 
     await s3Client!.send(command);
