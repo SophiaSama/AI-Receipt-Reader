@@ -104,7 +104,7 @@ export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
  * Delete receipt and associated S3 assets
  */
 export const deleteReceiptFromDB = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/receipts/${id}`, {
+  const response = await fetch(`${API_BASE}/receipts/delete?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
 
