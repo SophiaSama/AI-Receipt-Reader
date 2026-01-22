@@ -6,22 +6,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  */
 export default async function (req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-HTTP-Method-Override');
-  res.setHeader('Access-Control-Allow-Methods', 'DELETE,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'DELETE,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
   }
 
-  const effectiveMethod = ((): string => {
-    const override = req.headers['x-http-method-override'];
-    if (typeof override === 'string' && override) return override.toUpperCase();
-    return (req.method || '').toUpperCase();
-  })();
-
-  if (effectiveMethod !== 'DELETE') {
-    res.status(405).send('Method Not Allowed');
+  if (req.method !== 'DELETE') {
+    res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
 
