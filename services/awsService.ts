@@ -105,10 +105,14 @@ export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
  */
 export const deleteReceiptFromDB = async (id: string): Promise<void> => {
   const response = await fetch(`${API_BASE}/receipts/${id}`, {
-    method: 'DELETE',
+    method: 'POST',
+    headers: {
+      'X-HTTP-Method-Override': 'DELETE',
+    },
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to delete receipt: ${response.statusText}`);
+    const text = await response.text().catch(() => '');
+    throw new Error(`Failed to delete receipt: ${response.statusText} (${response.status})${text ? ` - ${text.substring(0, 200)}` : ''}`);
   }
 };
