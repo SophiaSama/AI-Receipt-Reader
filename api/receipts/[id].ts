@@ -7,14 +7,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 export default async function (req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'DELETE,POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
   }
 
-  if (req.method !== 'DELETE') {
+  // Some clients/proxies may not send DELETE reliably; allow POST as a fallback.
+  if (req.method !== 'DELETE' && req.method !== 'POST') {
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
