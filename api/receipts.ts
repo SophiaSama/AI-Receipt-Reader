@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handler as getReceiptsHandler } from '../backend/src/handlers/getReceipts';
 
 /**
  * Vercel Serverless Function:
@@ -21,6 +20,9 @@ export default async function (req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // @ts-ignore - resolved at runtime on Vercel after backend build outputs dist/
+    const { handler: getReceiptsHandler } = await import('../backend/dist/src/handlers/getReceipts.js');
+
     const event = {
       body: null,
       headers: {},
@@ -32,7 +34,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       requestContext: {},
     };
 
-    const result = await getReceiptsHandler(event);
+    const result = await getReceiptsHandler(event as any);
 
     if (result.headers) {
       for (const [k, v] of Object.entries(result.headers)) {

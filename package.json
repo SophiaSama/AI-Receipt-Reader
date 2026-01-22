@@ -9,9 +9,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run build:backend",
+    "build:backend": "cd backend && npm install && npm run build",
     "preview": "vite preview",
-    "vercel-build": "npm run build && cd backend && npm install && npm run build"
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "recharts": "^3.6.0",
