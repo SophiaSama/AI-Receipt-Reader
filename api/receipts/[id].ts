@@ -1,0 +1,51 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { handler as deleteHandler } from '../../backend/src/handlers/deleteReceipt';
+
+/**
+ * Vercel Serverless Function:
+ *   DELETE /api/receipts/:id
+ */
+export default async function (req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'DELETE,OPTIONS');
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  if (req.method !== 'DELETE') {
+    res.status(405).json({ error: 'Method Not Allowed' });
+    return;
+  }
+
+  try {
+    const id = typeof req.query.id === 'string' ? req.query.id : Array.isArray(req.query.id) ? req.query.id[0] : undefined;
+
+    const event = {
+      body: null,
+      headers: {},
+      httpMethod: 'DELETE',
+      isBase64Encoded: false,
+      path: `/api/receipts/${id ?? ''}`,
+      pathParameters: { id },
+      queryStringParameters: null,
+      requestContext: {},
+    };
+
+    const result = await deleteHandler(event);
+
+    if (result.headers) {
+      for (const [k, v] of Object.entries(result.headers)) {
+        res.setHeader(k, v);
+      }
+    }
+
+    // deleteHandler returns empty body with 204; preserve it.
+    res.status(result.statusCode).send(result.body);
+  } catch (err: any) {
+    console.error('Vercel /api/receipts/[id] error:', err);
+    res.status(500).json({ error: err?.message || 'Internal Server Error' });
+  }
+}

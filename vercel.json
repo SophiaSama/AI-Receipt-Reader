@@ -7,23 +7,15 @@
             "config": {
                 "distDir": "dist"
             }
-        },
-        {
-            "src": "backend/dist/local/server.js",
-            "use": "@vercel/node",
-            "config": {
-                "runtime": "nodejs20.x"
-            }
         }
     ],
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/(.*)",
-            "destination": "/backend/dist/local/server.js"
+            "handle": "filesystem"
         },
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
+            "src": "/(.*)",
+            "dest": "/index.html"
         }
     ]
 }
