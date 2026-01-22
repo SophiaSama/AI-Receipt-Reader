@@ -39,12 +39,17 @@ export default async function (req: VercelRequest, res: VercelResponse) {
 
     const id = idFromQuery || idFromPath;
 
+    if (!id) {
+      res.status(400).json({ error: 'Receipt ID is required' });
+      return;
+    }
+
     const event = {
       body: null,
       headers: {},
       httpMethod: 'DELETE',
       isBase64Encoded: false,
-      path: `/api/receipts/${id ?? ''}`,
+      path: `/api/receipts/${id}`,
       pathParameters: { id },
       queryStringParameters: null,
       requestContext: {},
