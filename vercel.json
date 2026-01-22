@@ -19,11 +19,7 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "backend/dist/local/server.js"
-        },
-        {
-            "source": "/images/(.*)",
-            "destination": "backend/dist/local/server.js"
+            "destination": "/backend/dist/local/server.js"
         },
         {
             "source": "/(.*)",
