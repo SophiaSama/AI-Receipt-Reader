@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { UploadSection } from './components/UploadSection';
 import { ReceiptList } from './components/ReceiptList';
 import { StatsOverview } from './components/StatsOverview';
@@ -113,8 +114,9 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <>
+      <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+        <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="bg-indigo-600 rounded-lg p-1.5 shadow-sm">
@@ -199,7 +201,9 @@ function App() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+      <SpeedInsights />
+    </>
   );
 }
 
