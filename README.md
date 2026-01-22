@@ -189,10 +189,13 @@ Navigate to: **<http://localhost:3000>**
 SmartReceiptReader/
 ├── 📄 App.tsx                    # Main React application
 ├── 📄 index.tsx                  # React entry point
+├── 📄 styles.css                 # Global styles
 ├── 📄 types.ts                   # TypeScript definitions
 ├── 📄 vite.config.ts             # Vite configuration
 ├── 📄 package.json               # Frontend dependencies
 ├── 📄 vercel.json                # Vercel deployment config
+├── 📄 postcss.config.cjs         # PostCSS config
+├── 📄 tailwind.config.cjs        # Tailwind config
 │
 ├── 📁 components/                # React components
 │   ├── UploadSection.tsx         # File upload UI
@@ -205,7 +208,12 @@ SmartReceiptReader/
 │   ├── awsService.ts             # API communication
 │   └── geminiService.ts          # (Legacy)
 │
-└── 📁 backend/                   # Backend code
+├── 📁 api/                       # Vercel Serverless Functions
+│   ├── process.ts                # Receipt processing endpoint
+│   ├── health.ts                 # Health check endpoint
+│   └── receipts/                 # Receipt management endpoints
+│
+└── 📁 backend/                   # Backend code (AWS Lambda / Local)
     ├── 📄 package.json           # Backend dependencies
     ├── 📄 template.yaml          # AWS SAM template
     ├── 📄 tsconfig.json          # TypeScript config
