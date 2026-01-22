@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handler as manualHandler } from '../../backend/src/handlers/manualSave';
 
 /**
  * Vercel Serverless Function: POST /api/receipts/manual
@@ -20,6 +19,9 @@ export default async function (req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // @ts-ignore - resolved at runtime on Vercel after backend build outputs dist/
+    const { handler: manualHandler } = await import('../../backend/dist/src/handlers/manualSave.js');
+
     const contentType = req.headers['content-type'] || '';
 
     const chunks: Buffer[] = [];
@@ -45,7 +47,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       requestContext: {},
     };
 
-    const result = await manualHandler(event);
+    const result = await manualHandler(event as any);
 
     if (result.headers) {
       for (const [k, v] of Object.entries(result.headers)) {

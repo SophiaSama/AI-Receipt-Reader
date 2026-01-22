@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handler as processHandler } from '../backend/src/handlers/processReceipt';
 
 /**
  * Vercel Serverless Function: POST /api/process
@@ -22,6 +21,10 @@ export default async function (req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - resolved at runtime on Vercel after backend build outputs dist/
+    const { handler: processHandler } = await import('../backend/dist/src/handlers/processReceipt.js');
+
     const contentType = req.headers['content-type'] || '';
 
     // Vercel provides the raw (unparsed) request body on req.body only if body parsing ran.
@@ -49,7 +52,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       requestContext: {},
     };
 
-    const result = await processHandler(event);
+    const result = await processHandler(event as any);
 
     // Forward status + headers + body
     if (result.headers) {

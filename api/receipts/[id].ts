@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handler as deleteHandler } from '../../backend/src/handlers/deleteReceipt';
 
 /**
  * Vercel Serverless Function:
@@ -21,6 +20,9 @@ export default async function (req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // @ts-ignore - resolved at runtime on Vercel after backend build outputs dist/
+    const { handler: deleteHandler } = await import('../../backend/dist/src/handlers/deleteReceipt.js');
+
     const id = typeof req.query.id === 'string' ? req.query.id : Array.isArray(req.query.id) ? req.query.id[0] : undefined;
 
     const event = {
@@ -34,7 +36,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       requestContext: {},
     };
 
-    const result = await deleteHandler(event);
+    const result = await deleteHandler(event as any);
 
     if (result.headers) {
       for (const [k, v] of Object.entries(result.headers)) {
