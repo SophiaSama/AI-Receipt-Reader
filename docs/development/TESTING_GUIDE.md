@@ -359,6 +359,39 @@ When you run any test command (`npm test`, `npm run test:integration`, etc.), th
    - Ensures all handler files are created
    - Validates directory structure
 
+### When It Works
+
+**✅ Works with these commands:**
+```powershell
+npm test                    # Local: npm install + npm test
+npm run test:integration    # Local: npm install + test:integration
+npm run test:e2e           # Local: npm install + test:e2e
+npm run test:coverage      # Local: npm install + test:coverage
+npm install && npm test    # Explicit install + test
+```
+
+**❌ Does NOT work with these:**
+```bash
+npm ci && npm test         # CI: npm ci skips lifecycle scripts!
+npx vitest                 # Direct vitest call bypasses npm
+./node_modules/.bin/vitest # Direct binary bypasses npm
+```
+
+**Why `npm ci` Skips Lifecycle Scripts:**
+- Security: Prevents arbitrary code execution during install
+- Predictability: Ensures reproducible builds
+- Speed: Faster in CI environments
+- Best Practice: CI should have explicit build steps
+
+**Solution for CI/CD:**
+Always explicitly build before testing:
+```yaml
+# GitHub Actions / GitLab CI / etc.
+- run: npm ci
+- run: npm run build:backend
+- run: npm test -- --run
+```
+
 ### Commands Affected
 
 All test commands automatically trigger the build:
@@ -446,6 +479,44 @@ export default defineConfig({
 
 ## 🔄 CI/CD Integration
 
+### Important: `npm ci` vs `npm install`
+
+**Local Development:**
+```powershell
+npm install  # Installs and runs lifecycle scripts (pretest, postinstall, etc.)
+npm test     # Runs pretest → build:backend → test
+```
+
+**CI/CD Environments:**
+```bash
+npm ci       # Clean install, does NOT run lifecycle scripts by default!
+npm test     # Will NOT run pretest hook automatically
+```
+
+**Why This Matters:**
+- `npm ci` is designed for CI environments (faster, reproducible)
+- It skips lifecycle scripts for security and predictability
+- Tests will fail if backend isn't built explicitly in CI
+
+**Solution:**
+GitHub Actions explicitly builds the backend before running tests:
+
+```yaml
+- name: Install root dependencies
+  run: npm ci
+
+- name: Install backend dependencies
+  run: cd backend && npm ci
+
+- name: Build backend (required for tests)
+  run: npm run build
+  working-directory: backend
+  # npm ci doesn't run pretest hooks
+
+- name: Run tests
+  run: npm test -- --run
+```
+
 ### GitHub Actions
 
 Tests run automatically on:
@@ -457,13 +528,13 @@ Workflow file: `.github/workflows/test.yml`
 **What it does:**
 1. ✅ Checks out code
 2. ✅ Sets up Node.js (20.x, 22.x)
-3. ✅ Installs dependencies
-4. ✅ **Automatically builds backend** (via `pretest` hook)
+3. ✅ Installs dependencies (`npm ci`)
+4. ✅ **Explicitly builds backend** (runs `npm run build:backend`)
 5. ✅ Runs tests
 6. ✅ Uploads coverage report
 7. ✅ Runs TypeScript checks
 
-**Note:** The CI pipeline benefits from the automated build system - no need to manually add build steps!
+**Note:** CI uses `npm ci` which doesn't run lifecycle scripts, so we explicitly build the backend in the workflow.
 
 ### Local Pre-commit Hook (Optional)
 
