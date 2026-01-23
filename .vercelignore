@@ -1,12 +1,4 @@
-# Source files (only ship compiled dist/)
-backend/src
-backend/local
-backend/node_modules
-
-# TypeScript config (not needed in production)
-backend/tsconfig.json
-
-# Development files
+# Development files only (NOT source code - Vercel needs to build)
 .env
 .env.local
 .env.*.local
@@ -15,7 +7,7 @@ backend/tsconfig.json
 .git
 .gitignore
 
-# Documentation (can keep or remove based on preference)
+# Documentation
 *.md
 !README.md
 
@@ -24,6 +16,7 @@ backend/tsconfig.json
 **/*.test.tsx
 **/*.spec.ts
 **/*.spec.tsx
+tests/
 
 # IDE
 .vscode
@@ -37,3 +30,9 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Backend node_modules (will be installed during build)
+backend/node_modules
+
+# Local server (not needed for Vercel deployment)
+backend/local/
