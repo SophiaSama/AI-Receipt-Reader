@@ -11,6 +11,7 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.ts'],
+    exclude: ['tests/e2e/**/*.test.ts'], // Exclude E2E tests by default
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

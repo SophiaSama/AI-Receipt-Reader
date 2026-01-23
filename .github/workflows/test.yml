@@ -30,8 +30,8 @@ jobs:
       # pretest automatically builds backend before tests
 
     - name: Run tests
-      run: npm test -- --run
-      # pretest hook already built the backend
+      run: npm run test:integration
+      # Run only integration tests (not E2E which need a live server)
       env:
         USE_LOCAL_STORAGE: true
         NODE_ENV: test
