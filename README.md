@@ -209,9 +209,12 @@ SmartReceiptReader/
 │   └── geminiService.ts          # (Legacy)
 │
 ├── 📁 api/                       # Vercel Serverless Functions
-│   ├── process.ts                # Receipt processing endpoint
-│   ├── health.ts                 # Health check endpoint
-│   └── receipts/                 # Receipt management endpoints
+│   ├── process.ts                # POST /api/process (receipt OCR)
+│   ├── health.ts                 # GET /api/health (health check)
+│   ├── receipts.ts               # GET /api/receipts (list all)
+│   └── receipts/                 # Receipt sub-routes
+│       ├── manual.ts             # POST /api/receipts/manual (manual entry)
+│       └── delete.ts             # DELETE /api/receipts/delete (delete by ID)
 │
 └── 📁 backend/                   # Backend code (AWS Lambda / Local)
     ├── 📄 package.json           # Backend dependencies
@@ -235,6 +238,7 @@ SmartReceiptReader/
     │       ├── parseMultipart.ts # Form parsing
     │       └── responseHelper.ts # API responses
     │
+    ├── 📁 dist/                  # Compiled JavaScript (generated)
     └── 📁 local/                 # Local development
         └── server.ts             # Express server
 ```
@@ -282,9 +286,12 @@ Get all receipts
 
 **Response:** Array of receipt objects
 
-### `DELETE /api/receipts/:id`
+### `DELETE /api/receipts/delete`
 
 Delete receipt and image
+
+**Request:**
+- Query Parameter: `id` (receipt ID)
 
 **Response:** 204 No Content
 
@@ -332,7 +339,7 @@ sam deploy --guided
 ### Deploy to Vercel
 
 > **🔐 Important:** Vercel needs AWS IAM credentials to access DynamoDB and S3.  
-> See **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** for IAM policy setup.
+> See **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** for complete setup including project structure, IAM policies, and environment configuration.
 
 ```bash
 # Install Vercel CLI
@@ -358,7 +365,9 @@ vercel
 - `S3_BUCKET_NAME` - Your S3 bucket name
 - `DYNAMODB_TABLE_NAME` - `smart-receipts`
 
-📚 **[Read Full Vercel Deployment Guide →](./VERCEL_DEPLOYMENT_GUIDE.md)**
+📚 **Documentation:**
+- **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** - Complete deployment setup
+- **[VERCEL_DEVELOPMENT_GUIDE.md](./VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices & troubleshooting
 
 ---
 
@@ -395,12 +404,18 @@ vercel
 
 ## 📚 Documentation
 
-Detailed documentation is available in these files:
+### Deployment Guides
+
+- **[AWS_DEPLOYMENT_GUIDE.md](./AWS_DEPLOYMENT_GUIDE.md)** - Deploy to AWS Lambda with SAM
+- **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** - Deploy to Vercel (includes IAM setup and project structure)
+- **[VERCEL_DEVELOPMENT_GUIDE.md](./VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices, common pitfalls, and debugging strategies
+
+### Technical Reference
 
 - **[BACKEND_API_GUIDE.md](./BACKEND_API_GUIDE.md)** - Backend development guidelines
 - **[DYNAMODB_SCHEMA.md](./DYNAMODB_SCHEMA.md)** - Database schema & format
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment checklist & troubleshooting
-- **[backend/CONFIGURATION.md](./backend/CONFIGURATION.md)** - Environment setup
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - General deployment checklist & troubleshooting
+- **[backend/CONFIGURATION.md](./backend/CONFIGURATION.md)** - Environment setup and configuration
 
 ---
 
