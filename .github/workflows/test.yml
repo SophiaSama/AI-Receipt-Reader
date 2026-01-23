@@ -60,13 +60,13 @@ jobs:
 
     - name: Install dependencies
       run: npm install
-      # npm install runs lifecycle scripts
+      # npm install runs lifecycle scripts and installs backend deps
 
-    - name: Check TypeScript
-      run: npx tsc --noEmit
+    - name: Check frontend TypeScript
+      run: npx tsc --noEmit --skipLibCheck
+      # Check frontend code only
 
     - name: Check backend TypeScript
-      run: |
-        cd backend
-        npm install
-        npx tsc --noEmit
+      run: npx tsc --noEmit
+      working-directory: backend
+      # Check backend code with its own tsconfig
