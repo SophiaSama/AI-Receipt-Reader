@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { readRawBody } from './_lib/readRawBody.js';
 
 /**
  * Vercel Serverless Function: POST /api/process
@@ -27,16 +28,8 @@ export default async function (req: VercelRequest, res: VercelResponse) {
 
     const contentType = req.headers['content-type'] || '';
 
-    // Vercel provides the raw (unparsed) request body on req.body only if body parsing ran.
-    // We explicitly read the raw body from the stream so multipart uploads work reliably.
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      req.on('data', (c: Buffer) => chunks.push(c));
-      req.on('end', () => resolve());
-      req.on('error', reject);
-    });
-
-    const rawBody = Buffer.concat(chunks);
+    // Use the robust utility that handles streams, rawBody, and body from various request shapes
+    const rawBody = await readRawBody(req);
 
     const event = {
       body: rawBody.toString('base64'),

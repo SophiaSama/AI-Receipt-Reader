@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { readRawBody } from '../_lib/readRawBody.js';
 
 /**
  * Vercel Serverless Function: POST /api/receipts/manual
@@ -24,14 +25,8 @@ export default async function (req: VercelRequest, res: VercelResponse) {
 
     const contentType = req.headers['content-type'] || '';
 
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      req.on('data', (c: Buffer) => chunks.push(c));
-      req.on('end', () => resolve());
-      req.on('error', reject);
-    });
-
-    const rawBody = Buffer.concat(chunks);
+    // Use the robust utility that handles streams, rawBody, and body from various request shapes
+    const rawBody = await readRawBody(req);
 
     const event = {
       body: rawBody.toString('base64'),
