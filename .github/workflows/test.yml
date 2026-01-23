@@ -24,10 +24,13 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
-    - name: Install dependencies (includes backend build via pretest)
+    - name: Install dependencies
       run: npm install
-      # npm install runs lifecycle scripts including pretest
-      # pretest automatically builds backend before tests
+      # Install root dependencies
+
+    - name: Build backend (required for tests)
+      run: node scripts/pre-test-build.cjs
+      # Ensures backend is built before tests run
 
     - name: Run tests
       run: npm run test:integration
