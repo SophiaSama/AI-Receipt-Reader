@@ -23,3 +23,7 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Docs
+REVIEW_SUMMARY.md
+NODEJS_VERSION.md
