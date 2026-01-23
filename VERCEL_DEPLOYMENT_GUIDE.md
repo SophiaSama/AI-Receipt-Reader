@@ -1,4 +1,97 @@
-# Vercel Deployment Guide - IAM Policies & Permissions
+# Vercel Deployment Guide - Complete Setup & IAM Configuration
+
+This guide covers the complete deployment process for SmartReceiptReader on Vercel, including:
+- 📂 **Project structure and root directory configuration**
+- 🔐 **AWS IAM policies and permissions**
+- ⚙️ **Vercel environment variables**
+- 🚀 **Deployment and troubleshooting**
+
+---
+
+## 📂 Understanding Your Project Structure on Vercel
+
+### Project Root Directory
+
+The **root directory** is where Vercel starts when building and deploying your application:
+
+```
+SmartReceiptReader/                    ← ROOT DIRECTORY (Vercel starts here)
+├── package.json                       ← Frontend build config
+├── vercel.json                        ← Vercel deployment config
+├── vite.config.ts                     ← Vite configuration
+├── index.html                         ← Entry HTML
+├── App.tsx                            ← React app
+├── index.tsx                          ← React entry point
+│
+├── api/                               ← Vercel Serverless Functions
+│   ├── process.ts                     ← POST /api/process (receipt OCR)
+│   ├── health.ts                      ← GET /api/health (health check)
+│   └── receipts/
+│       ├── receipts.ts                ← GET /api/receipts (list all)
+│       ├── manual.ts                  ← POST /api/receipts/manual (manual entry)
+│       └── delete.ts                  ← DELETE /api/receipts/delete?id=xxx
+│
+├── components/                        ← React components
+├── services/                          ← Frontend services
+│
+├── dist/                              ← Generated (after build)
+│   ├── index.html                     ← Built frontend
+│   ├── assets/                        ← Built JS/CSS
+│   └── ...
+│
+└── backend/                           ← Backend source code
+    ├── package.json                   ← Backend dependencies
+    ├── tsconfig.json                  ← TypeScript config
+    ├── src/                           ← Lambda handlers & services
+    └── dist/                          ← Generated (after build)
+```
+
+### Key Concepts
+
+**Root Directory Detection:**
+1. When you run `vercel`, it looks for `vercel.json` in the current directory
+2. That directory becomes the **root** - all paths in `vercel.json` are relative to it
+3. In your case: `SmartReceiptReader/` is the root
+
+**Vercel's Build Process:**
+```
+Step 1: Vercel detects root (SmartReceiptReader/)
+   ↓
+Step 2: Reads vercel.json configuration
+   ↓
+Step 3: Runs "vercel-build" script from root package.json
+   ├─ npm run build (builds frontend → dist/)
+   └─ cd backend && npm install && npm run build (builds backend → backend/dist/)
+   ↓
+Step 4: Deploys:
+   ├─ dist/ → Static files (React SPA)
+   └─ api/*.ts → Serverless Functions
+```
+
+**Important Path Rules:**
+- ✅ All paths in `vercel.json` are relative to the root
+- ✅ API functions in `api/` folder auto-deploy as serverless functions
+- ✅ Use `/api/(.*)` route to handle all API requests before SPA fallback
+- ✅ API functions import from `backend/dist/...` (compiled JavaScript)
+
+### Your vercel.json Configuration
+
+```json
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+
+**What This Does:**
+1. Routes `/api/*` requests to Vercel Serverless Functions in `api/` folder
+2. All other routes fallback to `index.html` (React SPA)
+
+---
+
+## 🔐 AWS IAM Setup - Why & How
 
 When deploying to **Vercel**, your serverless functions need **AWS IAM credentials** to access:
 - **DynamoDB** (for storing receipt data)
