@@ -49,7 +49,9 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    res.status(result.statusCode).send(result.body);
+    // Parse JSON body if present, use .json() for proper test compatibility
+    const body = result.body ? JSON.parse(result.body) : { message: 'Deleted' };
+    res.status(result.statusCode).json(body);
   } catch (err: any) {
     console.error('Vercel /api/receipts/delete error:', err);
     res.status(500).json({ error: err?.message || 'Internal Server Error' });

@@ -61,7 +61,8 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    res.status(result.statusCode).send(result.body);
+    // Parse JSON body and use .json() for proper test compatibility
+    res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (err: any) {
     console.error('Vercel /api/process error:', err);
     res.status(500).json({ error: err?.message || 'Internal Server Error' });
