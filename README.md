@@ -383,7 +383,7 @@ vercel
 
 ### Backend
 
-- **Node.js 18+** - Runtime
+- **Node.js 20+** - Runtime
 - **Express 4.18** - Local development server
 - **TypeScript 5.3** - Type safety
 - **Mistral AI SDK** - AI integration
