@@ -68,8 +68,8 @@ jobs:
       # Backend needs its own dependencies for TypeScript check
 
     - name: Check frontend TypeScript
-      run: npx tsc --noEmit --skipLibCheck
-      # Check frontend code only
+      run: npx tsc --noEmit
+      # Checks only frontend code (tests and backend excluded in tsconfig.json)
 
     - name: Check backend TypeScript
       run: npx tsc --noEmit
