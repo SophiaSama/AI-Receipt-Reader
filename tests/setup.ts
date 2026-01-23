@@ -1,5 +1,5 @@
 // Test setup and global configuration
-import { beforeAll, afterAll } from 'vitest';
+import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { existsSync } from 'fs';
 import path from 'path';
 
@@ -35,6 +35,16 @@ beforeAll(() => {
   console.log('✓ Backend build artifacts verified');
   console.log('✓ Environment variables configured');
   console.log('✓ Test environment ready\n');
+});
+
+// Clear in-memory store before each test
+beforeEach(async () => {
+  try {
+    const { clearReceipts } = await import('../api/_lib/receiptsStore.js');
+    await clearReceipts();
+  } catch (e) {
+    // Store may not be available in all tests, that's ok
+  }
 });
 
 afterAll(() => {
