@@ -38,7 +38,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
 
     if (result.headers) {
       for (const [k, v] of Object.entries(result.headers)) {
-        res.setHeader(k, v);
+        res.setHeader(k, String(v));
       }
     }
 
