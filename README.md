@@ -18,8 +18,8 @@
 
 ## Demo
 
-![alt image](AddReceiptUI.png)
-![alt image](HistoryUI.png)
+![Add Receipt UI](docs/assets/AddReceiptUI.png)
+![History UI](docs/assets/HistoryUI.png)
 
 ## 📖 Overview
 
@@ -334,7 +334,7 @@ sam deploy --guided
 - Note the API Gateway endpoint URL from outputs
 - Update frontend to use production API (if needed)
 
-📚 **[Read Full AWS Deployment Guide →](./AWS_DEPLOYMENT_GUIDE.md)**
+📚 **[Read Full AWS Deployment Guide →](./docs/deployment/AWS_DEPLOYMENT_GUIDE.md)**
 
 ### Deploy to Vercel
 
@@ -366,8 +366,8 @@ vercel
 - `DYNAMODB_TABLE_NAME` - `smart-receipts`
 
 📚 **Documentation:**
-- **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** - Complete deployment setup
-- **[VERCEL_DEVELOPMENT_GUIDE.md](./VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices & troubleshooting
+- **[docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md](./docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md)** - Complete deployment setup
+- **[docs/development/VERCEL_DEVELOPMENT_GUIDE.md](./docs/development/VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices & troubleshooting
 
 ---
 
@@ -409,6 +409,11 @@ vercel
 - **[AWS_DEPLOYMENT_GUIDE.md](./AWS_DEPLOYMENT_GUIDE.md)** - Deploy to AWS Lambda with SAM
 - **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** - Deploy to Vercel (includes IAM setup and project structure)
 - **[VERCEL_DEVELOPMENT_GUIDE.md](./VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices, common pitfalls, and debugging strategies
+
+### Development Guides
+
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Comprehensive testing documentation
+- **[tests/README.md](./tests/README.md)** - Test structure and examples
 
 ### Technical Reference
 
@@ -456,13 +461,23 @@ vercel
 ### Run Tests
 
 ```bash
-# Frontend tests (if configured)
+# Run all tests
 npm test
 
-# Backend tests (if configured)
-cd backend
-npm test
+# Run integration tests only
+npm run test:integration
+
+# Run E2E tests (requires server running)
+npm run test:e2e
+
+# Run with UI (interactive)
+npm run test:ui
+
+# Generate coverage report
+npm run test:coverage
 ```
+
+See **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** for detailed testing documentation.
 
 ### Build for Production
 
@@ -526,7 +541,7 @@ Backend will return mock OCR results.
 - ✅ For production: use AWS services
 - ✅ Verify DynamoDB table exists
 
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for comprehensive troubleshooting.
+See **[docs/deployment/DEPLOYMENT.md](./docs/deployment/DEPLOYMENT.md)** for comprehensive troubleshooting.
 
 ---
 
