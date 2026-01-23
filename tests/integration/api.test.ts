@@ -2,12 +2,12 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createServer } from 'http';
 import type { AddressInfo } from 'net';
 
-// Import API handlers
-import healthHandler from '../api/health';
-import processHandler from '../api/process';
-import receiptsHandler from '../api/receipts';
-import manualHandler from '../api/receipts/manual';
-import deleteHandler from '../api/receipts/delete';
+// Import API handlers using path aliases
+import healthHandler from '@/api/health';
+import processHandler from '@/api/process';
+import receiptsHandler from '@/api/receipts';
+import manualHandler from '@/api/receipts/manual';
+import deleteHandler from '@/api/receipts/delete';
 
 // Helper to create mock Vercel request/response
 function createMockRequest(options: {

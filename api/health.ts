@@ -10,8 +10,15 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // Only allow GET requests
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method Not Allowed' });
+    return;
+  }
+
   res.status(200).json({
-    status: 'ok',
+    status: 'healthy',
+    service: 'SmartReceipt API',
     timestamp: new Date().toISOString(),
     vercel: true,
   });
