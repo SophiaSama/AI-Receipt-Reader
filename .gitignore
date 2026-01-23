@@ -28,6 +28,5 @@ backend/.env
 backend/dist
 .aws-sam
 
-# Local Documents
-REVIEW_SUMMARY.md
-NODEJS_VERSION.md
+# Local Docs
+docs/my_local_doc/*
