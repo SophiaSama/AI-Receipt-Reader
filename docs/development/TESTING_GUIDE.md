@@ -2,6 +2,17 @@
 
 This document describes the testing infrastructure and practices for the SmartReceiptReader application.
 
+## ✨ Quick Start (New!)
+
+**Just run tests - everything else is automatic:**
+```powershell
+npm test
+```
+
+The automated test setup system handles all dependency building for you! See [Automated Test Setup System](#-automated-test-setup-system) for details.
+
+---
+
 ## 📚 Table of Contents
 
 - [Overview](#overview)
@@ -83,21 +94,81 @@ npm install
 cd ..
 ```
 
-### Build Backend
+### Automated Build Setup ✨
 
-Tests import from `backend/dist/`, so build first:
+**Good news!** You don't need to manually build the backend before running tests anymore. The project now includes an automated pre-test build system.
+
+#### How It Works
+
+When you run `npm test`, the system automatically:
+
+1. **Checks Dependencies** - Verifies all required packages are installed
+2. **Builds Backend** - Compiles TypeScript (`backend/src/` → `backend/dist/`)
+3. **Verifies Build** - Ensures compiled handlers exist
+4. **Runs Tests** - Executes your test suite
+
+This is powered by npm's `pretest` lifecycle hook:
+
+```json
+{
+  "scripts": {
+    "pretest": "npm run build:backend",
+    "build:backend": "cd backend && npm install && npm run build",
+    "test": "vitest"
+  }
+}
+```
+
+#### Why This Matters
+
+Tests depend on compiled backend code because:
+
+```
+tests/integration/api.test.ts
+    ↓ imports
+api/process.ts (Vercel serverless function)
+    ↓ dynamically imports at runtime
+backend/dist/src/handlers/processReceipt.js
+    ↑
+    Must exist before tests run!
+```
+
+**Without automated build:**
+- ❌ Developers must remember to run `npm run build:backend`
+- ❌ Tests fail with "Cannot find module" errors
+- ❌ Confusing for new contributors
+
+**With automated build:**
+- ✅ Just run `npm test` - it handles everything
+- ✅ Works in CI/CD pipelines automatically
+- ✅ Consistent across all environments
+
+#### Manual Build (If Needed)
+
+You can still build manually:
 
 ```powershell
-cd backend
+# Build backend only
+npm run build:backend
+
+# Build everything (frontend + backend)
 npm run build
-cd ..
 ```
 
 ---
 
 ## 🏃 Running Tests
 
-### All Tests
+### Quick Start
+
+```powershell
+# Run all tests (automatically builds backend first!)
+npm test
+```
+
+That's it! The `pretest` script handles all dependencies automatically.
+
+### All Tests (with automatic build)
 
 ```powershell
 npm test
@@ -247,6 +318,132 @@ const { buffer, contentType } = createFormData(metadata, file);
 
 ---
 
+## 🔧 Automated Test Setup System
+
+### Overview
+
+SmartReceiptReader includes an automated test setup system that ensures all dependencies are built before tests run. This eliminates the common "Cannot find module" errors and makes testing seamless.
+
+### Architecture
+
+```
+npm test
+    ↓
+pretest hook (automatic)
+    ↓
+build:backend script
+    ├─ cd backend
+    ├─ npm install (if needed)
+    ├─ npm run build (TypeScript compilation)
+    └─ Creates backend/dist/src/handlers/*.js
+    ↓
+test script (vitest)
+    ├─ Runs all tests
+    └─ Tests can import from backend/dist/ ✅
+```
+
+### What Gets Built Automatically
+
+When you run any test command (`npm test`, `npm run test:integration`, etc.), the system:
+
+1. **Installs Backend Dependencies**
+   - Runs `npm install` in `backend/` directory
+   - Only installs if `node_modules/` is missing or outdated
+
+2. **Compiles TypeScript**
+   - Compiles `backend/src/**/*.ts` → `backend/dist/src/**/*.js`
+   - Includes handlers, services, and utilities
+   - Uses `backend/tsconfig.json` configuration
+
+3. **Verifies Build Output**
+   - Ensures all handler files are created
+   - Validates directory structure
+
+### Commands Affected
+
+All test commands automatically trigger the build:
+
+```powershell
+npm test                    # ✅ Builds backend first
+npm run test:integration    # ✅ Builds backend first
+npm run test:e2e           # ✅ Builds backend first
+npm run test:coverage      # ✅ Builds backend first
+npm run test:ui            # ✅ Builds backend first
+```
+
+### Skipping the Build (Advanced)
+
+If you're making rapid test changes and want to skip the build:
+
+```powershell
+# Run vitest directly (skips pretest hook)
+npx vitest
+
+# Or use the underlying vitest command
+./node_modules/.bin/vitest
+```
+
+**⚠️ Warning:** Only skip the build if you're certain the backend hasn't changed!
+
+### Build Performance
+
+**First run:** ~10-20 seconds (installs dependencies + compiles)
+**Subsequent runs:** ~2-5 seconds (only recompiles changed files)
+
+**Tips for faster testing:**
+- Use watch mode: `npm test -- --watch`
+- Run specific tests: `npm test api.test.ts`
+- Keep backend changes separate from frontend changes
+
+### Debugging Build Issues
+
+If the automatic build fails:
+
+1. **Check backend dependencies:**
+   ```powershell
+   cd backend
+   npm install
+   cd ..
+   ```
+
+2. **Try manual build:**
+   ```powershell
+   npm run build:backend
+   ```
+
+3. **Check TypeScript errors:**
+   ```powershell
+   cd backend
+   npm run build -- --noEmit
+   cd ..
+   ```
+
+4. **Verify tsconfig.json:**
+   - Check `backend/tsconfig.json` exists
+   - Verify `"rootDir": "./"` and `"outDir": "./dist"`
+   - Ensure `"include": ["src/**/*"]`
+
+### Test Setup File
+
+The `tests/setup.ts` file runs before all tests and:
+- Sets environment variables (`USE_LOCAL_STORAGE=true`)
+- Configures test timeouts
+- Imports necessary globals from Vitest
+
+**Location:** `tests/setup.ts`
+
+**Configured in:** `vitest.config.ts`
+```typescript
+export default defineConfig({
+  test: {
+    setupFiles: ['./tests/setup.ts'],
+    // ...
+  }
+});
+```
+
+---
+
 ## 🔄 CI/CD Integration
 
 ### GitHub Actions
@@ -261,10 +458,12 @@ Workflow file: `.github/workflows/test.yml`
 1. ✅ Checks out code
 2. ✅ Sets up Node.js (20.x, 22.x)
 3. ✅ Installs dependencies
-4. ✅ Builds backend
+4. ✅ **Automatically builds backend** (via `pretest` hook)
 5. ✅ Runs tests
 6. ✅ Uploads coverage report
 7. ✅ Runs TypeScript checks
+
+**Note:** The CI pipeline benefits from the automated build system - no need to manually add build steps!
 
 ### Local Pre-commit Hook (Optional)
 
@@ -345,12 +544,51 @@ Install dependencies:
 npm install
 ```
 
+### "Cannot find module 'backend/dist/...'" (RESOLVED ✅)
+
+**This issue is now automatically fixed!** The `pretest` script builds the backend before tests run.
+
+If you still see this error:
+1. Make sure you have the latest `package.json` with `"pretest": "npm run build:backend"`
+2. Try running manually: `npm run build:backend`
+3. Check that `backend/dist/src/handlers/` contains `.js` files
+
+**Why this happens:**
+- Tests import API functions from `/api/*.ts`
+- API functions dynamically import handlers from `backend/dist/src/handlers/`
+- If backend isn't compiled, these imports fail
+
+**How it's fixed:**
+- The `pretest` lifecycle script runs `npm run build:backend` before every test
+- This ensures `backend/dist/` always exists and is up-to-date
+
 ### "Module not found: backend/dist/..."
 
-Build the backend first:
+**Old Solution (manual):**
 ```powershell
 cd backend && npm run build && cd ..
 ```
+
+**New Solution (automatic):**
+Just run `npm test` - the build happens automatically!
+
+### Missing Dependencies in Lock File
+
+If you see errors like "Missing: @vitest/spy@2.1.9 from lock file":
+
+```powershell
+# Regenerate package-lock.json
+npm install
+
+# Or clean install
+rm package-lock.json
+npm install
+```
+
+This typically happens after:
+- Updating dependencies
+- Pulling changes from Git
+- Switching branches
 
 ### Tests Timing Out
 
