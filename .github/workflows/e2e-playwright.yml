@@ -50,6 +50,8 @@ jobs:
 
     - name: Install Playwright browsers and system dependencies
       working-directory: tests/e2e/playwright
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: 0
       run: |
         python -m playwright install --with-deps ${{ matrix.browser }}
         echo "Playwright ${{ matrix.browser }} browser installed successfully"
