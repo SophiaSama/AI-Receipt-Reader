@@ -11,7 +11,7 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -20,118 +20,139 @@ jobs:
         python-version: ['3.11']
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-    - name: Setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
-        cache-dependency-path: tests/e2e/playwright/requirements.txt
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: tests/e2e/playwright/requirements.txt
 
-    - name: Install Node dependencies
-      run: npm install
+      - name: Install Node dependencies
+        run: npm install
 
-    - name: Build backend
-      run: node scripts/pre-test-build.cjs
+      - name: Build backend
+        run: node scripts/pre-test-build.cjs
 
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r tests/e2e/playwright/requirements.txt
-        echo "Python packages installed:"
-        pip list | grep -E "(playwright|pytest)"
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/e2e/playwright/requirements.txt
+          echo "Python packages installed:"
+          pip list | grep -E "(playwright|pytest)" || true
 
-    - name: Verify Playwright installation
-      run: |
-        echo "Checking Playwright installation..."
-        pip show playwright
-        python -c "
-        try:
-            from importlib.metadata import version
-            print(f'Playwright version: {version(\"playwright\")}')
-        except Exception:
-            try:
-                import playwright
-                print(f'Playwright installed at: {playwright.__file__}')
-            except Exception as e:
-                print(f'Warning: Could not verify Playwright version: {e}')
-        "
-        echo "Python executable: $(which python)"
-        python -c "import playwright; print(f'Playwright module location: {playwright.__file__}')"
+      - name: Install Playwright browsers and system dependencies
+        run: |
+          echo "Installing Playwright browser for matrix: ${{ matrix.browser }}"
+          python -m playwright install --with-deps ${{ matrix.browser }}
 
-    - name: Install Playwright browsers and system dependencies
-      run: |
-        echo "Installing ${{ matrix.browser }} browser..."
-        python -m playwright install --with-deps ${{ matrix.browser }}
-        echo "✓ Playwright ${{ matrix.browser }} browser installed successfully"
-        echo "Listing installed browsers:"
-        ls -la ~/.cache/ms-playwright/ || echo "Browser cache directory not found"
+      - name: Verify Playwright installation
+        run: |
+          echo "Checking Playwright module and python executable..."
+          pip show playwright || true
+          echo "Python executable: $(which python)"
+          python - <<'PY'
+          try:
+              from importlib.metadata import version
+              print(f"Playwright version: {version('playwright')}")
+          except Exception as e:
+              print(f"Warning: could not read package metadata: {e}")
 
-    - name: Verify browser executable
-      run: |
-        echo "Checking if ${{ matrix.browser }} is available..."
-        python -c "
-        try:
-            from playwright.sync_api import sync_playwright
-            with sync_playwright() as p:
-                browser_type = getattr(p, '${{ matrix.browser }}')
-                print(f'Browser executable: {browser_type.executable_path}')
-                print(f'✓ ${{ matrix.browser }} browser is ready')
-        except Exception as e:
-            print(f'Warning: Could not verify browser: {e}')
-            print('Tests will attempt to launch browser anyway...')
-        " || echo "Browser verification failed, but continuing..."
+          try:
+              import playwright
+              print(f"Playwright module location: {playwright.__file__}")
+          except Exception as e:
+              raise SystemExit(f"ERROR: failed to import playwright: {e}")
+          PY
 
-    - name: Start application
-      run: |
-        npm run dev &
-        sleep 10
-        npx wait-on http://localhost:3000 --timeout 60000
-      env:
-        USE_LOCAL_STORAGE: true
-        NODE_ENV: test
+      - name: Verify browser cache (lightweight)
+        run: |
+          echo "Listing installed Playwright cache directory:"
+          ls -la ~/.cache/ms-playwright/ || echo "Browser cache directory not found"
 
-    - name: Run E2E tests
-      working-directory: tests/e2e/playwright
-      run: pytest --browser ${{ matrix.browser }} --tracing on -v
-      env:
-        BASE_URL: http://localhost:3000
-        HEADLESS: true
+      - name: Playwright smoke test
+        run: |
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          import os
+          browser = os.environ.get('BROWSER', 'chromium')
 
-    - name: Sanitize artifact filenames
-      if: always()
-      working-directory: tests/e2e/playwright
-      run: |
-        # Remove or replace characters that are invalid in artifact names
-        find results/ test-results/ -type f 2>/dev/null | while read file; do
-          newname=$(echo "$file" | sed 's/[<>:"|?*]/_/g')
-          if [ "$file" != "$newname" ]; then
-            mv "$file" "$newname" 2>/dev/null || true
-          fi
-        done || true
+          with sync_playwright() as p:
+              btype = getattr(p, browser)
+              b = btype.launch(headless=True)
+              b.close()
 
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: e2e-results-${{ matrix.browser }}
-        path: |
-          tests/e2e/playwright/results/
-          tests/e2e/playwright/test-results/
-        retention-days: 7
+          print(f"Playwright smoke test OK for {browser}")
+          PY
+        env:
+          BROWSER: ${{ matrix.browser }}
 
-    - name: Upload Playwright traces
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: playwright-traces-${{ matrix.browser }}
-        path: tests/e2e/playwright/results/traces/
-        retention-days: 7
+      - name: Start application
+        run: |
+          npm run dev &
+          sleep 10
+          npx wait-on http://localhost:3000 --timeout 60000
+        env:
+          USE_LOCAL_STORAGE: true
+          NODE_ENV: test
+
+      - name: Run E2E tests
+        working-directory: tests/e2e/playwright
+        run: pytest --browser ${{ matrix.browser }} --tracing on -v
+        env:
+          BASE_URL: http://localhost:3000
+          HEADLESS: true
+
+      - name: Sanitize artifact filenames
+        if: always()
+        working-directory: tests/e2e/playwright
+        run: |
+          python - <<'PY'
+          import os
+          bad = set('"<>:\\|?*\r\n')
+
+          def clean_name(name: str) -> str:
+              return ''.join('_' if c in bad else c for c in name)
+
+          renamed = 0
+          for root, dirs, files in os.walk('.', topdown=False):
+              for fname in files:
+                  new = clean_name(fname)
+                  if new != fname:
+                      src = os.path.join(root, fname)
+                      dst = os.path.join(root, new)
+                      try:
+                          os.rename(src, dst)
+                          print(f'Renamed: {src} -> {dst}')
+                          renamed += 1
+                      except Exception as e:
+                          print(f'Failed to rename {src}: {e}')
+
+          print(f"Sanitizer done. Files renamed: {renamed}")
+          PY
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: |
+            tests/e2e/playwright/results/
+            tests/e2e/playwright/test-results/
+          retention-days: 7
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.browser }}
+          path: tests/e2e/playwright/results/traces/
+          retention-days: 7
