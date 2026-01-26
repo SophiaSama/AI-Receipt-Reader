@@ -45,8 +45,14 @@ jobs:
     - name: Install Python dependencies
       working-directory: tests/e2e/playwright
       run: |
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
-        playwright install --with-deps ${{ matrix.browser }}
+
+    - name: Install Playwright browsers and system dependencies
+      working-directory: tests/e2e/playwright
+      run: |
+        python -m playwright install --with-deps ${{ matrix.browser }}
+        echo "Playwright ${{ matrix.browser }} browser installed successfully"
 
     - name: Start application
       run: |
