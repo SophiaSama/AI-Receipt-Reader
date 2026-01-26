@@ -460,14 +460,16 @@ vercel
 
 ### Run Tests
 
+The project uses a **dual-mode testing architecture** for fast, reliable integration tests without external dependencies.
+
 ```bash
-# Run all tests
+# Run all integration tests (backend builds automatically if needed)
 npm test
 
 # Run integration tests only
 npm run test:integration
 
-# Run E2E tests (requires server running)
+# Run E2E tests (requires live server)
 npm run test:e2e
 
 # Run with UI (interactive)
@@ -477,7 +479,14 @@ npm run test:ui
 npm run test:coverage
 ```
 
-See **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** for detailed testing documentation.
+**Test Mode Features:**
+- ✅ **In-memory storage** - No AWS credentials needed
+- ✅ **Fast execution** - ~2-5 seconds for full suite
+- ✅ **Automatic setup** - Backend builds before tests run
+- ✅ **CI/CD friendly** - Works identically in all environments
+- ✅ **Full workflows** - Tests create → list → delete operations
+
+See **[docs/development/TESTING_GUIDE.md](./docs/development/TESTING_GUIDE.md)** for detailed testing documentation and **[TEST_MODE_ARCHITECTURE.md](./TEST_MODE_ARCHITECTURE.md)** for architecture details.
 
 ### Build for Production
 

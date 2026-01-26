@@ -131,6 +131,8 @@ npm run test:integration
 npm run test:e2e
 ```
 
+**Note:** The above runs the legacy TypeScript E2E tests. For the new Playwright E2E tests, see the [Playwright E2E Tests](#playwright-e2e-tests) section below.
+
 **With coverage:**
 ```bash
 npm run test:coverage
@@ -347,6 +349,175 @@ The test setup ensures:
 - ✅ Same behavior locally and in CI/CD
 
 **Just run `npm test` and everything works!** 🎉
+
+## Playwright E2E Tests
+
+### Overview
+
+The project includes a comprehensive Playwright-based E2E test suite for browser automation testing. These tests are located in `tests/e2e/playwright/` and provide full end-to-end testing of the application UI and workflows.
+
+### Quick Start
+
+**Windows (PowerShell):**
+```powershell
+# Navigate to playwright directory
+cd tests\e2e\playwright
+
+# First time setup (creates .venv and installs dependencies)
+.\setup.ps1
+
+# Run tests with automated server management
+.\run-e2e-tests.ps1
+```
+
+**Mac/Linux (Bash):**
+```bash
+# Navigate to playwright directory
+cd tests/e2e/playwright
+
+# First time setup (creates .venv and installs dependencies)
+./setup.sh
+
+# Run tests with automated server management
+./run-e2e-tests.sh
+```
+
+### Automated Test Runner
+
+The `run-e2e-tests` scripts automatically handle:
+- ✅ Checking if dev server is running
+- ✅ Starting server if needed
+- ✅ Waiting for server to be ready
+- ✅ Running Playwright tests
+- ✅ Stopping server after tests (optional)
+
+### Common Usage Examples
+
+**Run all tests (headless):**
+```powershell
+# Windows
+.\run-e2e-tests.ps1
+
+# Mac/Linux
+./run-e2e-tests.sh
+```
+
+**Run with visible browser:**
+```powershell
+# Windows
+.\run-e2e-tests.ps1 -Headed
+
+# Mac/Linux
+./run-e2e-tests.sh --headed
+```
+
+**Run specific test file:**
+```powershell
+# Windows
+.\run-e2e-tests.ps1 -TestPath "tests/test_health.py"
+
+# Mac/Linux
+./run-e2e-tests.sh --test-path "tests/test_health.py"
+```
+
+**Keep server running for faster subsequent runs:**
+```powershell
+# Windows
+.\run-e2e-tests.ps1 -Headed -KeepServerRunning
+
+# Mac/Linux
+./run-e2e-tests.sh --headed --keep-server
+```
+
+**Use different browser:**
+```powershell
+# Windows
+.\run-e2e-tests.ps1 -Browser "firefox"
+
+# Mac/Linux
+./run-e2e-tests.sh --browser firefox
+```
+
+### Test Suite Coverage
+
+The Playwright tests include:
+- **Health Checks** (`test_health.py`) - Application and API health
+- **Manual Receipt Entry** (`test_manual_receipt.py`) - Manual form submission
+- **Full Workflow** (`test_full_workflow.py`) - Complete user journeys
+- **API Error Handling** (`test_api_errors.py`) - Error scenarios and validation
+- **Page Object Models** (`test_page_objects.py`) - Maintainable page patterns
+
+### Virtual Environment Location
+
+The Python virtual environment (`.venv`) is located in `tests/e2e/playwright/.venv/` (not in the project root). This keeps the E2E test dependencies isolated from the main project.
+
+**If you have a misplaced .venv in the project root:**
+```powershell
+# Windows
+cd tests\e2e\playwright
+.\fix-venv-location.ps1
+
+# Mac/Linux
+cd tests/e2e/playwright
+./fix-venv-location.sh  # (if available, or manually move/delete)
+```
+
+### Manual Test Execution
+
+If you need to run tests manually without the automation script:
+
+```bash
+# Ensure dev server is running
+npm run dev  # In separate terminal
+
+# Activate virtual environment and run tests
+# Windows:
+tests\e2e\playwright\.venv\Scripts\Activate.ps1
+pytest -v
+
+# Mac/Linux:
+source tests/e2e/playwright/.venv/bin/activate
+pytest -v
+```
+
+### Documentation
+
+Comprehensive documentation is available in `tests/e2e/playwright/`:
+- **README.md** - Main documentation and overview
+- **GETTING_STARTED.md** - Step-by-step setup guide
+- **AUTOMATED_RUNNER.md** - Detailed runner script documentation
+- **QUICK_REFERENCE.md** - Quick command reference
+- **ARCHITECTURE.md** - Test architecture and patterns
+- **VENV_LOCATION_GUIDE.md** - Virtual environment best practices
+
+### Troubleshooting
+
+**Virtual environment not found:**
+```bash
+# Run setup script first
+cd tests/e2e/playwright
+.\setup.ps1  # Windows
+./setup.sh   # Mac/Linux
+```
+
+**Server won't start:**
+- Check if port 3000 is already in use
+- Try running `npm run dev` manually to see errors
+- Ensure all dependencies are installed (`npm install`)
+
+**Browser not found:**
+```bash
+# Reinstall Playwright browsers
+cd tests/e2e/playwright
+.\.venv\Scripts\python.exe -m playwright install  # Windows
+.venv/bin/python -m playwright install          # Mac/Linux
+```
+
+**Tests fail unexpectedly:**
+- Ensure dev server is running (`http://localhost:3000`)
+- Check API health endpoint (`http://localhost:3000/api/health`)
+- Try running with `--headed` flag to see what's happening
+- Check test output for specific error messages
 
 ---
 

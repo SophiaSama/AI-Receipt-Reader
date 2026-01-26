@@ -78,3 +78,32 @@ jobs:
       run: npx tsc --noEmit
       working-directory: backend
       # Check backend code with its own tsconfig
+
+  # Notify Vercel about CI results (optional, requires VERCEL_TOKEN)
+  notify-vercel:
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: always() # Run even if tests/lint fail
+    steps:
+    - name: Notify Vercel of CI Status
+      if: github.event_name == 'pull_request' && vars.VERCEL_PROJECT_ID != ''
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const conclusion = '${{ needs.test.result }}' === 'success' && '${{ needs.lint.result }}' === 'success' ? 'success' : 'failure';
+          console.log(`CI Status: Tests=${{ needs.test.result }}, Lint=${{ needs.lint.result }}, Overall=${conclusion}`);
+          
+          // Create a check run for Vercel to see
+          await github.rest.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: 'CI/CD Pipeline',
+            head_sha: context.payload.pull_request?.head.sha || context.sha,
+            status: 'completed',
+            conclusion: conclusion,
+            output: {
+              title: `Integration Tests & Linting ${conclusion === 'success' ? 'Passed' : 'Failed'}`,
+              summary: `Tests: ${{ needs.test.result }}\nLint: ${{ needs.lint.result }}`
+            }
+          });

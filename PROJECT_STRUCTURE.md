@@ -9,9 +9,12 @@ SmartReceiptReader/
 │   ├── process.ts                    # POST /api/process (receipt OCR)
 │   ├── health.ts                     # GET /api/health (health check)
 │   ├── receipts.ts                   # GET /api/receipts (list all)
-│   └── receipts/
-│       ├── manual.ts                 # POST /api/receipts/manual
-│       └── delete.ts                 # DELETE /api/receipts/delete
+│   ├── receipts/
+│   │   ├── manual.ts                 # POST /api/receipts/manual
+│   │   └── delete.ts                 # DELETE /api/receipts/delete
+│   └── _lib/                         # Shared utilities for API
+│       ├── readRawBody.ts            # Request body reader (streams/objects/buffers)
+│       └── receiptsStore.ts          # In-memory storage for tests
 │
 ├── 📁 backend/                       # Backend Source Code
 │   ├── package.json                  # Backend dependencies
@@ -40,14 +43,17 @@ SmartReceiptReader/
 │
 ├── 📁 tests/                         # Test Files
 │   ├── tsconfig.json                 # Test TypeScript config
-│   ├── setup.ts                      # Test setup
+│   ├── setup.ts                      # Test setup (clears in-memory store)
 │   ├── README.md                     # Test documentation
 │   ├── integration/                  # API integration tests
-│   │   └── api.test.ts
+│   │   └── api.test.ts               # Test mode integration tests
 │   ├── e2e/                          # End-to-end tests
-│   │   └── api.e2e.test.ts
+│   │   └── api.e2e.test.ts           # Tests against live server
 │   └── helpers/                      # Test utilities
-│       └── testUtils.ts
+│       └── testUtils.ts              # Mock helpers
+│
+├── 📁 scripts/                       # Build and utility scripts
+│   └── pre-test-build.cjs            # Pre-test backend build script
 │
 ├── 📁 docs/                          # Documentation
 │   ├── assets/                       # Images and media
@@ -65,7 +71,11 @@ SmartReceiptReader/
 │   │   ├── TESTING_GUIDE.md          # Testing documentation
 │   │   └── DYNAMODB_SCHEMA.md        # Database schema
 │   │
+│   ├── my_local_doc/                 # Local documentation
+│   │   └── CI_CD_TESTING.md          # CI/CD test setup guide
+│   │
 │   ├── CONFIG_ORGANIZATION.md        # Config file guide
+│   ├── TEST_SETUP.md                 # Test setup and prerequisites
 │   └── TSCONFIG_STRUCTURE.md         # TypeScript config guide
 │
 ├── 📁 .github/                       # GitHub Config
@@ -93,10 +103,33 @@ SmartReceiptReader/
 ├── 📄 LICENSE                        # MIT License
 │
 ├── 📄 README.md                      # Main readme
-└── 📄 PROJECT_STRUCTURE.md           # This file
+├── 📄 PROJECT_STRUCTURE.md           # This file
+└── 📄 TEST_MODE_ARCHITECTURE.md      # Test mode documentation
 ```
 
 ---
+
+## 🏗️ Architecture Highlights
+
+### Test Mode System
+
+The project uses a **dual-mode architecture** for API endpoints:
+
+- **Production Mode**: Uses AWS services, processes streams, requires multipart data
+- **Test Mode**: Uses in-memory storage, handles pre-parsed bodies, no external dependencies
+
+Key files:
+- `api/_lib/receiptsStore.ts` - In-memory storage for tests
+- `api/_lib/readRawBody.ts` - Universal request body reader
+- `scripts/pre-test-build.cjs` - Automated backend build before tests
+
+Benefits:
+- ✅ Fast, reliable integration tests (~2-5 seconds)
+- ✅ No AWS credentials needed for tests
+- ✅ CI/CD friendly
+- ✅ Same code handles both modes
+
+See `TEST_MODE_ARCHITECTURE.md` for detailed documentation.
 
 ## 📚 Quick Navigation
 
