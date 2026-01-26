@@ -66,7 +66,7 @@ jobs:
 
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: e2e-results-${{ matrix.browser }}
         path: |
@@ -76,7 +76,7 @@ jobs:
 
     - name: Upload Playwright traces
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: playwright-traces-${{ matrix.browser }}
         path: tests/e2e/playwright/results/traces/
