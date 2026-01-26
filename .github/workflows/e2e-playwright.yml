@@ -54,6 +54,13 @@ jobs:
           echo "Installing Playwright browser for matrix: ${{ matrix.browser }}"
           python -m playwright install --with-deps ${{ matrix.browser }}
 
+          # pytest-playwright may use Chromium headless shell on Linux.
+          # Ensure it exists to avoid: chromium_headless_shell-* executable doesn't exist.
+          if [ "${{ matrix.browser }}" = "chromium" ]; then
+            echo "Also installing chromium headless shell (Linux CI)"
+            python -m playwright install chromium-headless-shell
+          fi
+
       - name: Verify Playwright installation
         run: |
           echo "Checking Playwright module and python executable..."
