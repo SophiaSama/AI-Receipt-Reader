@@ -79,8 +79,10 @@ tests/e2e/playwright/
 
 ### Quick Start
 
+**Note:** Tests run in **headless mode** by default (no visible browser). Use `--headed` to see the browser during test execution.
+
 ```bash
-# Run all tests
+# Run all tests (headless by default)
 pytest tests/e2e/playwright/
 
 # Run specific test file
@@ -91,7 +93,7 @@ pytest --browser chromium
 pytest --browser firefox
 pytest --browser webkit
 
-# Run in headed mode (see browser)
+# Run in headed mode (see browser - useful for debugging)
 pytest --headed
 
 # Run with traces (debugging)

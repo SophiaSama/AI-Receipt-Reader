@@ -59,10 +59,11 @@ jobs:
 
     - name: Run E2E tests
       working-directory: tests/e2e/playwright
-      run: pytest --browser ${{ matrix.browser }} --tracing on
+      run: pytest --browser ${{ matrix.browser }} --tracing on -v
       env:
         BASE_URL: http://localhost:3000
         HEADLESS: true
+        PLAYWRIGHT_BROWSERS_PATH: 0
 
     - name: Upload test results
       if: always()
