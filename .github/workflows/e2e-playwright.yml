@@ -53,9 +53,19 @@ jobs:
       run: |
         echo "Checking Playwright installation..."
         pip show playwright
-        python -c "import playwright; print(f'Playwright version: {playwright.__version__}')"
+        python -c "
+        try:
+            from importlib.metadata import version
+            print(f'Playwright version: {version(\"playwright\")}')
+        except Exception:
+            try:
+                import playwright
+                print(f'Playwright installed at: {playwright.__file__}')
+            except Exception as e:
+                print(f'Warning: Could not verify Playwright version: {e}')
+        "
         echo "Python executable: $(which python)"
-        echo "Playwright module location: $(python -c 'import playwright; print(playwright.__file__)')"
+        python -c "import playwright; print(f'Playwright module location: {playwright.__file__}')"
 
     - name: Install Playwright browsers and system dependencies
       run: |
@@ -68,7 +78,17 @@ jobs:
     - name: Verify browser executable
       run: |
         echo "Checking if ${{ matrix.browser }} is available..."
-        python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print(f'Browser path: {p.${{ matrix.browser }}.executable_path}'); p.stop()" || echo "Failed to get browser path"
+        python -c "
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser_type = getattr(p, '${{ matrix.browser }}')
+                print(f'Browser executable: {browser_type.executable_path}')
+                print(f'✓ ${{ matrix.browser }} browser is ready')
+        except Exception as e:
+            print(f'Warning: Could not verify browser: {e}')
+            print('Tests will attempt to launch browser anyway...')
+        " || echo "Browser verification failed, but continuing..."
 
     - name: Start application
       run: |
