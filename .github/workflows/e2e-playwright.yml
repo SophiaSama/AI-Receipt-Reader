@@ -43,15 +43,13 @@ jobs:
       run: node scripts/pre-test-build.cjs
 
     - name: Install Python dependencies
-      working-directory: tests/e2e/playwright
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r tests/e2e/playwright/requirements.txt
         echo "Python packages installed:"
         pip list | grep -E "(playwright|pytest)"
 
     - name: Verify Playwright installation
-      working-directory: tests/e2e/playwright
       run: |
         echo "Checking Playwright installation..."
         pip show playwright
@@ -60,20 +58,14 @@ jobs:
         echo "Playwright module location: $(python -c 'import playwright; print(playwright.__file__)')"
 
     - name: Install Playwright browsers and system dependencies
-      working-directory: tests/e2e/playwright
-      env:
-        PLAYWRIGHT_BROWSERS_PATH: 0
       run: |
         echo "Installing ${{ matrix.browser }} browser..."
         python -m playwright install --with-deps ${{ matrix.browser }}
-        echo "Verifying browser installation..."
-        python -m playwright install-deps ${{ matrix.browser }}
         echo "✓ Playwright ${{ matrix.browser }} browser installed successfully"
         echo "Listing installed browsers:"
         ls -la ~/.cache/ms-playwright/ || echo "Browser cache directory not found"
 
     - name: Verify browser executable
-      working-directory: tests/e2e/playwright
       run: |
         echo "Checking if ${{ matrix.browser }} is available..."
         python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print(f'Browser path: {p.${{ matrix.browser }}.executable_path}'); p.stop()" || echo "Failed to get browser path"
@@ -93,6 +85,18 @@ jobs:
       env:
         BASE_URL: http://localhost:3000
         HEADLESS: true
+
+    - name: Sanitize artifact filenames
+      if: always()
+      working-directory: tests/e2e/playwright
+      run: |
+        # Remove or replace characters that are invalid in artifact names
+        find results/ test-results/ -type f 2>/dev/null | while read file; do
+          newname=$(echo "$file" | sed 's/[<>:"|?*]/_/g')
+          if [ "$file" != "$newname" ]; then
+            mv "$file" "$newname" 2>/dev/null || true
+          fi
+        done || true
 
     - name: Upload test results
       if: always()
