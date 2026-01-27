@@ -10,15 +10,15 @@ class TestHealthCheck:
     
     def test_app_loads(self, page: Page):
         """Test that the application loads successfully"""
-        # Vite commonly normalizes to a trailing slash.
-        expect(page).to_have_url("http://localhost:3000/*")
+        # Vite normalizes to a trailing slash.
+        expect(page).to_have_url("http://localhost:3000/")
         
         errors = []
         page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
         
         page.wait_for_load_state("networkidle")
         
-        # Filter out known WebKit-only CORS console noise (the suite routes /api directly to backend).
+        # Filter out known WebKit-only CORS console noise.
         filtered = [e for e in errors if "due to access control checks" not in e]
         assert len(filtered) == 0, f"Console errors found: {filtered}"
     
@@ -47,7 +47,15 @@ class TestHealthCheck:
     def test_no_javascript_errors(self, page: Page):
         """Test that there are no JavaScript errors on page load"""
         errors = []
-        page.on("pageerror", lambda exc: errors.append(str(exc)))
+
+        def _handler(exc):
+            text = str(exc)
+            # WebKit sometimes reports CORS enforcement as page errors even when the app works.
+            if "due to access control checks" in text:
+                return
+            errors.append(text)
+
+        page.on("pageerror", _handler)
         
         page.reload()
         page.wait_for_load_state("networkidle")

@@ -35,7 +35,9 @@ class HomePage(BasePage):
     
     def navigate_home(self):
         """Navigate to home page"""
-        self.navigate("/")
+        # Check if already at home, otherwise navigate
+        if not self.page.url.startswith(self.base_url):
+            self.navigate("/")
         return self
     
     # Primary actions
@@ -46,9 +48,9 @@ class HomePage(BasePage):
     
     def click_upload(self):
         """Click upload button"""
-        # Using .or_ avoids invalid CSS like: "button:has-text('Upload'), text=Upload Receipt"
-        self.page.locator("button:has-text('Upload')").or_(
-            self.page.locator("text=Upload Receipt")
+        # Use get_by_role for better selector
+        self.page.get_by_role("button", name="Upload").or_(
+            self.page.get_by_text("Upload Receipt")
         ).first.click()
         return self
     

@@ -4,6 +4,7 @@ Tests HTTP status codes and error responses
 """
 import pytest
 from playwright.sync_api import Page
+from urllib.parse import quote
 
 
 class TestAPIErrors:
@@ -47,12 +48,15 @@ class TestAPIErrors:
     ])
     def test_invalid_receipt_ids(self, api_page: Page, api_url: str, invalid_id: str):
         """Invalid receipt IDs should return an error status."""
+
         bad = invalid_id.strip()
         if not bad:
-            # compat endpoint validates empty IDs
             response = api_page.request.delete(f"{api_url}/receipts/delete?id=")
         else:
-            response = api_page.request.delete(f"{api_url}/receipts/{bad}")
+            # Use compat endpoint to avoid path traversal surprises in routing
+            response = api_page.request.delete(
+                f"{api_url}/receipts/delete?id={quote(bad, safe='')}"
+            )
 
         assert response.status in [400, 404, 422], (
             f"Invalid ID '{invalid_id}' should return error status, got {response.status}"

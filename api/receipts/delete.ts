@@ -22,15 +22,23 @@ export default async function (req: VercelRequest, res: VercelResponse) {
   try {
     const id = typeof req.query.id === 'string' ? req.query.id : Array.isArray(req.query.id) ? req.query.id[0] : undefined;
 
-    if (!id) {
+    // Validate ID is provided
+    if (!id || !id.trim()) {
       res.status(400).json({ error: 'Receipt ID is required' });
+      return;
+    }
+
+    // Validate ID format to prevent path traversal and XSS
+    const trimmedId = id.trim();
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmedId)) {
+      res.status(400).json({ error: 'Invalid receipt ID format' });
       return;
     }
 
     // TEST MODE: Check if we should use in-memory store
     try {
       const { deleteReceiptById } = await import('../_lib/receiptsStore.js');
-      const deleted = await deleteReceiptById(id);
+      const deleted = await deleteReceiptById(trimmedId);
       if (deleted || process.env.NODE_ENV === 'test') {
         return res.status(204).json({ message: 'Deleted successfully' });
       }
@@ -46,8 +54,8 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       headers: {},
       httpMethod: 'DELETE',
       isBase64Encoded: false,
-      path: `/api/receipts/${id}`,
-      pathParameters: { id },
+      path: `/api/receipts/${trimmedId}`,
+      pathParameters: { id: trimmedId },
       queryStringParameters: null,
       requestContext: {},
     };
