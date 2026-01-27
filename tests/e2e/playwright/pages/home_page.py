@@ -1,6 +1,18 @@
 """
 Home Page Object Model
-Encapsulates main home page functionality
+Encapsulates main h    def click_upload(self):
+        """Click upload button/area - uses the hidden file input"""
+        # The upload section uses a hidden file input, not a visible button
+        # We need to interact with the label or the file input directly
+        file_input = self.page.locator("input[type='file']#dropzone-file")
+        if file_input.is_visible():
+            return self
+        
+        # If using a label-based upload, click the label
+        upload_label = self.page.locator("label[for='dropzone-file']")
+        if upload_label.is_visible():
+            upload_label.click()
+        return selfe functionality
 """
 from playwright.sync_api import Page, expect
 from .base_page import BasePage
@@ -67,20 +79,12 @@ class HomePage(BasePage):
         Args:
             file_path: Path to the file to upload
         """
-        # Open upload dialog
-        self.click_upload()
+        # Directly set file on the hidden input instead of clicking
+        file_input = self.page.locator("input[type='file']#dropzone-file")
+        file_input.set_input_files(file_path)
         
-        # Wait for file input
-        self.page.wait_for_selector(self.FILE_INPUT)
-        
-        # Set file
-        self.page.set_input_files(self.FILE_INPUT, file_path)
-        
-        # Submit upload
-        submit_btn = self.page.locator(self.UPLOAD_SUBMIT)
-        if submit_btn.is_visible():
-            submit_btn.click()
-        
+        # Wait for processing to complete
+        self.page.wait_for_load_state("networkidle")
         return self
     
     def cancel_upload(self):

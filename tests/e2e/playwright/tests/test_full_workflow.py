@@ -99,9 +99,11 @@ class TestFullWorkflow:
     def test_statistics_update_workflow(self, page: Page, sample_receipt_data: dict):
         """Test that statistics update after adding receipt"""
 
-        # Get initial stats (if visible)
-        stats_section = page.locator("text=Total").or_(page.locator(".stats"))
-        initial_stats = stats_section.text_content() if stats_section.is_visible() else ""
+        # Get initial stats (if visible) - use more specific selector
+        stats_section = page.locator(".stats, [data-testid='stats']").or_(
+            page.get_by_text("Total Spent")
+        )
+        initial_stats = stats_section.first.text_content() if stats_section.first.is_visible() else ""
 
         # Add receipt
         page.locator("button:has-text('Manual')").first.click()

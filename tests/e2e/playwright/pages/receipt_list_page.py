@@ -27,12 +27,12 @@ class ReceiptListPage(BasePage):
     CLEAR_FILTERS_BUTTON = "button:has-text('Clear'), button:has-text('Reset')"
     
     # Stats
-    STATS_SECTION = ".stats, [data-testid='stats']"
+    STATS_SECTION = "[data-testid='stats'], .stats"
     TOTAL_RECEIPTS = ".total-receipts, [data-testid='total-receipts']"
     TOTAL_AMOUNT = ".total-amount, [data-testid='total-amount']"
     
     # Empty state
-    EMPTY_MESSAGE = ".empty-state, [data-testid='empty-state'], text=No receipts"
+    EMPTY_MESSAGE = ".empty-state, [data-testid='empty-state']"
     
     def __init__(self, page: Page):
         super().__init__(page)
@@ -176,21 +176,23 @@ class ReceiptListPage(BasePage):
     def wait_for_receipts_to_load(self, timeout: int = 5000):
         """Wait for receipts to load"""
         # Wait for either receipts or empty state
-        self.page.locator(f"{self.RECEIPT_ROW}, {self.EMPTY_MESSAGE}").first.wait_for(
-            state="visible",
-            timeout=timeout
+        receipt_or_empty = self.page.locator(self.RECEIPT_ROW).or_(
+            self.page.locator(self.EMPTY_MESSAGE)
+        ).or_(
+            self.page.get_by_text("No receipts")
         )
+        receipt_or_empty.first.wait_for(state="visible", timeout=timeout)
         return self
     
     # Assertions
     def assert_receipt_exists(self, merchant_name: str):
         """Assert receipt with merchant name exists"""
-        expect(self.page.locator(f"text={merchant_name}")).to_be_visible()
+        expect(self.page.get_by_text(merchant_name).first).to_be_visible()
         return self
     
     def assert_receipt_not_exists(self, merchant_name: str):
         """Assert receipt with merchant name does not exist"""
-        expect(self.page.locator(f"text={merchant_name}")).not_to_be_visible()
+        expect(self.page.get_by_text(merchant_name)).not_to_be_visible()
         return self
     
     def assert_receipt_count(self, expected_count: int):
@@ -200,12 +202,22 @@ class ReceiptListPage(BasePage):
     
     def assert_empty_state_shown(self):
         """Assert empty state is shown"""
-        expect(self.page.locator(self.EMPTY_MESSAGE)).to_be_visible()
+        # Check for empty state element or "No receipts" text
+        empty_indicator = self.page.locator(self.EMPTY_MESSAGE).or_(
+            self.page.get_by_text("No receipts")
+        )
+        expect(empty_indicator.first).to_be_visible()
         return self
     
     def assert_stats_visible(self):
         """Assert stats section is visible"""
-        expect(self.page.locator(self.STATS_SECTION)).to_be_visible()
+        # Stats overview shows "Total Spent" and "Expense Overview"
+        stats_indicator = self.page.locator(self.STATS_SECTION).or_(
+            self.page.get_by_text("Total Spent")
+        ).or_(
+            self.page.get_by_text("Expense Overview")
+        )
+        expect(stats_indicator.first).to_be_visible()
         return self
     
     def assert_filtered_results(self, expected_merchant_names: List[str]):

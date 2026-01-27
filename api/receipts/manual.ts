@@ -28,6 +28,11 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       return handleTestMode(req, res);
     }
 
+    // If no multipart and no valid body, return 400
+    if (!contentType.includes('multipart/form-data') && (!req.body || !req.body.metadata)) {
+      return res.status(400).json({ error: 'multipart/form-data with metadata field is required' });
+    }
+
     // @ts-ignore - resolved at runtime on Vercel after backend build outputs dist/
     const { handler: manualHandler } = await import('../../backend/dist/src/handlers/manualSave.js');
 
