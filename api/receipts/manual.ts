@@ -73,8 +73,18 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Parse JSON body and use .json() for proper test compatibility
-    res.status(result.statusCode).json(JSON.parse(result.body));
+    // Parse JSON body safely - backend always returns valid JSON
+    let responseBody;
+    try {
+      responseBody = result.body ? JSON.parse(result.body) : {};
+    } catch (parseError) {
+      console.error('[manual.ts] Failed to parse backend response body:', parseError);
+      // If backend response is malformed, return 500
+      return res.status(500).json({ error: 'Internal server error: invalid response format' });
+    }
+
+    // Return the backend's status code and parsed body
+    res.status(result.statusCode).json(responseBody);
   } catch (err: any) {
     console.error('Vercel /api/receipts/manual error:', err);
     
