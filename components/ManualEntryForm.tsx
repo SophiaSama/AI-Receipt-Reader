@@ -57,6 +57,8 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
           <input
             required
             type="text"
+            name="merchantName"
+            id="merchantName"
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             placeholder="e.g. Starbucks"
             value={formData.merchantName}
@@ -70,6 +72,8 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
             <input
               required
               type="date"
+              name="date"
+              id="date"
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               value={formData.date}
               onChange={e => setFormData({ ...formData, date: e.target.value })}
@@ -78,6 +82,8 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Currency</label>
             <select
+              name="currency"
+              id="currency"
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               value={formData.currency}
               onChange={e => setFormData({ ...formData, currency: e.target.value })}
@@ -97,6 +103,8 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
             required
             type="number"
             step="0.01"
+            name="total"
+            id="total"
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800"
             value={formData.total}
             onChange={e => setFormData({ ...formData, total: Number(e.target.value) })}

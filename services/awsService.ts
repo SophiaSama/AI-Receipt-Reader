@@ -104,11 +104,24 @@ export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
  * Delete receipt and associated S3 assets
  */
 export const deleteReceiptFromDB = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/receipts/delete?id=${encodeURIComponent(id)}`, {
+  // Backend exposes DELETE /api/receipts/:id (see backend/local/server.ts)
+  const response = await fetch(`${API_BASE}/receipts/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to delete receipt: ${response.statusText}`);
+    let message = `Failed to delete receipt: ${response.statusText} (${response.status})`;
+    try {
+      const txt = await response.text();
+      try {
+        const j = JSON.parse(txt);
+        if (j?.error) message = `Failed to delete receipt: ${j.error}`;
+      } catch {
+        if (txt) message += ` - ${txt.substring(0, 200)}`;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
   }
 };
