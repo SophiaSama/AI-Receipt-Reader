@@ -123,26 +123,50 @@ jobs:
         run: |
           python - <<'PY'
           import os
-          bad = set('"<>:\\|?*\r\n')
+          import re
 
-          def clean_name(name: str) -> str:
-              return ''.join('_' if c in bad else c for c in name)
+          INVALID = set('"<>:\\|?*\r\n')
+
+          def clean_component(name: str) -> str:
+              # Replace invalid chars and collapse whitespace
+              cleaned = ''.join('_' if c in INVALID else c for c in name)
+              cleaned = re.sub(r"\s+", "_", cleaned).strip("._ ")
+              return cleaned or "_"
+
+          def rename_path(root: str, entry: str) -> None:
+              src = os.path.join(root, entry)
+              dst_name = clean_component(entry)
+              if dst_name == entry:
+                  return
+              dst = os.path.join(root, dst_name)
+
+              # Avoid collisions
+              if os.path.exists(dst):
+                  base, ext = os.path.splitext(dst_name)
+                  i = 1
+                  while os.path.exists(os.path.join(root, f"{base}__{i}{ext}")):
+                      i += 1
+                  dst = os.path.join(root, f"{base}__{i}{ext}")
+
+              os.rename(src, dst)
+              print(f"Renamed: {src} -> {dst}")
 
           renamed = 0
+
+          # Pass 1: rename files and dirs bottom-up (so children are handled before parents).
           for root, dirs, files in os.walk('.', topdown=False):
               for fname in files:
-                  new = clean_name(fname)
-                  if new != fname:
-                      src = os.path.join(root, fname)
-                      dst = os.path.join(root, new)
-                      try:
-                          os.rename(src, dst)
-                          print(f'Renamed: {src} -> {dst}')
-                          renamed += 1
-                      except Exception as e:
-                          print(f'Failed to rename {src}: {e}')
+                  before = fname
+                  rename_path(root, fname)
+                  if before != clean_component(before):
+                      renamed += 1
+              for dname in dirs:
+                  before = dname
+                  rename_path(root, dname)
+                  if before != clean_component(before):
+                      renamed += 1
 
-          print(f"Sanitizer done. Files renamed: {renamed}")
+          print(f"Sanitizer done. Entries renamed: {renamed}")
           PY
 
       - name: Upload test results
