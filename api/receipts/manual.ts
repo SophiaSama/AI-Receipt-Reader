@@ -59,7 +59,12 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       requestContext: {},
     };
 
-    console.log('[manual.ts] Calling backend handler...');
+    console.log('[manual.ts] About to call backend handler with event:', {
+      bodyLength: event.body.length,
+      contentType: event.headers['content-type'],
+      isBase64Encoded: event.isBase64Encoded
+    });
+    
     const result = await manualHandler(event as any);
     
     console.log('[manual.ts] Backend handler result:', {
@@ -89,7 +94,11 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     // Return the backend's status code and parsed body
     res.status(result.statusCode).json(responseBody);
   } catch (err: any) {
-    console.error('Vercel /api/receipts/manual error:', err);
+    console.error('[manual.ts] ERROR caught:', {
+      message: err?.message,
+      stack: err?.stack,
+      name: err?.name
+    });
     
     // Check if this is a validation/parse error (client error) or server error
     const isClientError = err?.message && (
@@ -98,10 +107,12 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       err.message.includes('validation') ||
       err.message.includes('Invalid') ||
       err.message.includes('Missing') ||
-      err.message.toLowerCase().includes('bad request')
+      err.message.toLowerCase().includes('bad request') ||
+      err.message.includes('boundary')
     );
     
     const statusCode = isClientError ? 400 : 500;
+    console.log(`[manual.ts] Returning status ${statusCode} for error: ${err?.message}`);
     res.status(statusCode).json({ error: err?.message || 'Internal Server Error' });
   }
 }

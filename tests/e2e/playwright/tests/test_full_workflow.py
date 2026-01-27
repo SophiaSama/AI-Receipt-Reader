@@ -37,8 +37,11 @@ class TestFullWorkflow:
         if delete_button.is_visible():
             delete_button.click()
 
-            confirm_button = page.locator("button:has-text('Confirm')").or_(
-                page.locator("button:has-text('Yes')")
+            # The confirmation modal has a "Delete" button, not "Confirm"
+            confirm_button = page.locator("div[role='dialog'] button:has-text('Delete')").or_(
+                page.locator("button:has-text('Confirm')").or_(
+                    page.locator("button:has-text('Yes')")
+                )
             )
             if confirm_button.is_visible():
                 confirm_button.click()

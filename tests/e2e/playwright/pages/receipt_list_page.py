@@ -57,8 +57,9 @@ class ReceiptListPage(BasePage):
         count = receipt_rows.count()
         
         for i in range(count):
-            merchant_elem = receipt_rows.nth(i).locator(self.RECEIPT_MERCHANT)
-            if merchant_elem.is_visible():
+            # The merchant name is in an h3 tag within the receipt row
+            merchant_elem = receipt_rows.nth(i).locator("h3, .merchant-name, [data-testid='merchant-name']").first
+            if merchant_elem.count() > 0 and merchant_elem.is_visible():
                 merchants.append(merchant_elem.text_content().strip())
         
         return merchants
@@ -71,8 +72,9 @@ class ReceiptListPage(BasePage):
         if delete_btn.is_visible():
             delete_btn.click()
             
-            # Handle confirmation modal if it appears
-            confirm_btn = self.page.locator("button:has-text('Confirm'), button:has-text('Yes'), button:has-text('OK')")
+            # Handle confirmation modal - the confirm button also says "Delete" in the modal
+            # Look for the Delete button in the modal (not the one in the receipt row)
+            confirm_btn = self.page.locator("div[role='dialog'] button:has-text('Delete'), button:has-text('Confirm'), button:has-text('Yes'), button:has-text('OK')")
             if confirm_btn.is_visible(timeout=2000):
                 confirm_btn.click()
         
