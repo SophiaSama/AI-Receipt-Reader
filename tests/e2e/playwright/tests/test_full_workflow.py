@@ -26,7 +26,6 @@ class TestFullWorkflow:
         page.locator("button[type='submit']").click()
 
         # Step 2: Verify receipt appears in list
-        page.wait_for_load_state("networkidle")
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
         # Step 3: Delete receipt (best-effort depending on UI)
@@ -44,7 +43,6 @@ class TestFullWorkflow:
             if confirm_button.is_visible():
                 confirm_button.click()
 
-            page.wait_for_load_state("networkidle")
             expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
     def test_filter_and_search_workflow(self, page: Page, sample_receipt_data: dict):
@@ -60,7 +58,6 @@ class TestFullWorkflow:
         page.fill("input[name='total'], #total", str(sample_receipt_data["total"]))
         page.locator("button[type='submit']").click()
 
-        page.wait_for_load_state("networkidle")
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
         search_input = page.locator("input[placeholder*='Search']").or_(
@@ -113,9 +110,6 @@ class TestFullWorkflow:
         page.fill("input[name='date'], #date, input[type='date']", sample_receipt_data["date"])
         page.fill("input[name='total'], #total", str(sample_receipt_data["total"]))
         page.locator("button[type='submit']").click()
-
-        # Wait for receipt to appear
-        page.wait_for_timeout(2000)
 
         # Check stats updated
         new_stats = stats_section.text_content() if stats_section.is_visible() else ""

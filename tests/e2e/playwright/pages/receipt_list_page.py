@@ -94,8 +94,6 @@ class ReceiptListPage(BasePage):
         search_input = self.page.locator(self.SEARCH_INPUT)
         if search_input.is_visible():
             search_input.fill(query)
-            # Allow time for search to filter
-            self.page.wait_for_timeout(500)
         return self
     
     def clear_search(self):
@@ -110,7 +108,6 @@ class ReceiptListPage(BasePage):
         filter_select = self.page.locator(self.FILTER_MERCHANT)
         if filter_select.is_visible():
             filter_select.select_option(merchant)
-            self.page.wait_for_timeout(500)
         return self
     
     def filter_by_date_range(self, date_from: Optional[str] = None, date_to: Optional[str] = None):
@@ -125,9 +122,6 @@ class ReceiptListPage(BasePage):
             if to_input.is_visible():
                 to_input.fill(date_to)
         
-        if date_from or date_to:
-            self.page.wait_for_timeout(500)
-        
         return self
     
     def filter_by_category(self, category: str):
@@ -135,7 +129,6 @@ class ReceiptListPage(BasePage):
         filter_select = self.page.locator(self.FILTER_CATEGORY)
         if filter_select.is_visible():
             filter_select.select_option(category)
-            self.page.wait_for_timeout(500)
         return self
     
     def clear_filters(self):
@@ -174,20 +167,44 @@ class ReceiptListPage(BasePage):
         return self.get_receipt_count() > 0
     
     def wait_for_receipts_to_load(self, timeout: int = 5000):
-        """Wait for receipts to load"""
+        """Wait for receipts to load and scroll into view if needed"""
         # Wait for either receipts or empty state
         receipt_or_empty = self.page.locator(self.RECEIPT_ROW).or_(
             self.page.locator(self.EMPTY_MESSAGE)
         ).or_(
             self.page.get_by_text("No receipts")
         )
+        
+        # Wait for element to be attached to DOM
+        receipt_or_empty.first.wait_for(state="attached", timeout=timeout)
+        
+        # Scroll to receipt list section to ensure visibility
+        try:
+            # Try to scroll the receipt list container into view
+            receipt_container = self.page.locator("main").or_(self.page.locator(".receipt-list"))
+            if receipt_container.count() > 0:
+                receipt_container.first.scroll_into_view_if_needed()
+            
+            # Also scroll the first receipt into view
+            if self.page.locator(self.RECEIPT_ROW).count() > 0:
+                self.page.locator(self.RECEIPT_ROW).first.scroll_into_view_if_needed()
+        except:
+            pass  # Scroll may fail, that's ok
+        
+        # Now wait for visibility
         receipt_or_empty.first.wait_for(state="visible", timeout=timeout)
         return self
     
     # Assertions
     def assert_receipt_exists(self, merchant_name: str):
         """Assert receipt with merchant name exists"""
-        expect(self.page.get_by_text(merchant_name).first).to_be_visible()
+        receipt = self.page.get_by_text(merchant_name).first
+        # Scroll into view if needed
+        try:
+            receipt.scroll_into_view_if_needed(timeout=2000)
+        except:
+            pass  # May already be visible
+        expect(receipt).to_be_visible()
         return self
     
     def assert_receipt_not_exists(self, merchant_name: str):

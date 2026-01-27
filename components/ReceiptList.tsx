@@ -40,7 +40,10 @@ export const ReceiptList: React.FC<ReceiptListProps> = ({ receipts, onDelete }) 
 
   if (receipts.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-slate-100">
+      <div 
+        className="text-center py-12 bg-white rounded-xl shadow-sm border border-slate-100"
+        data-testid="empty-state"
+      >
         <p className="text-slate-400">No receipts found.</p>
       </div>
     );
@@ -94,7 +97,12 @@ export const ReceiptList: React.FC<ReceiptListProps> = ({ receipts, onDelete }) 
 
       <div className="space-y-4">
         {sortedReceipts.map((receipt) => (
-          <div key={receipt.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div 
+            key={receipt.id} 
+            data-testid="receipt-item"
+            data-receipt-id={receipt.id}
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group"
+          >
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center space-x-3 flex-grow overflow-hidden">
                 <button 

@@ -45,7 +45,6 @@ class TestManualReceipt:
             )
         ).click()
         
-        page.wait_for_load_state("networkidle")
         # Verify success (receipt appears in list or success message)
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
     
@@ -109,6 +108,5 @@ class TestManualReceipt:
             total_input.fill("5.50")
         
         page.locator("button[type='submit']").click()
-        page.wait_for_load_state("networkidle")
         
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)

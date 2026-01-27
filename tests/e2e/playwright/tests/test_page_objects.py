@@ -45,8 +45,8 @@ class TestWithPageObjects:
             total="100.00"
         )
         
-        # Wait for creation to complete
-        page.wait_for_load_state("networkidle", timeout=10000)
+        # Scroll to top where new receipts appear
+        page.evaluate("window.scrollTo(0, 0)")
         
         # READ
         receipt_list.wait_for_receipts_to_load(timeout=15000)
@@ -158,8 +158,8 @@ class TestWithPageObjects:
         # Upload file
         home.upload_file(sample_receipt_image)
         
-        # Wait for processing
-        page.wait_for_timeout(3000)
+        # Scroll to top where new receipts appear
+        page.evaluate("window.scrollTo(0, 0)")
         
         # Verify receipt appears (depends on OCR implementation)
         receipt_list.wait_for_receipts_to_load()
@@ -179,8 +179,8 @@ class TestWithPageObjects:
             .select_currency("USD")
             .submit_form())
         
-        # Wait for creation to complete
-        page.wait_for_load_state("networkidle", timeout=10000)
+        # Scroll to top where new receipts appear
+        page.evaluate("window.scrollTo(0, 0)")
         
         # Verify with chained assertions
         (receipt_list
@@ -206,11 +206,10 @@ class TestAdvancedPageObjectPatterns:
         
         for merchant, date, total in test_receipts:
             manual_entry.create_receipt(merchant, date, total)
-            # Wait between creations
-            page.wait_for_timeout(1000)
         
-        # Wait for all receipts to appear
-        page.wait_for_load_state("networkidle", timeout=10000)
+        # Scroll to top to see all receipts
+        page.evaluate("window.scrollTo(0, 0)")
+        
         receipt_list.wait_for_receipts_to_load(timeout=15000)
         
         # Verify all created
@@ -227,8 +226,9 @@ class TestAdvancedPageObjectPatterns:
         # Create test data
         manual_entry.create_receipt("Grocery Store", "2026-01-26", "85.50")
         
-        # Wait for receipt to appear
-        page.wait_for_load_state("networkidle", timeout=10000)
+        # Scroll to top to see receipt
+        page.evaluate("window.scrollTo(0, 0)")
+        
         receipt_list.wait_for_receipts_to_load()
         
         # Get receipt count
@@ -251,8 +251,9 @@ class TestAdvancedPageObjectPatterns:
         # Create single receipt
         manual_entry.create_receipt("Only Receipt", "2026-01-26", "50.00")
         
-        # Wait for receipt to appear in UI
-        page.wait_for_load_state("networkidle", timeout=10000)
+        # Scroll to top to see receipt
+        page.evaluate("window.scrollTo(0, 0)")
+        
         receipt_list.wait_for_receipts_to_load()
         receipt_list.assert_receipt_exists("Only Receipt")
         receipt_list.assert_receipt_count(1)
