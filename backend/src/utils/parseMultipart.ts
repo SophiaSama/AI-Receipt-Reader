@@ -19,6 +19,7 @@ export const parseMultipart = (
         try {
             // Validate content type has boundary
             if (!contentType.includes('boundary=')) {
+                console.error('[parseMultipart] Missing boundary in Content-Type:', contentType);
                 return reject(new Error('Missing boundary in Content-Type header'));
             }
 

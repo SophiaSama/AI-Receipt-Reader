@@ -64,7 +64,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     
     console.log('[manual.ts] Backend handler result:', {
       statusCode: result.statusCode,
-      body: result.body
+      bodyPreview: result.body?.substring(0, 200)
     });
 
     if (result.headers) {
@@ -79,10 +79,13 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       responseBody = result.body ? JSON.parse(result.body) : {};
     } catch (parseError) {
       console.error('[manual.ts] Failed to parse backend response body:', parseError);
+      console.error('[manual.ts] Raw body:', result.body);
       // If backend response is malformed, return 500
       return res.status(500).json({ error: 'Internal server error: invalid response format' });
     }
 
+    console.log('[manual.ts] Returning status:', result.statusCode);
+    
     // Return the backend's status code and parsed body
     res.status(result.statusCode).json(responseBody);
   } catch (err: any) {
