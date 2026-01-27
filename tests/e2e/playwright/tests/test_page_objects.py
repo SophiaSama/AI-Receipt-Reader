@@ -45,13 +45,16 @@ class TestWithPageObjects:
             total="100.00"
         )
         
+        # Wait for creation to complete
+        page.wait_for_load_state("networkidle", timeout=10000)
+        
         # READ
-        receipt_list.wait_for_receipts_to_load()
+        receipt_list.wait_for_receipts_to_load(timeout=15000)
         receipt_list.assert_receipt_exists(test_merchant)
         
         # Verify in list of merchants
         merchants = receipt_list.get_receipt_merchants()
-        assert test_merchant in merchants
+        assert test_merchant in merchants, f"Expected '{test_merchant}' in {merchants}"
         
         # DELETE
         receipt_list.delete_receipt_by_merchant(test_merchant)
@@ -145,6 +148,8 @@ class TestWithPageObjects:
         print(f"Total amount: {total_amount}")
     
     @pytest.mark.slow
+    @pytest.mark.external
+    @pytest.mark.skip(reason="Skipped by default to avoid Mistral AI rate limits. Run with: pytest -m external")
     def test_upload_receipt_file(self, page: Page, sample_receipt_image: str):
         """Test uploading a receipt file (if feature exists)"""
         home = HomePage(page)
@@ -174,9 +179,12 @@ class TestWithPageObjects:
             .select_currency("USD")
             .submit_form())
         
+        # Wait for creation to complete
+        page.wait_for_load_state("networkidle", timeout=10000)
+        
         # Verify with chained assertions
         (receipt_list
-            .wait_for_receipts_to_load()
+            .wait_for_receipts_to_load(timeout=15000)
             .assert_receipt_exists("Fluent Store")
             .assert_receipt_count(1))
 
@@ -198,9 +206,14 @@ class TestAdvancedPageObjectPatterns:
         
         for merchant, date, total in test_receipts:
             manual_entry.create_receipt(merchant, date, total)
+            # Wait between creations
+            page.wait_for_timeout(1000)
+        
+        # Wait for all receipts to appear
+        page.wait_for_load_state("networkidle", timeout=10000)
+        receipt_list.wait_for_receipts_to_load(timeout=15000)
         
         # Verify all created
-        receipt_list.wait_for_receipts_to_load()
         receipt_list.assert_receipt_count(len(test_receipts))
         
         for merchant, _, _ in test_receipts:
@@ -214,13 +227,17 @@ class TestAdvancedPageObjectPatterns:
         # Create test data
         manual_entry.create_receipt("Grocery Store", "2026-01-26", "85.50")
         
+        # Wait for receipt to appear
+        page.wait_for_load_state("networkidle", timeout=10000)
+        receipt_list.wait_for_receipts_to_load()
+        
         # Get receipt count
         count = receipt_list.get_receipt_count()
-        assert count > 0
+        assert count > 0, f"Expected at least 1 receipt, got {count}"
         
         # Get merchants list
         merchants = receipt_list.get_receipt_merchants()
-        assert "Grocery Store" in merchants
+        assert "Grocery Store" in merchants, f"Expected 'Grocery Store' in {merchants}"
         
         # Check for empty state
         assert not receipt_list.is_empty()
@@ -233,6 +250,11 @@ class TestAdvancedPageObjectPatterns:
         
         # Create single receipt
         manual_entry.create_receipt("Only Receipt", "2026-01-26", "50.00")
+        
+        # Wait for receipt to appear in UI
+        page.wait_for_load_state("networkidle", timeout=10000)
+        receipt_list.wait_for_receipts_to_load()
+        receipt_list.assert_receipt_exists("Only Receipt")
         receipt_list.assert_receipt_count(1)
         
         # Delete it

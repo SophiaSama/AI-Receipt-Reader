@@ -39,6 +39,12 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     // Use the robust utility that handles streams, rawBody, and body from various request shapes
     const rawBody = await readRawBody(req);
 
+    console.log('[manual.ts] Request details:', {
+      contentType,
+      bodyLength: rawBody.length,
+      bodyPreview: rawBody.toString('utf8').substring(0, 200)
+    });
+
     const event = {
       body: rawBody.toString('base64'),
       headers: {
@@ -53,7 +59,13 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       requestContext: {},
     };
 
+    console.log('[manual.ts] Calling backend handler...');
     const result = await manualHandler(event as any);
+    
+    console.log('[manual.ts] Backend handler result:', {
+      statusCode: result.statusCode,
+      body: result.body
+    });
 
     if (result.headers) {
       for (const [k, v] of Object.entries(result.headers)) {
@@ -65,7 +77,19 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (err: any) {
     console.error('Vercel /api/receipts/manual error:', err);
-    res.status(500).json({ error: err?.message || 'Internal Server Error' });
+    
+    // Check if this is a validation/parse error (client error) or server error
+    const isClientError = err?.message && (
+      err.message.includes('required') ||
+      err.message.includes('parsing') ||
+      err.message.includes('validation') ||
+      err.message.includes('Invalid') ||
+      err.message.includes('Missing') ||
+      err.message.toLowerCase().includes('bad request')
+    );
+    
+    const statusCode = isClientError ? 400 : 500;
+    res.status(statusCode).json({ error: err?.message || 'Internal Server Error' });
   }
 }
 
