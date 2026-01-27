@@ -47,10 +47,11 @@ class ReceiptListPage(BasePage):
         return self.get_receipt_rows().count()
     
     def get_receipt_by_merchant(self, merchant_name: str) -> Locator:
-        """Get receipt row by merchant name"""
+        """Get receipt row by merchant name (returns first match if multiple exist)"""
         # Find the receipt row that contains this merchant name
         # The receipt row has data-testid="receipt-item"
-        return self.page.locator(f"{self.RECEIPT_ROW}:has-text('{merchant_name}')")
+        # Use .first to handle cases where multiple receipts have the same merchant name
+        return self.page.locator(f"{self.RECEIPT_ROW}:has-text('{merchant_name}')").first
     
     def get_receipt_merchants(self) -> List[str]:
         """Get list of all merchant names"""

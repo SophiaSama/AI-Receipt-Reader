@@ -29,9 +29,9 @@ class TestFullWorkflow:
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
         # Step 3: Delete receipt (best-effort depending on UI)
-        # Find the receipt row that contains the merchant name
-        receipt_row = page.locator(f"[data-testid='receipt-item']:has-text('{unique_merchant}')").or_(
-            page.locator(f"text={unique_merchant}").locator("..")
+        # Find the receipt row that contains the merchant name (use .first in case of duplicates)
+        receipt_row = page.locator(f"[data-testid='receipt-item']:has-text('{unique_merchant}')").first.or_(
+            page.locator(f"text={unique_merchant}").locator("..").first
         )
         
         # Hover over receipt row to make delete button visible
