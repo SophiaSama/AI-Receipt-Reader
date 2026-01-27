@@ -3,6 +3,7 @@ import { ParsedMultipartData } from '../types';
 
 /**
  * Parse multipart/form-data from API Gateway event
+ * Throws Error if parsing fails (caller should catch and return 400)
  */
 export const parseMultipart = (
     body: string,
@@ -15,42 +16,58 @@ export const parseMultipart = (
             files: [],
         };
 
-        const busboy = Busboy({ headers: { 'content-type': contentType } });
+        try {
+            // Validate content type has boundary
+            if (!contentType.includes('boundary=')) {
+                return reject(new Error('Missing boundary in Content-Type header'));
+            }
 
-        // Decode body if base64 encoded
-        const buffer = isBase64Encoded
-            ? Buffer.from(body, 'base64')
-            : Buffer.from(body, 'utf-8');
+            const busboy = Busboy({ headers: { 'content-type': contentType } });
 
-        busboy.on('field', (fieldname: string, value: string) => {
-            result.fields[fieldname] = value;
-        });
+            // Decode body if base64 encoded
+            const buffer = isBase64Encoded
+                ? Buffer.from(body, 'base64')
+                : Buffer.from(body, 'utf-8');
 
-        busboy.on('file', (fieldname: string, file: NodeJS.ReadableStream, info: { filename: string; mimeType: string }) => {
-            const chunks: Buffer[] = [];
+            // Validate body is not empty
+            if (!buffer || buffer.length === 0) {
+                return reject(new Error('Request body is empty'));
+            }
 
-            file.on('data', (chunk: Buffer) => {
-                chunks.push(chunk);
+            busboy.on('field', (fieldname: string, value: string) => {
+                result.fields[fieldname] = value;
             });
 
-            file.on('end', () => {
-                result.files.push({
-                    filename: info.filename,
-                    content: Buffer.concat(chunks),
-                    contentType: info.mimeType,
+            busboy.on('file', (fieldname: string, file: NodeJS.ReadableStream, info: { filename: string; mimeType: string }) => {
+                const chunks: Buffer[] = [];
+
+                file.on('data', (chunk: Buffer) => {
+                    chunks.push(chunk);
+                });
+
+                file.on('end', () => {
+                    result.files.push({
+                        filename: info.filename,
+                        content: Buffer.concat(chunks),
+                        contentType: info.mimeType,
+                    });
                 });
             });
-        });
 
-        busboy.on('finish', () => {
-            resolve(result);
-        });
+            busboy.on('finish', () => {
+                resolve(result);
+            });
 
-        busboy.on('error', (error: Error) => {
-            reject(error);
-        });
+            busboy.on('error', (error: Error) => {
+                // Busboy parsing error - reject with descriptive message
+                reject(new Error(`Multipart parsing failed: ${error.message}`));
+            });
 
-        busboy.end(buffer);
+            busboy.end(buffer);
+        } catch (error: any) {
+            // Setup/initialization error
+            reject(new Error(`Failed to initialize multipart parser: ${error.message}`));
+        }
     });
 };
 
