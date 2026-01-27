@@ -49,9 +49,9 @@ class ReceiptListPage(BasePage):
     def get_receipt_by_merchant(self, merchant_name: str) -> Locator:
         """Get receipt row by merchant name (returns first match if multiple exist)"""
         # Find the receipt row that contains this merchant name
-        # The receipt row has data-testid="receipt-item"
-        # Use .first to handle cases where multiple receipts have the same merchant name
-        return self.page.locator(f"{self.RECEIPT_ROW}:has-text('{merchant_name}')").first
+        # Filter at the RECEIPT_ROW level only, not child elements
+        # Use filter() to ensure we only match the actual receipt-item, not nested elements
+        return self.page.locator(self.RECEIPT_ROW).filter(has_text=merchant_name).first
     
     def get_receipt_merchants(self) -> List[str]:
         """Get list of all merchant names"""
@@ -70,6 +70,9 @@ class ReceiptListPage(BasePage):
     def delete_receipt_by_merchant(self, merchant_name: str):
         """Delete receipt by merchant name"""
         receipt_row = self.get_receipt_by_merchant(merchant_name)
+
+        # Always scroll the receipt row into view before interacting
+        receipt_row.scroll_into_view_if_needed()
         
         # Hover over the receipt row to make the delete button visible (opacity-0 → opacity-100)
         receipt_row.hover()
@@ -81,7 +84,7 @@ class ReceiptListPage(BasePage):
         
         # Handle confirmation modal - the confirm button also says "Delete" in the modal
         # Look for the Delete button in the modal (not the one in the receipt row)
-        confirm_btn = self.page.locator("div[role='dialog'] button:has-text('Delete'), button:has-text('Confirm'), button:has-text('Yes'), button:has-text('OK')")
+        confirm_btn = self.page.locator("div[role='dialog'] button:has-text('Delete'), button:has_text('Confirm'), button:has_text('Yes'), button:has_text('OK')")
         if confirm_btn.is_visible(timeout=2000):
             confirm_btn.click()
         
