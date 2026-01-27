@@ -29,24 +29,31 @@ class TestFullWorkflow:
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
         # Step 3: Delete receipt (best-effort depending on UI)
-        receipt_row = page.locator(f"text={unique_merchant}").locator("..")
+        # Find the receipt row that contains the merchant name
+        receipt_row = page.locator(f"[data-testid='receipt-item']:has-text('{unique_merchant}')").or_(
+            page.locator(f"text={unique_merchant}").locator("..")
+        )
+        
+        # Hover over receipt row to make delete button visible
+        receipt_row.hover()
+        
+        # Wait for delete button to become visible after hover, then click
         delete_button = receipt_row.locator("button:has-text('Delete')").or_(
             receipt_row.locator("button[aria-label='Delete']")
         )
+        delete_button.wait_for(state="visible", timeout=3000)
+        delete_button.click()
 
-        if delete_button.is_visible():
-            delete_button.click()
-
-            # The confirmation modal has a "Delete" button, not "Confirm"
-            confirm_button = page.locator("div[role='dialog'] button:has-text('Delete')").or_(
-                page.locator("button:has-text('Confirm')").or_(
-                    page.locator("button:has-text('Yes')")
-                )
+        # The confirmation modal has a "Delete" button, not "Confirm"
+        confirm_button = page.locator("div[role='dialog'] button:has-text('Delete')").or_(
+            page.locator("button:has-text('Confirm')").or_(
+                page.locator("button:has-text('Yes')")
             )
-            if confirm_button.is_visible():
-                confirm_button.click()
+        )
+        if confirm_button.is_visible():
+            confirm_button.click()
 
-            expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
+        expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
     def test_filter_and_search_workflow(self, page: Page, sample_receipt_data: dict):
         """Test filtering and searching receipts"""

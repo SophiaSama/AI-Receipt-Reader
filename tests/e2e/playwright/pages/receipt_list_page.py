@@ -48,7 +48,9 @@ class ReceiptListPage(BasePage):
     
     def get_receipt_by_merchant(self, merchant_name: str) -> Locator:
         """Get receipt row by merchant name"""
-        return self.page.locator(f"text={merchant_name}").locator("..")
+        # Find the receipt row that contains this merchant name
+        # The receipt row has data-testid="receipt-item"
+        return self.page.locator(f"{self.RECEIPT_ROW}:has-text('{merchant_name}')")
     
     def get_receipt_merchants(self) -> List[str]:
         """Get list of all merchant names"""
@@ -67,16 +69,20 @@ class ReceiptListPage(BasePage):
     def delete_receipt_by_merchant(self, merchant_name: str):
         """Delete receipt by merchant name"""
         receipt_row = self.get_receipt_by_merchant(merchant_name)
-        delete_btn = receipt_row.locator(self.DELETE_BUTTON)
         
-        if delete_btn.is_visible():
-            delete_btn.click()
-            
-            # Handle confirmation modal - the confirm button also says "Delete" in the modal
-            # Look for the Delete button in the modal (not the one in the receipt row)
-            confirm_btn = self.page.locator("div[role='dialog'] button:has-text('Delete'), button:has-text('Confirm'), button:has-text('Yes'), button:has-text('OK')")
-            if confirm_btn.is_visible(timeout=2000):
-                confirm_btn.click()
+        # Hover over the receipt row to make the delete button visible (opacity-0 → opacity-100)
+        receipt_row.hover()
+        
+        # Wait for the delete button to become visible after hover
+        delete_btn = receipt_row.locator(self.DELETE_BUTTON)
+        delete_btn.wait_for(state="visible", timeout=3000)
+        delete_btn.click()
+        
+        # Handle confirmation modal - the confirm button also says "Delete" in the modal
+        # Look for the Delete button in the modal (not the one in the receipt row)
+        confirm_btn = self.page.locator("div[role='dialog'] button:has-text('Delete'), button:has-text('Confirm'), button:has-text('Yes'), button:has-text('OK')")
+        if confirm_btn.is_visible(timeout=2000):
+            confirm_btn.click()
         
         return self
     
