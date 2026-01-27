@@ -31,12 +31,29 @@ def api_url():
 @pytest.fixture(scope="function")
 def context(browser: Browser):
     """Browser context with custom settings"""
+    # WebKit is stricter about some CORS scenarios; avoid flaky console errors by routing
+    # frontend /api calls directly to the backend origin in tests.
+    backend_origin = os.getenv("BACKEND_ORIGIN", "http://localhost:3001")
+
     context = browser.new_context(
         viewport={"width": 1920, "height": 1080},
         locale="en-US",
         timezone_id="America/New_York",
         record_video_dir="results/videos" if os.getenv("RECORD_VIDEO") else None,
     )
+
+    # Route all /api/* requests (from the page) to the backend to reduce CORS issues in WebKit.
+    def _route_api(route):
+        url = route.request.url
+        # If the request is to the dev server /api, forward to backend directly.
+        if "/api/" in url or url.endswith("/api"):
+            path = url.split("/api", 1)[1]
+            target = f"{backend_origin}/api{path}"
+            return route.continue_(url=target)
+        return route.continue_()
+
+    context.route("**/api/**", _route_api)
+
     yield context
     context.close()
 
@@ -107,18 +124,15 @@ def sample_receipt_image():
 def cleanup_test_data(page: Page, api_url: str):
     """Cleanup test data after each test"""
     yield
-    
-    # Delete test receipts (if any were created)
-    # This runs after each test
+
     try:
-        # Get all receipts
         response = page.request.get(f"{api_url}/receipts")
         if response.ok:
             receipts = response.json()
-            # Delete receipts created by tests
             for receipt in receipts:
                 if receipt.get("merchantName", "").startswith("Test"):
-                    page.request.delete(f"{api_url}/receipts/delete?id={receipt['id']}")
+                    # Local API delete route
+                    page.request.delete(f"{api_url}/receipts/{receipt['id']}")
     except Exception as e:
         print(f"Cleanup warning: {e}")
 

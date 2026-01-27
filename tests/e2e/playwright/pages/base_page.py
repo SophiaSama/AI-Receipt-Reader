@@ -4,6 +4,7 @@ Provides common functionality for all page objects
 """
 from playwright.sync_api import Page, Locator, expect
 from typing import Optional
+import os
 
 
 class BasePage:
@@ -11,10 +12,17 @@ class BasePage:
     
     def __init__(self, page: Page):
         self.page = page
-    
+        self.base_url = os.getenv("BASE_URL", "http://localhost:3000").rstrip("/")
+
     def navigate(self, url: str = "/"):
         """Navigate to a URL (relative to base URL)"""
-        self.page.goto(url)
+        if url.startswith("http://") or url.startswith("https://"):
+            target = url
+        else:
+            if not url.startswith("/"):
+                url = "/" + url
+            target = f"{self.base_url}{url}"
+        self.page.goto(target)
     
     def get_title(self) -> str:
         """Get page title"""

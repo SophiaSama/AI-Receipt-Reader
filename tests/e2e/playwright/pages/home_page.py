@@ -16,8 +16,8 @@ class HomePage(BasePage):
     RECEIPTS_LINK = "a[href='/receipts'], a:has-text('Receipts')"
     
     # Primary actions
-    MANUAL_ENTRY_BUTTON = "button:has-text('Manual'), text=Manual Entry"
-    UPLOAD_BUTTON = "button:has-text('Upload'), text=Upload Receipt"
+    MANUAL_ENTRY_BUTTON = "button:has-text('Manual')"
+    UPLOAD_BUTTON_TEXT = "Upload"
     EXPORT_BUTTON = "button:has-text('Export')"
     
     # Upload modal
@@ -46,7 +46,10 @@ class HomePage(BasePage):
     
     def click_upload(self):
         """Click upload button"""
-        self.page.locator(self.UPLOAD_BUTTON).first.click()
+        # Using .or_ avoids invalid CSS like: "button:has-text('Upload'), text=Upload Receipt"
+        self.page.locator("button:has-text('Upload')").or_(
+            self.page.locator("text=Upload Receipt")
+        ).first.click()
         return self
     
     def click_export(self):

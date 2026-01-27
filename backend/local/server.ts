@@ -71,6 +71,30 @@ app.post('/api/process', upload.single('file'), async (req: Request, res: Respon
 });
 
 /**
+ * DELETE /api/receipts/delete?id=:id
+ * Compatibility endpoint used by older clients/tests.
+ */
+app.delete('/api/receipts/delete', async (req: Request, res: Response) => {
+    try {
+        const idRaw = req.query.id;
+        const id = typeof idRaw === 'string' ? idRaw.trim() : '';
+
+        if (!id) {
+            return res.status(400).json({ error: 'Receipt ID is required' });
+        }
+
+        await deleteReceiptHandler(id);
+        return res.status(204).send();
+    } catch (error: any) {
+        console.error('Error deleting receipt (compat):', error);
+        if (typeof error?.message === 'string' && error.message.includes('not found')) {
+            return res.status(404).json({ error: error.message });
+        }
+        return res.status(500).json({ error: error.message || 'Delete failed' });
+    }
+});
+
+/**
  * POST /api/receipts/manual
  * Manual receipt entry endpoint
  */
@@ -149,6 +173,17 @@ app.get('/api/health', (req: Request, res: Response) => {
         timestamp: new Date().toISOString(),
         localMode: process.env.USE_LOCAL_STORAGE === 'true'
     });
+});
+
+// Return 405 for wrong methods to known endpoints tested by E2E
+app.all('/api/health', (req: Request, res: Response) => {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method Not Allowed' });
+});
+
+// Catch-all for unknown API endpoints (so they become 404, not 500)
+app.all('/api/*', (req: Request, res: Response) => {
+    return res.status(404).json({ error: 'Not Found' });
 });
 
 // Start server

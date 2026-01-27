@@ -9,13 +9,13 @@ from typing import Optional
 
 class ManualEntryPage(BasePage):
     """Page Object for manual receipt entry form"""
-    
+
     # Selectors
     MANUAL_ENTRY_BUTTON = "button:has-text('Manual')"
     MERCHANT_INPUT = "input[name='merchantName'], #merchantName"
-    DATE_INPUT = "input[name='date'], #date, input[type='date']"
-    TOTAL_INPUT = "input[name='total'], #total"
-    CURRENCY_SELECT = "select[name='currency'], #currency"
+    DATE_INPUT = "#date, input[name='date']"
+    TOTAL_INPUT = "#total, input[name='total']"
+    CURRENCY_SELECT = "#currency, select[name='currency']"
     CATEGORY_SELECT = "select[name='category'], #category"
     NOTES_TEXTAREA = "textarea[name='notes'], #notes"
     SUBMIT_BUTTON = "button[type='submit']"
@@ -38,17 +38,17 @@ class ManualEntryPage(BasePage):
     
     def fill_date(self, date: str):
         """Fill date field (format: YYYY-MM-DD)"""
-        self.page.locator(self.DATE_INPUT).fill(date)
+        self.page.locator(self.DATE_INPUT).first.fill(date)
         return self
     
     def fill_total(self, total: str):
         """Fill total amount field"""
-        self.page.locator(self.TOTAL_INPUT).fill(str(total))
+        self.page.locator(self.TOTAL_INPUT).first.fill(str(total))
         return self
     
     def select_currency(self, currency: str = "USD"):
         """Select currency (if available)"""
-        currency_field = self.page.locator(self.CURRENCY_SELECT)
+        currency_field = self.page.locator(self.CURRENCY_SELECT).first
         if currency_field.is_visible():
             currency_field.select_option(currency)
         return self
