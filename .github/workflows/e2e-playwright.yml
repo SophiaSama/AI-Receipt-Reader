@@ -1,0 +1,281 @@
+name: E2E Tests (Playwright)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        node-version: [20.x]
+        python-version: ['3.11']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: tests/e2e/playwright/requirements.txt
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Build backend
+        run: node scripts/pre-test-build.cjs
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/e2e/playwright/requirements.txt
+          echo "Python packages installed:"
+          pip list | grep -E "(playwright|pytest)" || true
+
+      - name: Install Playwright browsers and system dependencies
+        run: |
+          echo "Installing Playwright browser for matrix: ${{ matrix.browser }}"
+          python -m playwright install --with-deps ${{ matrix.browser }}
+
+          # pytest-playwright may use Chromium headless shell on Linux regardless of the selected browser
+          # (e.g., for APIRequestContext helpers). Ensure it exists to avoid:
+          #   chromium_headless_shell-* executable doesn't exist.
+          echo "Also installing chromium headless shell (Linux CI)"
+          python -m playwright install chromium-headless-shell
+
+      - name: Verify Playwright installation
+        run: |
+          echo "Checking Playwright module and python executable..."
+          pip show playwright || true
+          echo "Python executable: $(which python)"
+          python - <<'PY'
+          try:
+              from importlib.metadata import version
+              print(f"Playwright version: {version('playwright')}")
+          except Exception as e:
+              print(f"Warning: could not read package metadata: {e}")
+
+          try:
+              import playwright
+              print(f"Playwright module location: {playwright.__file__}")
+          except Exception as e:
+              raise SystemExit(f"ERROR: failed to import playwright: {e}")
+          PY
+
+      - name: Verify browser cache (lightweight)
+        run: |
+          echo "Listing installed Playwright cache directory:"
+          ls -la ~/.cache/ms-playwright/ || echo "Browser cache directory not found"
+
+      - name: Playwright smoke test
+        run: |
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          import os
+          browser = os.environ.get('BROWSER', 'chromium')
+
+          with sync_playwright() as p:
+              btype = getattr(p, browser)
+              b = btype.launch(headless=True)
+              b.close()
+
+          print(f"Playwright smoke test OK for {browser}")
+          PY
+        env:
+          BROWSER: ${{ matrix.browser }}
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          echo "Installing backend dependencies..."
+          npm install
+          echo "✅ Backend dependencies installed"
+
+      - name: Start backend server
+        run: |
+          echo "Starting backend server on port 3001..."
+          cd backend
+          npm run dev > ../backend.log 2>&1 &
+          echo $! > /tmp/backend.pid
+          cd ..
+          echo "Backend server started with PID $(cat /tmp/backend.pid)"
+        env:
+          NODE_ENV: test
+          PORT: 3001
+          USE_LOCAL_STORAGE: true
+
+      - name: Start frontend server
+        run: |
+          echo "Starting frontend server on port 3000..."
+          npm run dev > frontend.log 2>&1 &
+          echo $! > /tmp/frontend.pid
+          echo "Frontend server started with PID $(cat /tmp/frontend.pid)"
+        env:
+          NODE_ENV: test
+          USE_LOCAL_STORAGE: true
+
+      - name: Wait for servers to be ready
+        run: |
+          echo "Waiting for backend health endpoint..."
+          timeout 60 bash -c 'until curl -f http://localhost:3001/api/health > /dev/null 2>&1; do 
+            echo "Backend not ready yet, waiting..."
+            sleep 2
+          done' || {
+            echo "❌ ERROR: Backend failed to start on port 3001"
+            echo "Backend logs:"
+            cat backend.log || echo "No backend logs found"
+            exit 1
+          }
+          echo "✅ Backend is ready at http://localhost:3001"
+          
+          echo "Waiting for frontend..."
+          npx wait-on http://localhost:3000 --timeout 60000 || {
+            echo "❌ ERROR: Frontend failed to start on port 3000"
+            echo "Frontend logs:"
+            cat frontend.log || echo "No frontend logs found"
+            exit 1
+          }
+          echo "✅ Frontend is ready at http://localhost:3000"
+          
+          echo ""
+          echo "=== Server Status ==="
+          echo "Backend health check:"
+          curl -s http://localhost:3001/api/health || echo "Health check failed"
+          echo ""
+          echo "Frontend check:"
+          curl -I http://localhost:3000 2>&1 | head -n 1 || echo "Frontend check failed"
+          echo "===================="
+
+      - name: Run E2E tests
+        working-directory: tests/e2e/playwright
+        run: pytest --browser ${{ matrix.browser }} --tracing on -v -m "not external"
+        env:
+          BASE_URL: http://localhost:3000
+          BACKEND_ORIGIN: http://localhost:3001
+          HEADLESS: true
+          NODE_ENV: test
+
+      - name: Sanitize artifact filenames
+        if: always()
+        working-directory: tests/e2e/playwright
+        run: |
+          python - <<'PY'
+          import os
+          import re
+
+          INVALID = set('"<>:\\|?*\r\n')
+
+          def clean_component(name: str) -> str:
+              # Replace invalid chars and collapse whitespace
+              cleaned = ''.join('_' if c in INVALID else c for c in name)
+              cleaned = re.sub(r"\s+", "_", cleaned).strip("._ ")
+              return cleaned or "_"
+
+          def rename_path(root: str, entry: str) -> None:
+              src = os.path.join(root, entry)
+              dst_name = clean_component(entry)
+              if dst_name == entry:
+                  return
+              dst = os.path.join(root, dst_name)
+
+              # Avoid collisions
+              if os.path.exists(dst):
+                  base, ext = os.path.splitext(dst_name)
+                  i = 1
+                  while os.path.exists(os.path.join(root, f"{base}__{i}{ext}")):
+                      i += 1
+                  dst = os.path.join(root, f"{base}__{i}{ext}")
+
+              os.rename(src, dst)
+              print(f"Renamed: {src} -> {dst}")
+
+          renamed = 0
+
+          # Pass 1: rename files and dirs bottom-up (so children are handled before parents).
+          for root, dirs, files in os.walk('.', topdown=False):
+              for fname in files:
+                  before = fname
+                  rename_path(root, fname)
+                  if before != clean_component(before):
+                      renamed += 1
+              for dname in dirs:
+                  before = dname
+                  rename_path(root, dname)
+                  if before != clean_component(before):
+                      renamed += 1
+
+          print(f"Sanitizer done. Entries renamed: {renamed}")
+          PY
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: |
+            tests/e2e/playwright/results/
+            tests/e2e/playwright/test-results/
+          retention-days: 7
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.browser }}
+          path: tests/e2e/playwright/results/traces/
+          retention-days: 7
+
+      - name: Cleanup servers
+        if: always()
+        run: |
+          echo "Stopping servers..."
+          
+          # Stop backend
+          if [ -f /tmp/backend.pid ]; then
+            BACKEND_PID=$(cat /tmp/backend.pid)
+            echo "Stopping backend server (PID: $BACKEND_PID)..."
+            kill $BACKEND_PID 2>/dev/null || echo "Backend already stopped"
+          fi
+          
+          # Stop frontend
+          if [ -f /tmp/frontend.pid ]; then
+            FRONTEND_PID=$(cat /tmp/frontend.pid)
+            echo "Stopping frontend server (PID: $FRONTEND_PID)..."
+            kill $FRONTEND_PID 2>/dev/null || echo "Frontend already stopped"
+          fi
+          
+          # Fallback: kill by process name
+          pkill -f "ts-node.*local/server.ts" 2>/dev/null || true
+          pkill -f "vite" 2>/dev/null || true
+          
+          echo "✅ Servers cleanup complete"
+          
+          # Show server logs if they exist
+          if [ -f backend.log ]; then
+            echo ""
+            echo "=== Backend Logs (last 50 lines) ==="
+            tail -n 50 backend.log
+          fi
+          
+          if [ -f frontend.log ]; then
+            echo ""
+            echo "=== Frontend Logs (last 50 lines) ==="
+            tail -n 50 frontend.log
+          fi

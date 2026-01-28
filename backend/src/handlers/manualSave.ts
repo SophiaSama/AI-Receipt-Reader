@@ -17,22 +17,33 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     try {
         const contentType = event.headers['content-type'] || event.headers['Content-Type'] || '';
 
+        // ✅ Early validation - check content type (400 if wrong)
         if (!contentType.includes('multipart/form-data')) {
             return badRequest('Content-Type must be multipart/form-data');
         }
 
+        // ✅ Early validation - check body exists (400 if missing)
         if (!event.body) {
             return badRequest('Request body is required');
         }
 
-        const parsed = await parseMultipart(event.body, contentType, event.isBase64Encoded);
+        // ✅ Parse multipart data - parsing errors are client errors (400)
+        let parsed;
+        try {
+            parsed = await parseMultipart(event.body, contentType, event.isBase64Encoded);
+        } catch (parseError: any) {
+            // Busboy parsing error = malformed client data = 400 Bad Request
+            console.error('Multipart parsing error:', parseError);
+            return badRequest(`Invalid multipart data: ${parseError.message || 'Parsing failed'}`);
+        }
 
-        // Parse metadata from form field
+        // ✅ Validate metadata field exists (400 if missing)
         const metadataStr = parsed.fields['metadata'];
         if (!metadataStr) {
             return badRequest('metadata field is required');
         }
 
+        // ✅ Validate JSON parsing (400 if invalid JSON)
         let metadata: Partial<ReceiptData>;
         try {
             metadata = JSON.parse(metadataStr);
@@ -40,7 +51,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return badRequest('Invalid metadata JSON');
         }
 
-        // Validate required fields
+        // ✅ Validate required fields (400 if missing)
         if (!metadata.merchantName || metadata.total === undefined || !metadata.date) {
             return badRequest('merchantName, total, and date are required in metadata');
         }
@@ -70,7 +81,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         return success(receipt);
     } catch (error: any) {
-        console.error('Error saving manual receipt:', error);
+        // All parsing and validation errors are already returned as 400 above
+        // Only truly unexpected errors reach here (e.g., S3 failure, DynamoDB failure)
+        console.error('Unexpected error saving manual receipt:', error);
         return serverError(error.message || 'Internal server error');
     }
 };

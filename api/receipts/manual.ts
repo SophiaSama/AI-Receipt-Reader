@@ -28,11 +28,22 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       return handleTestMode(req, res);
     }
 
+    // If no multipart and no valid body, return 400
+    if (!contentType.includes('multipart/form-data') && (!req.body || !req.body.metadata)) {
+      return res.status(400).json({ error: 'multipart/form-data with metadata field is required' });
+    }
+
     // @ts-ignore - resolved at runtime on Vercel after backend build outputs dist/
     const { handler: manualHandler } = await import('../../backend/dist/src/handlers/manualSave.js');
 
     // Use the robust utility that handles streams, rawBody, and body from various request shapes
     const rawBody = await readRawBody(req);
+
+    console.log('[manual.ts] Request details:', {
+      contentType,
+      bodyLength: rawBody.length,
+      bodyPreview: rawBody.toString('utf8').substring(0, 200)
+    });
 
     const event = {
       body: rawBody.toString('base64'),
@@ -48,7 +59,18 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       requestContext: {},
     };
 
+    console.log('[manual.ts] About to call backend handler with event:', {
+      bodyLength: event.body.length,
+      contentType: event.headers['content-type'],
+      isBase64Encoded: event.isBase64Encoded
+    });
+    
     const result = await manualHandler(event as any);
+    
+    console.log('[manual.ts] Backend handler result:', {
+      statusCode: result.statusCode,
+      bodyPreview: result.body?.substring(0, 200)
+    });
 
     if (result.headers) {
       for (const [k, v] of Object.entries(result.headers)) {
@@ -56,11 +78,42 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Parse JSON body and use .json() for proper test compatibility
-    res.status(result.statusCode).json(JSON.parse(result.body));
+    // Parse JSON body safely - backend always returns valid JSON
+    let responseBody;
+    try {
+      responseBody = result.body ? JSON.parse(result.body) : {};
+    } catch (parseError) {
+      console.error('[manual.ts] Failed to parse backend response body:', parseError);
+      console.error('[manual.ts] Raw body:', result.body);
+      // If backend response is malformed, return 500
+      return res.status(500).json({ error: 'Internal server error: invalid response format' });
+    }
+
+    console.log('[manual.ts] Returning status:', result.statusCode);
+    
+    // Return the backend's status code and parsed body
+    res.status(result.statusCode).json(responseBody);
   } catch (err: any) {
-    console.error('Vercel /api/receipts/manual error:', err);
-    res.status(500).json({ error: err?.message || 'Internal Server Error' });
+    console.error('[manual.ts] ERROR caught:', {
+      message: err?.message,
+      stack: err?.stack,
+      name: err?.name
+    });
+    
+    // Check if this is a validation/parse error (client error) or server error
+    const isClientError = err?.message && (
+      err.message.includes('required') ||
+      err.message.includes('parsing') ||
+      err.message.includes('validation') ||
+      err.message.includes('Invalid') ||
+      err.message.includes('Missing') ||
+      err.message.toLowerCase().includes('bad request') ||
+      err.message.includes('boundary')
+    );
+    
+    const statusCode = isClientError ? 400 : 500;
+    console.log(`[manual.ts] Returning status ${statusCode} for error: ${err?.message}`);
+    res.status(statusCode).json({ error: err?.message || 'Internal Server Error' });
   }
 }
 

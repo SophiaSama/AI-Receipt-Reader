@@ -12,6 +12,7 @@ import { processReceiptHandler } from '../src/handlers/processReceipt';
 import { manualSaveHandler } from '../src/handlers/manualSave';
 import { getReceiptsHandler } from '../src/handlers/getReceipts';
 import { deleteReceiptHandler } from '../src/handlers/deleteReceipt';
+import { batchDeleteReceiptsHandler } from '../src/handlers/batchDeleteReceipts';
 import { getLocalImage } from '../src/services/s3Service';
 
 const app = express();
@@ -71,6 +72,30 @@ app.post('/api/process', upload.single('file'), async (req: Request, res: Respon
 });
 
 /**
+ * DELETE /api/receipts/delete?id=:id
+ * Compatibility endpoint used by older clients/tests.
+ */
+app.delete('/api/receipts/delete', async (req: Request, res: Response) => {
+    try {
+        const idRaw = req.query.id;
+        const id = typeof idRaw === 'string' ? idRaw.trim() : '';
+
+        if (!id) {
+            return res.status(400).json({ error: 'Receipt ID is required' });
+        }
+
+        await deleteReceiptHandler(id);
+        return res.status(204).send();
+    } catch (error: any) {
+        console.error('Error deleting receipt (compat):', error);
+        if (typeof error?.message === 'string' && error.message.includes('not found')) {
+            return res.status(404).json({ error: error.message });
+        }
+        return res.status(500).json({ error: error.message || 'Delete failed' });
+    }
+});
+
+/**
  * POST /api/receipts/manual
  * Manual receipt entry endpoint
  */
@@ -99,6 +124,9 @@ app.post('/api/receipts/manual', upload.single('file'), async (req: Request, res
         res.json(receipt);
     } catch (error: any) {
         console.error('Error saving manual receipt:', error);
+        if (error.message && error.message.includes('required')) {
+            return res.status(400).json({ error: error.message });
+        }
         res.status(500).json({ error: error.message || 'Save failed' });
     }
 });
@@ -142,6 +170,29 @@ app.delete('/api/receipts/:id', async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * POST /api/receipts/batch-delete
+ * Bulk delete receipts
+ */
+app.post('/api/receipts/batch-delete', async (req: Request, res: Response) => {
+    try {
+        const { ids } = req.body;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'Array of receipt IDs is required' });
+        }
+
+        // Use the handler implementation that works for local too
+        const { batchDeleteReceiptsHandler } = await import('../src/handlers/batchDeleteReceipts');
+        await batchDeleteReceiptsHandler(ids);
+
+        res.status(204).send();
+    } catch (error: any) {
+        console.error('Error bulk deleting receipts:', error);
+        res.status(500).json({ error: error.message || 'Bulk delete failed' });
+    }
+});
+
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({
@@ -149,6 +200,17 @@ app.get('/api/health', (req: Request, res: Response) => {
         timestamp: new Date().toISOString(),
         localMode: process.env.USE_LOCAL_STORAGE === 'true'
     });
+});
+
+// Return 405 for wrong methods to known endpoints tested by E2E
+app.all('/api/health', (req: Request, res: Response) => {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method Not Allowed' });
+});
+
+// Catch-all for unknown API endpoints (so they become 404, not 500)
+app.all('/api/*', (req: Request, res: Response) => {
+    return res.status(404).json({ error: 'Not Found' });
 });
 
 // Start server
@@ -168,6 +230,7 @@ if (process.env.VERCEL !== '1') {
 ║    POST   /api/receipts/manual - Manual entry             ║
 ║    GET    /api/receipts        - Get all receipts         ║
 ║    DELETE /api/receipts/:id    - Delete receipt           ║
+║    POST   /api/receipts/batch-delete - Bulk delete        ║
 ║    GET    /api/health          - Health check             ║
 ╚═══════════════════════════════════════════════════════════╝
     `);

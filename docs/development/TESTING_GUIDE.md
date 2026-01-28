@@ -2,14 +2,14 @@
 
 This document describes the testing infrastructure and practices for the SmartReceiptReader application.
 
-## ✨ Quick Start (New!)
+## ✨ Quick Start
 
-**Just run tests - everything else is automatic:**
+**Just run tests - the pre-build script handles everything:**
 ```powershell
 npm test
 ```
 
-The automated test setup system handles all dependency building for you! See [Automated Test Setup System](#-automated-test-setup-system) for details.
+The automated test setup system builds the backend automatically before running tests. See [Test Architecture](#-test-architecture) for details.
 
 ---
 
@@ -17,6 +17,7 @@ The automated test setup system handles all dependency building for you! See [Au
 
 - [Overview](#overview)
 - [Test Types](#test-types)
+- [Test Architecture](#test-architecture)
 - [Getting Started](#getting-started)
 - [Running Tests](#running-tests)
 - [Test Structure](#test-structure)
@@ -34,14 +35,16 @@ SmartReceiptReader uses **Vitest** as the testing framework, providing:
 - ✅ Compatible with Vite's config
 - ✅ Similar API to Jest (easy migration)
 - ✅ Built-in coverage reporting
+- ✅ In-memory test mode (no external dependencies)
 
 ### Test Coverage
 
 | Category | Coverage Target | Status |
 |----------|----------------|--------|
 | API Routes | 90%+ | 🟢 Implemented |
-| Handlers | 80%+ | 🟡 Partial |
-| Services | 70%+ | 🔴 Planned |
+| Handlers | 80%+ | � Implemented |
+| Services | 70%+ | � Partial |
+| Test Mode | 100% | 🟢 Implemented |
 
 ---
 
@@ -50,22 +53,30 @@ SmartReceiptReader uses **Vitest** as the testing framework, providing:
 ### 1. Integration Tests (`tests/integration/`)
 
 Test API routes end-to-end within the application:
-- Mock HTTP requests/responses
-- Use in-memory storage (`USE_LOCAL_STORAGE=true`)
-- No external dependencies required
-- Fast execution (~2-5 seconds)
+- **Test Mode Architecture** - Uses in-memory storage for fast, reliable tests
+- Mock HTTP requests/responses (no live server needed)
+- No external dependencies (S3, DynamoDB, Mistral AI)
+- Fast execution (~2-5 seconds for full suite)
+- Tests full create → list → delete workflows
 
-**When to use:** Testing API logic, request/response handling, validation
+**When to use:** Testing API logic, request/response handling, validation, CRUD operations
+
+**Key Features:**
+- In-memory receipt store (`api/_lib/receiptsStore.ts`)
+- Dual-mode API endpoints (production vs test)
+- Request body handling utilities (`readRawBody`)
+- Automatic store cleanup between tests
 
 ### 2. E2E Tests (`tests/e2e/`)
 
 Test against a live server (local or deployed):
 - Real HTTP requests with `fetch`
-- Tests full stack including routing
+- Tests full stack including routing and deployment
 - Can test against `vercel dev` or production
 - Slower execution (~10-30 seconds)
+- Requires actual backend services
 
-**When to use:** Testing deployment, routing, real-world scenarios
+**When to use:** Testing deployment, routing, real-world scenarios, production validation
 
 ### 3. Unit Tests (Future)
 
@@ -73,6 +84,70 @@ Test individual functions and components:
 - Test utilities in isolation
 - Test React components with React Testing Library
 - Test business logic without dependencies
+
+---
+
+## 🏗️ Test Architecture
+
+### Test Mode vs Production Mode
+
+The project uses a **dual-mode architecture** for API endpoints:
+
+#### Production Mode
+- Reads from Node.js streams (`req.on('data')`)
+- Calls backend Lambda handlers
+- Uses AWS services (S3, DynamoDB)
+- Processes with Mistral AI
+- Requires multipart/form-data
+
+#### Test Mode
+- Reads from pre-parsed objects (`req.body`)
+- Uses in-memory storage (`receiptsStore`)
+- No external dependencies
+- Fast execution
+- Handles JSON and string bodies
+
+### How Test Mode Detection Works
+
+```typescript
+// api/receipts/manual.ts
+if (req.body && typeof req.body === 'object' && 
+    req.body.metadata && !contentType.includes('multipart/form-data')) {
+  return handleTestMode(req, res);
+}
+```
+
+### In-Memory Receipt Store
+
+Location: `api/_lib/receiptsStore.ts`
+
+```typescript
+export async function addReceipt(receipt: Receipt): Promise<void>;
+export async function listReceipts(): Promise<Receipt[]>;
+export async function deleteReceiptById(id: string): Promise<boolean>;
+export async function clearReceipts(): Promise<void>;
+```
+
+**Benefits:**
+- ✅ Fast - No network calls or I/O
+- ✅ Reliable - No flaky external dependencies
+- ✅ Isolated - Each test starts with clean state
+- ✅ CI-Friendly - No AWS credentials needed
+
+### Request Body Utilities
+
+Location: `api/_lib/readRawBody.ts`
+
+Handles multiple request shapes:
+1. **Node.js streams** - Production Vercel runtime
+2. **Pre-parsed objects** - Test harness
+3. **Raw buffers** - Some frameworks
+4. **Stringified JSON** - Various clients
+
+```typescript
+const rawBody = await readRawBody(req);
+// Works with streams, objects, buffers, or strings!
+```
 
 ---
 
@@ -85,75 +160,59 @@ Node.js 20+ and npm 10+ are required.
 ### Install Dependencies
 
 ```powershell
-# Install all dependencies (includes dev dependencies)
+# Install all dependencies (root + backend automatically handled)
 npm install
-
-# Install backend dependencies
-cd backend
-npm install
-cd ..
 ```
 
-### Automated Build Setup ✨
+### Pre-Test Build System
 
-**Good news!** You don't need to manually build the backend before running tests anymore. The project now includes an automated pre-test build system.
+**The project uses an explicit pre-test build script** that ensures backend is compiled before tests run.
 
 #### How It Works
 
-When you run `npm test`, the system automatically:
+The test workflow is:
 
-1. **Checks Dependencies** - Verifies all required packages are installed
-2. **Builds Backend** - Compiles TypeScript (`backend/src/` → `backend/dist/`)
-3. **Verifies Build** - Ensures compiled handlers exist
-4. **Runs Tests** - Executes your test suite
-
-This is powered by npm's `pretest` lifecycle hook:
-
-```json
-{
-  "scripts": {
-    "pretest": "npm run build:backend",
-    "build:backend": "cd backend && npm install && npm run build",
-    "test": "vitest"
-  }
-}
+```
+npm test
+    ↓
+Runs: node scripts/pre-test-build.cjs
+    ↓
+    1. Checks if backend/node_modules exists
+    2. Installs backend dependencies if needed
+    3. Checks if backend/dist exists
+    4. Compiles TypeScript if needed
+    5. Verifies all handlers exist
+    ↓
+tests/setup.ts runs (clears in-memory store)
+    ↓
+Test execution begins
 ```
 
-#### Why This Matters
+The build script (`scripts/pre-test-build.cjs`) is:
+- **Explicit** - Called directly in CI/CD workflows
+- **Smart** - Only builds if necessary
+- **Fast** - Skips build if artifacts exist
+- **Reliable** - Works identically everywhere
 
-Tests depend on compiled backend code because:
+#### Why This Architecture?
+
+Tests import API handlers which dynamically import backend code:
 
 ```
 tests/integration/api.test.ts
     ↓ imports
-api/process.ts (Vercel serverless function)
+api/receipts/manual.ts
     ↓ dynamically imports at runtime
-backend/dist/src/handlers/processReceipt.js
-    ↑
-    Must exist before tests run!
+backend/dist/src/handlers/manualSave.js  ← Must exist!
 ```
 
-**Without automated build:**
-- ❌ Developers must remember to run `npm run build:backend`
+**Without build:**
 - ❌ Tests fail with "Cannot find module" errors
-- ❌ Confusing for new contributors
 
 **With automated build:**
-- ✅ Just run `npm test` - it handles everything
-- ✅ Works in CI/CD pipelines automatically
-- ✅ Consistent across all environments
-
-#### Manual Build (If Needed)
-
-You can still build manually:
-
-```powershell
-# Build backend only
-npm run build:backend
-
-# Build everything (frontend + backend)
-npm run build
-```
+- ✅ Backend compiled before tests run
+- ✅ Works in local dev and CI/CD
+- ✅ Clear error messages if build fails
 
 ---
 
@@ -162,15 +221,7 @@ npm run build
 ### Quick Start
 
 ```powershell
-# Run all tests (automatically builds backend first!)
-npm test
-```
-
-That's it! The `pretest` script handles all dependencies automatically.
-
-### All Tests (with automatic build)
-
-```powershell
+# Run all integration tests (backend builds automatically if needed)
 npm test
 ```
 
@@ -198,6 +249,86 @@ npm run test:e2e
 ```
 
 ### With UI (Interactive)
+
+```powershell
+npm run test:ui
+```
+
+### With Coverage
+
+```powershell
+npm run test:coverage
+```
+
+### Watch Mode (Auto-rerun)
+
+```powershell
+npm test -- --watch
+```
+
+### Manual Build (if needed)
+
+```powershell
+# Build backend explicitly
+node scripts/pre-test-build.cjs
+
+# Or use npm script
+npm run build:backend
+```
+
+---
+
+## 📊 Understanding Test Output
+
+### Successful Test Run
+
+```
+ ✓ tests/integration/api.test.ts (15)
+   ✓ Health Endpoint - GET /api/health (2)
+     ✓ should return healthy status
+     ✓ should reject non-GET requests
+   ✓ Receipts List - GET /api/receipts (2)
+     ✓ should return empty array initially
+     ✓ should reject non-GET requests
+   ✓ Manual Receipt Entry - POST /api/receipts/manual (3)
+     ✓ should save manual receipt without image
+     ✓ should validate required fields
+     ✓ should reject non-POST requests
+   ✓ Full Workflow Integration (1)
+     ✓ should complete create → list → delete workflow
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  10:30:00
+   Duration  2.5s
+```
+
+### Build Output
+
+```
+═══════════════════════════════════════════════════
+  Pre-Test Build & Dependency Check
+═══════════════════════════════════════════════════
+
+▶ Checking Root Dependencies
+✓ Root dependencies are ready
+
+▶ Checking Backend Build Artifacts
+⚠ Backend build artifacts missing or incomplete
+
+▶ Building Backend TypeScript
+  Compiling TypeScript...
+✓ Backend built successfully
+
+▶ Verifying Test Prerequisites
+✓ Backend handlers ready
+✓ Backend services ready
+✓ Backend utilities ready
+
+═══════════════════════════════════════════════════
+✓ All prerequisites ready for testing!
+═══════════════════════════════════════════════════
+```
 
 ```powershell
 npm run test:ui

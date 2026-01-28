@@ -4,7 +4,8 @@ import {
     PutCommand,
     GetCommand,
     ScanCommand,
-    DeleteCommand
+    DeleteCommand,
+    BatchWriteCommand
 } from '@aws-sdk/lib-dynamodb';
 import { ReceiptData } from '../types';
 
@@ -88,6 +89,37 @@ export const deleteReceipt = async (id: string): Promise<void> => {
     });
 
     await dynamoClient!.send(command);
+};
+
+/**
+ * Delete multiple receipts by ID
+ */
+export const batchDeleteReceipts = async (ids: string[]): Promise<void> => {
+    if (ids.length === 0) return;
+
+    if (isLocalMode) {
+        ids.forEach(id => localReceiptStore.delete(id));
+        return;
+    }
+
+    // DynamoDB BatchWrite has a limit of 25 items per request
+    const CHUNK_SIZE = 25;
+    for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const chunk = ids.slice(i, i + CHUNK_SIZE);
+        const deleteRequests = chunk.map(id => ({
+            DeleteRequest: {
+                Key: { id }
+            }
+        }));
+
+        const command = new BatchWriteCommand({
+            RequestItems: {
+                [TABLE_NAME]: deleteRequests
+            }
+        });
+
+        await dynamoClient!.send(command);
+    }
 };
 
 /**
