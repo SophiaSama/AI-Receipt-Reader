@@ -124,6 +124,9 @@ app.post('/api/receipts/manual', upload.single('file'), async (req: Request, res
         res.json(receipt);
     } catch (error: any) {
         console.error('Error saving manual receipt:', error);
+        if (error.message && error.message.includes('required')) {
+            return res.status(400).json({ error: error.message });
+        }
         res.status(500).json({ error: error.message || 'Save failed' });
     }
 });
