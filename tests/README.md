@@ -42,12 +42,11 @@ npm run test:integration
 
 ### E2E Tests (requires live server)
 
-```powershell
-# Start server first
-npm run dev
+Run with python playwright
 
-# Then run E2E tests
-npm run test:e2e
+```powershell
+# Run all tests (headless by default)
+pytest tests/e2e/playwright/
 ```
 
 ## 📝 Test Coverage
@@ -148,6 +147,7 @@ beforeEach(async () => {
 ## 🔧 Configuration
 
 Tests use the following environment:
+
 - `USE_LOCAL_STORAGE=true` - Enables in-memory storage mode
 - `NODE_ENV=test` - Test environment flag
 - `MISTRAL_API_KEY` - From your environment or defaults to 'test-key'
@@ -205,24 +205,28 @@ function createMockResponse() {
 ## 🎯 Benefits of Test Mode Architecture
 
 ### Fast ⚡
+
 - No network calls to AWS
 - No API calls to Mistral
 - No S3 uploads or DynamoDB queries
 - Tests complete in ~2-5 seconds
 
 ### Reliable 🔒
+
 - No flaky network issues
 - No external service outages
 - No credential management
 - Deterministic results
 
 ### CI-Friendly 🚀
+
 - No AWS credentials needed
 - No environment setup required
 - Works identically in local and CI
 - Parallel test execution safe
 
 ### Maintainable 🛠️
+
 - Clear separation of concerns
 - Test and production code paths separate
 - Easy to debug
@@ -277,6 +281,7 @@ console.log('Current receipts:', await listReceipts());
     expect(res.getData()).toHaveProperty('id');
   });
 });
+
 ```
 
 ## 🐛 Debugging Tests
@@ -378,6 +383,7 @@ Tests don't make actual Mistral API calls. To test AI integration:
 ## 📈 Coverage Goals
 
 Target coverage levels:
+
 - **API Routes**: 90%+ coverage
 - **Handlers**: 80%+ coverage
 - **Services**: 70%+ coverage
