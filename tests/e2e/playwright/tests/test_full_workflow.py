@@ -37,9 +37,7 @@ class TestFullWorkflow:
         receipt_row.hover()
         
         # Wait for delete button to become visible after hover, then click
-        delete_button = receipt_row.locator("button:has-text('Delete')").or_(
-            receipt_row.locator("button[aria-label='Delete']")
-        )
+        delete_button = receipt_row.locator("button[title='Purge Record']")
         delete_button.wait_for(state="visible", timeout=3000)
         delete_button.click()
 

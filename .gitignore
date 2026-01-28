@@ -49,3 +49,8 @@ tests/e2e/playwright/.env
 
 # Agent Skills
 .github/skills/*
+.agent/*
+.opencode/*
+.ruff_cache/*
+# Local settings
+.env

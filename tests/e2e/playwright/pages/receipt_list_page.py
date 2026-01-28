@@ -12,11 +12,11 @@ class ReceiptListPage(BasePage):
     """Page Object for receipt list and filters"""
 
     # Selectors
-    RECEIPT_ROW = ".receipt-row, [data-testid='receipt-item'], .receipt-item"
+    RECEIPT_ROW = "[data-testid='receipt-item']"
     RECEIPT_MERCHANT = ".merchant-name, [data-testid='merchant-name']"
     RECEIPT_DATE = ".receipt-date, [data-testid='receipt-date']"
     RECEIPT_TOTAL = ".receipt-total, [data-testid='receipt-total']"
-    DELETE_BUTTON = "button:has-text(\"Delete\"), button[aria-label='Delete']"
+    DELETE_BUTTON = "button[title='Purge Record']"
     EDIT_BUTTON = "button:has-text(\"Edit\"), button[aria-label='Edit']"
 
     # Search and filters
@@ -28,7 +28,7 @@ class ReceiptListPage(BasePage):
     CLEAR_FILTERS_BUTTON = 'button:has-text("Clear"), button:has-text("Reset")'
 
     # Stats
-    STATS_SECTION = "[data-testid='stats'], .stats"
+    STATS_SECTION = "[data-testid='stats-overview']"
     TOTAL_RECEIPTS = ".total-receipts, [data-testid='total-receipts']"
     TOTAL_AMOUNT = ".total-amount, [data-testid='total-amount']"
 

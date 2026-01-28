@@ -130,9 +130,8 @@ def cleanup_test_data(page: Page, api_url: str):
         if response.ok:
             receipts = response.json()
             for receipt in receipts:
-                if receipt.get("merchantName", "").startswith("Test"):
-                    # Local API delete route
-                    page.request.delete(f"{api_url}/receipts/{receipt['id']}")
+                # Delete all receipts to ensure clean state
+                page.request.delete(f"{api_url}/receipts/{receipt['id']}")
     except Exception as e:
         print(f"Cleanup warning: {e}")
 
@@ -169,3 +168,14 @@ def pytest_runtest_makereport(item, call):
             screenshot_path = f"results/screenshots/{item.name}.png"
             page.screenshot(path=screenshot_path)
             print(f"\nScreenshot saved: {screenshot_path}")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("-m") == "external":
+        # If user typed -m external, do not skip
+        return
+    
+    skip_external = pytest.mark.skip(reason="need -m external option to run")
+    for item in items:
+        if "external" in item.keywords:
+            item.add_marker(skip_external)

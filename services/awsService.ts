@@ -100,9 +100,6 @@ export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
   return data.sort((a: ReceiptData, b: ReceiptData) => b.createdAt - a.createdAt);
 };
 
-/**
- * Delete receipt and associated S3 assets
- */
 export const deleteReceiptFromDB = async (id: string): Promise<void> => {
   // Backend exposes DELETE /api/receipts/:id (see backend/local/server.ts)
   const response = await fetch(`${API_BASE}/receipts/${encodeURIComponent(id)}`, {
@@ -116,6 +113,37 @@ export const deleteReceiptFromDB = async (id: string): Promise<void> => {
       try {
         const j = JSON.parse(txt);
         if (j?.error) message = `Failed to delete receipt: ${j.error}`;
+      } catch {
+        if (txt) message += ` - ${txt.substring(0, 200)}`;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+};
+
+/**
+ * Delete multiple receipts and associated assets
+ */
+export const deleteReceiptsFromDB = async (ids: string[]): Promise<void> => {
+  if (!ids || ids.length === 0) return;
+
+  const response = await fetch(`${API_BASE}/receipts/batch-delete`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  if (!response.ok) {
+    let message = `Failed to bulk delete receipts: ${response.statusText} (${response.status})`;
+    try {
+      const txt = await response.text();
+      try {
+        const j = JSON.parse(txt);
+        if (j?.error) message = `Failed to bulk delete: ${j.error}`;
       } catch {
         if (txt) message += ` - ${txt.substring(0, 200)}`;
       }

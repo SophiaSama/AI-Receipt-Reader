@@ -19,7 +19,7 @@ class ManualEntryPage(BasePage):
     CATEGORY_SELECT = "select[name='category'], #category"
     NOTES_TEXTAREA = "textarea[name='notes'], #notes"
     SUBMIT_BUTTON = "button[type='submit']"
-    CANCEL_BUTTON = "button:has-text('Cancel'), button.cancel"
+    CANCEL_BUTTON = "button:has-text('Cancel'), button:has-text('Abort'), button.cancel"
     
     def __init__(self, page: Page):
         super().__init__(page)

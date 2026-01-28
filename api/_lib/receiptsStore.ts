@@ -33,6 +33,16 @@ export async function deleteReceiptById(id: string): Promise<boolean> {
   return true;
 }
 
+export async function batchDeleteReceipts(ids: string[]): Promise<void> {
+  const idsSet = new Set(ids);
+  let i = receipts.length;
+  while (i--) {
+    if (idsSet.has(receipts[i].id)) {
+      receipts.splice(i, 1);
+    }
+  }
+}
+
 export async function clearReceipts(): Promise<void> {
   receipts.length = 0;
 }

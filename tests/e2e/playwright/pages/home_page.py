@@ -71,7 +71,18 @@ class HomePage(BasePage):
         file_input = self.page.locator("input[type='file']#dropzone-file")
         file_input.set_input_files(file_path)
         
-        # Wait for processing to complete
+        # Wait for processing to start (optional, but good for stability)
+        try:
+            self.page.wait_for_selector("text=Analyzing", timeout=2000)
+        except:
+            pass # Might happen too fast
+            
+        # Wait for processing messages to disappear
+        self.page.locator("text=Uploading...").wait_for(state="hidden", timeout=30000)
+        self.page.locator("text=Mistral AI Analyzing").wait_for(state="hidden", timeout=30000)
+        self.page.locator("text=Processing").wait_for(state="hidden", timeout=30000)
+        
+        # Wait for network idle to ensure data is fetched
         self.page.wait_for_load_state("networkidle")
         return self
     

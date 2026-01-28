@@ -12,6 +12,7 @@ import { processReceiptHandler } from '../src/handlers/processReceipt';
 import { manualSaveHandler } from '../src/handlers/manualSave';
 import { getReceiptsHandler } from '../src/handlers/getReceipts';
 import { deleteReceiptHandler } from '../src/handlers/deleteReceipt';
+import { batchDeleteReceiptsHandler } from '../src/handlers/batchDeleteReceipts';
 import { getLocalImage } from '../src/services/s3Service';
 
 const app = express();
@@ -166,6 +167,29 @@ app.delete('/api/receipts/:id', async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * POST /api/receipts/batch-delete
+ * Bulk delete receipts
+ */
+app.post('/api/receipts/batch-delete', async (req: Request, res: Response) => {
+    try {
+        const { ids } = req.body;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'Array of receipt IDs is required' });
+        }
+
+        // Use the handler implementation that works for local too
+        const { batchDeleteReceiptsHandler } = await import('../src/handlers/batchDeleteReceipts');
+        await batchDeleteReceiptsHandler(ids);
+
+        res.status(204).send();
+    } catch (error: any) {
+        console.error('Error bulk deleting receipts:', error);
+        res.status(500).json({ error: error.message || 'Bulk delete failed' });
+    }
+});
+
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({
@@ -203,6 +227,7 @@ if (process.env.VERCEL !== '1') {
 ║    POST   /api/receipts/manual - Manual entry             ║
 ║    GET    /api/receipts        - Get all receipts         ║
 ║    DELETE /api/receipts/:id    - Delete receipt           ║
+║    POST   /api/receipts/batch-delete - Bulk delete        ║
 ║    GET    /api/health          - Health check             ║
 ╚═══════════════════════════════════════════════════════════╝
     `);

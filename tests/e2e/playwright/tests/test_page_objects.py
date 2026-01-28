@@ -149,7 +149,6 @@ class TestWithPageObjects:
     
     @pytest.mark.slow
     @pytest.mark.external
-    @pytest.mark.skip(reason="Skipped by default to avoid Mistral AI rate limits. Run with: pytest -m external")
     def test_upload_receipt_file(self, page: Page, sample_receipt_image: str):
         """Test uploading a receipt file (if feature exists)"""
         home = HomePage(page)
