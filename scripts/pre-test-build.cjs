@@ -50,6 +50,7 @@ function checkBackendDist() {
     path.join(backendDistDir, 'src', 'handlers', 'getReceipts.js'),
     path.join(backendDistDir, 'src', 'handlers', 'manualSave.js'),
     path.join(backendDistDir, 'src', 'handlers', 'deleteReceipt.js'),
+    path.join(backendDistDir, 'src', 'handlers', 'batchDeleteReceipts.js'),
   ];
 
   return requiredFiles.every(file => existsSync(file));
@@ -57,16 +58,16 @@ function checkBackendDist() {
 
 function buildBackend() {
   logStep('Building Backend TypeScript');
-  
+
   try {
     // Check if backend/node_modules exists
     const backendNodeModules = path.join(backendDir, 'node_modules');
     if (!existsSync(backendNodeModules)) {
       log('  Installing backend dependencies...');
-      execSync('npm install', { 
-        cwd: backendDir, 
+      execSync('npm install', {
+        cwd: backendDir,
         stdio: 'inherit',
-        encoding: 'utf-8' 
+        encoding: 'utf-8'
       });
     } else {
       log('  Backend dependencies already installed');
@@ -74,12 +75,12 @@ function buildBackend() {
 
     // Build backend
     log('  Compiling TypeScript...');
-    execSync('npm run build', { 
-      cwd: backendDir, 
+    execSync('npm run build', {
+      cwd: backendDir,
       stdio: 'inherit',
-      encoding: 'utf-8' 
+      encoding: 'utf-8'
     });
-    
+
     logSuccess('Backend built successfully');
     return true;
   } catch (error) {
@@ -97,12 +98,12 @@ function checkRootDependencies() {
 
 function installRootDependencies() {
   logStep('Installing Root Dependencies');
-  
+
   try {
-    execSync('npm install', { 
-      cwd: rootDir, 
+    execSync('npm install', {
+      cwd: rootDir,
       stdio: 'inherit',
-      encoding: 'utf-8' 
+      encoding: 'utf-8'
     });
     logSuccess('Root dependencies installed');
     return true;
