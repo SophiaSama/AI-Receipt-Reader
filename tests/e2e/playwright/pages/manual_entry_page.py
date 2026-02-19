@@ -11,7 +11,7 @@ class ManualEntryPage(BasePage):
     """Page Object for manual receipt entry form"""
 
     # Selectors
-    MANUAL_ENTRY_BUTTON = "button:has-text('Manual')"
+    MANUAL_ENTRY_BUTTON = "button:has-text('Switch to Manual')"
     MERCHANT_INPUT = "input[name='merchantName'], #merchantName"
     DATE_INPUT = "#date"  # Specific to manual entry form to avoid matching filter date inputs
     TOTAL_INPUT = "#total, input[name='total']"

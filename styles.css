@@ -4,37 +4,42 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 }
 
 @layer components {
   .glass {
-    @apply bg-slate-900/40 backdrop-blur-md border border-white/10;
+    @apply bg-white/70 backdrop-blur-xl border border-pink-100/40;
   }
 
   .glass-card {
-    @apply glass rounded-2xl shadow-2xl;
+    @apply glass rounded-xl shadow-glass;
   }
 
   .glass-header {
-    @apply bg-slate-950/60 backdrop-blur-lg border-b border-white/5 sticky top-0 z-50;
+    @apply bg-white/80 backdrop-blur-xl border-b border-pink-100/30 sticky top-0 z-50;
   }
 
   .btn-primary {
-    @apply bg-primary hover:bg-secondary text-slate-950 font-bold px-6 py-2.5 rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 flex items-center justify-center gap-2;
+    @apply bg-primary text-white hover:bg-primary/85 font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm flex items-center justify-center gap-2 cursor-pointer;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-slate-600 hover:bg-blush hover:text-primary font-medium px-4 py-2 rounded-lg transition-all duration-200 border border-pink-100 flex items-center justify-center gap-2 cursor-pointer;
   }
 
   .btn-accent {
-    @apply bg-accent hover:opacity-90 text-white font-bold px-6 py-2.5 rounded-xl transition-all duration-300 shadow-lg shadow-accent/20 flex items-center justify-center gap-2;
+    @apply bg-lavender-50 hover:bg-lavender-100 text-secondary font-medium px-4 py-2 rounded-lg transition-all duration-200 border border-lavender-200 flex items-center justify-center gap-2 cursor-pointer;
   }
 }
 
-/* Custom Mesh Gradient for Background */
+/* Warm Cream Background with Soft Gradient */
 body {
-  background-color: #0f172a;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+  background-color: #FFF8F0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(232, 121, 160, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(167, 139, 250, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(196, 181, 253, 0.03) 0%, transparent 60%);
   min-height: 100vh;
 }
