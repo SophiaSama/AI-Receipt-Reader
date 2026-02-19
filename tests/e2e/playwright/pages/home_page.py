@@ -16,13 +16,13 @@ class HomePage(BasePage):
     RECEIPTS_LINK = "a[href='/receipts'], a:has-text('Receipts')"
     
     # Primary actions
-    MANUAL_ENTRY_BUTTON = "button:has-text('Manual')"
-    UPLOAD_BUTTON_TEXT = "Upload"
-    EXPORT_BUTTON = "button:has-text('Export')"
+    MANUAL_ENTRY_BUTTON = "button:has-text('Switch to Manual')"
+    UPLOAD_BUTTON_TEXT = "Switch to Upload"
+    EXPORT_BUTTON = "button:has-text('Export CSV')"
     
     # Upload modal
     FILE_INPUT = "input[type='file']"
-    UPLOAD_SUBMIT = "button:has-text('Upload'), button[type='submit']"
+    UPLOAD_SUBMIT = "button:has-text('Upload')" # Note: Upload is auto-triggered on drop/select usually
     UPLOAD_CANCEL = "button:has-text('Cancel')"
     
     # Export options

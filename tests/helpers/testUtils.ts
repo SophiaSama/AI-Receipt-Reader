@@ -9,20 +9,19 @@ export interface MockFile {
   size: number;
 }
 
-export function createMockImageFile(filename = 'test-receipt.jpg'): MockFile {
-  // Create a minimal valid JPEG header
-  const jpegHeader = Buffer.from([
-    0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46,
-    0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
+export function createMockImageFile(filename = 'test-receipt.png'): MockFile {
+  // Create a minimal valid image header
+  const mockHeader = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
   ]);
-  
+
   return {
     fieldname: 'file',
     originalname: filename,
     encoding: '7bit',
-    mimetype: 'image/jpeg',
-    buffer: jpegHeader,
-    size: jpegHeader.length,
+    mimetype: 'image/png',
+    buffer: mockHeader,
+    size: mockHeader.length,
   };
 }
 

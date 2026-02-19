@@ -12,18 +12,18 @@ class ReceiptListPage(BasePage):
     """Page Object for receipt list and filters"""
 
     # Selectors
-    RECEIPT_ROW = "[data-testid='receipt-item']"
-    RECEIPT_MERCHANT = ".merchant-name, [data-testid='merchant-name']"
-    RECEIPT_DATE = ".receipt-date, [data-testid='receipt-date']"
-    RECEIPT_TOTAL = ".receipt-total, [data-testid='receipt-total']"
+    RECEIPT_ROW = "tr[data-testid='receipt-item']"
+    RECEIPT_MERCHANT = "[data-testid='merchant-name']"
+    RECEIPT_DATE = "[data-testid='receipt-date']"
+    RECEIPT_TOTAL = "[data-testid='receipt-total']"
     DELETE_BUTTON = "button[title='Purge Record']"
     EDIT_BUTTON = "button:has-text(\"Edit\"), button[aria-label='Edit']"
 
     # Search and filters
-    SEARCH_INPUT = "input[type='search'], input[placeholder*='Search']"
+    SEARCH_INPUT = "input[placeholder*='Filter by merchant']"
     FILTER_MERCHANT = "#filter-merchant, select[name='merchant']"
-    FILTER_DATE_FROM = "#filter-date-from, input[name='dateFrom']"
-    FILTER_DATE_TO = "#filter-date-to, input[name='dateTo']"
+    FILTER_DATE_FROM = "input[placeholder='From']"
+    FILTER_DATE_TO = "input[placeholder='To']"
     FILTER_CATEGORY = "#filter-category, select[name='category']"
     CLEAR_FILTERS_BUTTON = 'button:has-text("Clear"), button:has-text("Reset")'
 

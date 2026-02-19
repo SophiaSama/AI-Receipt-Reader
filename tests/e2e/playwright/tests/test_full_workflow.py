@@ -77,8 +77,20 @@ class TestFullWorkflow:
             search_input.fill("NonExistent12345")
             expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
-    def test_export_csv_workflow(self, page: Page):
+    def test_export_csv_workflow(self, page: Page, sample_receipt_data: dict):
         """Test exporting receipts to CSV"""
+
+        # Create at least one receipt so export has data
+        page.locator("button:has-text('Manual')").first.click()
+        page.wait_for_selector("input[name='merchantName'], #merchantName")
+
+        unique_merchant = f"ExportTest {page.evaluate('Date.now()')}"
+        page.fill("input[name='merchantName'], #merchantName", unique_merchant)
+        page.fill("input[name='date'], #date, input[type='date']", sample_receipt_data["date"])
+        page.fill("input[name='total'], #total", str(sample_receipt_data["total"]))
+        page.locator("button[type='submit']").click()
+
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
         # Look for export button
         export_button = page.locator("button:has-text('Export')").or_(

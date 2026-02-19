@@ -64,7 +64,7 @@ tests/e2e/playwright/
 │   ├── test_page_objects.py            # POM usage examples
 │   │
 │   └── fixtures/                        # Test data and assets
-│       └── sample-receipt.jpg           # Sample receipt image for upload tests
+│       └── sample-receipt.png           # Sample receipt image for upload tests
 │
 └── pages/                               # Page Object Models
     ├── README.md                        # POM documentation
@@ -138,7 +138,7 @@ TEST_USER_EMAIL=test@example.com
 TEST_USER_PASSWORD=testpassword123
 
 # Test data
-TEST_RECEIPT_IMAGE=tests/fixtures/sample-receipt.jpg
+TEST_RECEIPT_IMAGE=tests/fixtures/sample-receipt.png
 
 # Browser settings
 HEADLESS=true
@@ -235,29 +235,34 @@ def test_with_mock_api(page: Page):
 ## Test Scenarios
 
 ### 1. Health Check
+
 - App loads successfully
 - All main sections visible
 - No console errors
 
 ### 2. Manual Receipt Entry
+
 - Open manual entry form
 - Fill all required fields
 - Submit successfully
 - Receipt appears in list
 
 ### 3. Receipt Upload
+
 - Select image file
 - Upload processes
 - OCR extracts data
 - Receipt saved
 
 ### 4. Receipt List
+
 - Receipts display
 - Filter by merchant
 - Filter by date range
 - Search functionality
 
 ### 5. Full Workflow
+
 - Create manual receipt
 - Verify in list
 - Delete receipt
@@ -319,6 +324,7 @@ page.screenshot(path="full-page.png", full_page=True)
 ## Best Practices
 
 ### DO ✅
+
 - Use Page Object Models for reusability
 - Use data-testid attributes for stable selectors
 - Write independent tests (no dependencies)
@@ -327,6 +333,7 @@ page.screenshot(path="full-page.png", full_page=True)
 - Mock external services when needed
 
 ### DON'T ❌
+
 - Don't use sleep() - use auto-waiting
 - Don't rely on specific timing
 - Don't use brittle selectors (like :nth-child)
@@ -336,18 +343,22 @@ page.screenshot(path="full-page.png", full_page=True)
 ## Troubleshooting
 
 ### Tests fail with "Target closed"
+
 **Cause:** Browser closed unexpectedly  
 **Fix:** Check for console errors, increase timeouts
 
 ### Element not found
+
 **Cause:** Selector wrong or element not rendered  
 **Fix:** Use Playwright Inspector to debug selectors
 
 ### Flaky tests
+
 **Cause:** Race conditions, network issues  
 **Fix:** Use proper auto-waiting, mock network requests
 
 ### Slow tests
+
 **Cause:** Too many network requests  
 **Fix:** Mock API responses, use parallel execution
 
@@ -361,6 +372,7 @@ page.screenshot(path="full-page.png", full_page=True)
 ---
 
 **Next Steps:**
+
 1. Set up Python virtual environment
 2. Install dependencies
 3. Create first test

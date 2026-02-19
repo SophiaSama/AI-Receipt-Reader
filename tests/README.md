@@ -325,7 +325,7 @@ describe('My Feature', () => {
 ```typescript
 import { createMockImageFile, createFormData } from '../helpers/testUtils';
 
-const file = createMockImageFile('receipt.jpg');
+const file = createMockImageFile('receipt.png');
 const formData = createFormData(metadata, file);
 ```
 

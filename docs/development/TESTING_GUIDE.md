@@ -5,6 +5,7 @@ This document describes the testing infrastructure and practices for the SmartRe
 ## ✨ Quick Start
 
 **Just run tests - the pre-build script handles everything:**
+
 ```powershell
 npm test
 ```
@@ -30,6 +31,7 @@ The automated test setup system builds the backend automatically before running 
 ## 🎯 Overview
 
 SmartReceiptReader uses **Vitest** as the testing framework, providing:
+
 - ✅ Fast unit and integration tests
 - ✅ TypeScript support out of the box
 - ✅ Compatible with Vite's config
@@ -53,6 +55,7 @@ SmartReceiptReader uses **Vitest** as the testing framework, providing:
 ### 1. Integration Tests (`tests/integration/`)
 
 Test API routes end-to-end within the application:
+
 - **Test Mode Architecture** - Uses in-memory storage for fast, reliable tests
 - Mock HTTP requests/responses (no live server needed)
 - No external dependencies (S3, DynamoDB, Mistral AI)
@@ -62,6 +65,7 @@ Test API routes end-to-end within the application:
 **When to use:** Testing API logic, request/response handling, validation, CRUD operations
 
 **Key Features:**
+
 - In-memory receipt store (`api/_lib/receiptsStore.ts`)
 - Dual-mode API endpoints (production vs test)
 - Request body handling utilities (`readRawBody`)
@@ -70,6 +74,7 @@ Test API routes end-to-end within the application:
 ### 2. E2E Tests (`tests/e2e/`)
 
 Test against a live server (local or deployed):
+
 - Real HTTP requests with `fetch`
 - Tests full stack including routing and deployment
 - Can test against `vercel dev` or production
@@ -81,6 +86,7 @@ Test against a live server (local or deployed):
 ### 3. Unit Tests (Future)
 
 Test individual functions and components:
+
 - Test utilities in isolation
 - Test React components with React Testing Library
 - Test business logic without dependencies
@@ -94,6 +100,7 @@ Test individual functions and components:
 The project uses a **dual-mode architecture** for API endpoints:
 
 #### Production Mode
+
 - Reads from Node.js streams (`req.on('data')`)
 - Calls backend Lambda handlers
 - Uses AWS services (S3, DynamoDB)
@@ -101,6 +108,7 @@ The project uses a **dual-mode architecture** for API endpoints:
 - Requires multipart/form-data
 
 #### Test Mode
+
 - Reads from pre-parsed objects (`req.body`)
 - Uses in-memory storage (`receiptsStore`)
 - No external dependencies
@@ -129,6 +137,7 @@ export async function clearReceipts(): Promise<void>;
 ```
 
 **Benefits:**
+
 - ✅ Fast - No network calls or I/O
 - ✅ Reliable - No flaky external dependencies
 - ✅ Isolated - Each test starts with clean state
@@ -139,6 +148,7 @@ export async function clearReceipts(): Promise<void>;
 Location: `api/_lib/readRawBody.ts`
 
 Handles multiple request shapes:
+
 1. **Node.js streams** - Production Vercel runtime
 2. **Pre-parsed objects** - Test harness
 3. **Raw buffers** - Some frameworks
@@ -189,6 +199,7 @@ Test execution begins
 ```
 
 The build script (`scripts/pre-test-build.cjs`) is:
+
 - **Explicit** - Called directly in CI/CD workflows
 - **Smart** - Only builds if necessary
 - **Fast** - Skips build if artifacts exist
@@ -207,9 +218,11 @@ backend/dist/src/handlers/manualSave.js  ← Must exist!
 ```
 
 **Without build:**
+
 - ❌ Tests fail with "Cannot find module" errors
 
 **With automated build:**
+
 - ✅ Backend compiled before tests run
 - ✅ Works in local dev and CI/CD
 - ✅ Clear error messages if build fails
@@ -440,7 +453,7 @@ describe('E2E: My Feature', () => {
 import { createMockImageFile, createFormData } from '../tests/helpers/testUtils';
 
 // Create a mock image file
-const file = createMockImageFile('receipt.jpg');
+const file = createMockImageFile('receipt.png');
 
 // Create form data with metadata and file
 const metadata = { merchantName: 'Test Store', total: 50 };
@@ -493,6 +506,7 @@ When you run any test command (`npm test`, `npm run test:integration`, etc.), th
 ### When It Works
 
 **✅ Works with these commands:**
+
 ```powershell
 npm test                    # Local: npm install + npm test
 npm run test:integration    # Local: npm install + test:integration
@@ -502,6 +516,7 @@ npm install && npm test    # Explicit install + test
 ```
 
 **❌ Does NOT work with these:**
+
 ```bash
 npm ci && npm test         # CI: npm ci skips lifecycle scripts!
 npx vitest                 # Direct vitest call bypasses npm
@@ -509,6 +524,7 @@ npx vitest                 # Direct vitest call bypasses npm
 ```
 
 **Why `npm ci` Skips Lifecycle Scripts:**
+
 - Security: Prevents arbitrary code execution during install
 - Predictability: Ensures reproducible builds
 - Speed: Faster in CI environments
@@ -516,6 +532,7 @@ npx vitest                 # Direct vitest call bypasses npm
 
 **Solution for CI/CD:**
 Always explicitly build before testing:
+
 ```yaml
 # GitHub Actions / GitLab CI / etc.
 - run: npm ci
@@ -555,6 +572,7 @@ npx vitest
 **Subsequent runs:** ~2-5 seconds (only recompiles changed files)
 
 **Tips for faster testing:**
+
 - Use watch mode: `npm test -- --watch`
 - Run specific tests: `npm test api.test.ts`
 - Keep backend changes separate from frontend changes
@@ -564,6 +582,7 @@ npx vitest
 If the automatic build fails:
 
 1. **Check backend dependencies:**
+
    ```powershell
    cd backend
    npm install
@@ -571,11 +590,13 @@ If the automatic build fails:
    ```
 
 2. **Try manual build:**
+
    ```powershell
    npm run build:backend
    ```
 
 3. **Check TypeScript errors:**
+
    ```powershell
    cd backend
    npm run build -- --noEmit
@@ -590,6 +611,7 @@ If the automatic build fails:
 ### Test Setup File
 
 The `tests/setup.ts` file runs before all tests and:
+
 - Sets environment variables (`USE_LOCAL_STORAGE=true`)
 - Configures test timeouts
 - Imports necessary globals from Vitest
@@ -597,6 +619,7 @@ The `tests/setup.ts` file runs before all tests and:
 **Location:** `tests/setup.ts`
 
 **Configured in:** `vitest.config.ts`
+
 ```typescript
 export default defineConfig({
   test: {
@@ -613,18 +636,21 @@ export default defineConfig({
 ### Important: `npm ci` vs `npm install`
 
 **Local Development:**
+
 ```powershell
 npm install  # Installs and runs lifecycle scripts (pretest, postinstall, etc.)
 npm test     # Runs pretest → build:backend → test
 ```
 
 **CI/CD Environments:**
+
 ```bash
 npm ci       # Clean install, does NOT run lifecycle scripts by default!
 npm test     # Will NOT run pretest hook automatically
 ```
 
 **Why This Matters:**
+
 - `npm ci` is designed for CI environments (faster, reproducible)
 - It skips lifecycle scripts for security and predictability
 - Tests will fail if backend isn't built explicitly in CI
@@ -651,12 +677,14 @@ GitHub Actions explicitly builds the backend before running tests:
 ### GitHub Actions
 
 Tests run automatically on:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 
 Workflow file: `.github/workflows/test.yml`
 
 **What it does:**
+
 1. ✅ Checks out code
 2. ✅ Sets up Node.js (20.x, 22.x)
 3. ✅ Installs dependencies (`npm ci`)
@@ -742,6 +770,7 @@ it('should do something', async () => {
 ### "Cannot find module 'vitest'"
 
 Install dependencies:
+
 ```powershell
 npm install
 ```
@@ -751,22 +780,26 @@ npm install
 **This issue is now automatically fixed!** The `pretest` script builds the backend before tests run.
 
 If you still see this error:
+
 1. Make sure you have the latest `package.json` with `"pretest": "npm run build:backend"`
 2. Try running manually: `npm run build:backend`
 3. Check that `backend/dist/src/handlers/` contains `.js` files
 
 **Why this happens:**
+
 - Tests import API functions from `/api/*.ts`
 - API functions dynamically import handlers from `backend/dist/src/handlers/`
 - If backend isn't compiled, these imports fail
 
 **How it's fixed:**
+
 - The `pretest` lifecycle script runs `npm run build:backend` before every test
 - This ensures `backend/dist/` always exists and is up-to-date
 
 ### "Module not found: backend/dist/..."
 
 **Old Solution (manual):**
+
 ```powershell
 cd backend && npm run build && cd ..
 ```
@@ -788,6 +821,7 @@ npm install
 ```
 
 This typically happens after:
+
 - Updating dependencies
 - Pulling changes from Git
 - Switching branches
@@ -795,6 +829,7 @@ This typically happens after:
 ### Tests Timing Out
 
 Increase timeout in test file:
+
 ```typescript
 it('slow test', async () => {
   // Test code
@@ -802,6 +837,7 @@ it('slow test', async () => {
 ```
 
 Or globally in `vitest.config.ts`:
+
 ```typescript
 testTimeout: 30000
 ```
@@ -809,11 +845,13 @@ testTimeout: 30000
 ### E2E Tests Failing
 
 Make sure server is running:
+
 ```powershell
 npm run dev
 ```
 
 Or set correct API URL:
+
 ```powershell
 $env:API_URL="http://localhost:3000"
 npm run test:e2e
@@ -822,6 +860,7 @@ npm run test:e2e
 ### Coverage Not Generated
 
 Install coverage provider:
+
 ```powershell
 npm install --save-dev @vitest/coverage-v8
 ```
