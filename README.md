@@ -18,8 +18,7 @@
 
 ## Demo
 
-![Add Receipt UI](docs/assets/AddReceiptUI.png)
-![History UI](docs/assets/HistoryUI.png)
+![New UI](docs/assets/new_UI.png)
 
 ## 📖 Overview
 
@@ -30,7 +29,8 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - 🤖 **AI-Powered OCR** - Mistral AI extracts text from receipt images
 - 🧠 **Smart Parsing** - LLM structures data automatically (merchant, date, items, total)
 - ☁️ **Cloud Backend** - Serverless architecture on AWS Lambda or Vercel
-- 📊 **Rich Dashboard** - Beautiful statistics and expense visualization
+- 🎨 **Soft UI** - Beautiful light glassmorphism aesthetic with pink/lavender accents
+- 📊 **Rich Dashboard** - Compact statistics and expense visualization
 - 🔍 **Advanced Filtering** - Search and filter by merchant, amount, date range
 - 📥 **CSV Export** - Download your expense data anytime
 - ✍️ **Manual Entry** - Optionally add receipts manually
@@ -291,6 +291,7 @@ Get all receipts
 Delete receipt and image
 
 **Request:**
+
 - Query Parameter: `id` (receipt ID)
 
 **Response:** 204 No Content
@@ -366,6 +367,7 @@ vercel
 - `DYNAMODB_TABLE_NAME` - `smart-receipts`
 
 📚 **Documentation:**
+
 - **[docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md](./docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md)** - Complete deployment setup
 - **[docs/development/VERCEL_DEVELOPMENT_GUIDE.md](./docs/development/VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices & troubleshooting
 
@@ -480,6 +482,7 @@ npm run test:coverage
 ```
 
 **Test Mode Features:**
+
 - ✅ **In-memory storage** - No AWS credentials needed
 - ✅ **Fast execution** - ~2-5 seconds for full suite
 - ✅ **Automatic setup** - Backend builds before tests run
@@ -605,6 +608,7 @@ Need help? Check these resources:
 
 ### Planned Features
 
+- [x] Soft Feminine UI Redesign
 - [ ] Multi-user support with authentication
 - [ ] Mobile app (React Native)
 - [ ] Receipt categories & tags
@@ -613,7 +617,7 @@ Need help? Check these resources:
 - [ ] Advanced analytics & reports
 - [ ] Receipt splitting for shared expenses
 - [ ] Multiple currency support
-- [ ] Dark mode theme
+- [ ] Dark mode toggle
 
 ---
 

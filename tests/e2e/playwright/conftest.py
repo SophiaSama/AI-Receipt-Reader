@@ -108,7 +108,7 @@ def sample_receipt_image():
     """Path to sample receipt image"""
     # Fixtures are stored in tests/fixtures/ subdirectory
     fixtures_dir = Path(__file__).parent / "tests" / "fixtures"
-    image_path = fixtures_dir / "sample-receipt.jpg"
+    image_path = fixtures_dir / "sample-receipt.png"
     
     if not image_path.exists():
         # Create sample image if it doesn't exist
