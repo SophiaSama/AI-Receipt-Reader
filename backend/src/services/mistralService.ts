@@ -11,7 +11,11 @@ const mistralClient = apiKey && apiKey !== 'your_mistral_api_key_here'
 /**
  * Extract text from a receipt image using Mistral AI vision capabilities
  */
-export const extractTextFromImage = async (imageBase64: string, mimeType: string): Promise<MistralOCRResult> => {
+export const extractTextFromImage = async (
+    imageBase64: string,
+    mimeType: string,
+    model: string = 'pixtral-12b-2409'
+): Promise<MistralOCRResult> => {
     if (!mistralClient) {
         console.warn('Mistral API key not configured - using mock OCR response');
         return mockOCRResponse();
@@ -19,7 +23,7 @@ export const extractTextFromImage = async (imageBase64: string, mimeType: string
 
     try {
         const response = await mistralClient.chat.complete({
-            model: 'pixtral-12b-2409',
+            model,
             messages: [
                 {
                     role: 'user',
@@ -48,7 +52,10 @@ export const extractTextFromImage = async (imageBase64: string, mimeType: string
 /**
  * Structure raw receipt text into structured JSON using Mistral LLM
  */
-export const structureReceiptData = async (rawText: string): Promise<MistralStructuredResult> => {
+export const structureReceiptData = async (
+    rawText: string,
+    model: string = 'mistral-large-latest'
+): Promise<MistralStructuredResult> => {
     if (!mistralClient) {
         console.warn('Mistral API key not configured - using mock structured response');
         return mockStructuredResponse(rawText);
@@ -56,7 +63,7 @@ export const structureReceiptData = async (rawText: string): Promise<MistralStru
 
     try {
         const response = await mistralClient.chat.complete({
-            model: 'mistral-large-latest',
+            model,
             messages: [
                 {
                     role: 'system',
@@ -105,7 +112,7 @@ Rules:
 /**
  * Mock OCR response for development without API key
  */
-const mockOCRResponse = (): MistralOCRResult => {
+export const mockOCRResponse = (): MistralOCRResult => {
     return {
         rawText: `DEMO GROCERY STORE
 123 Main Street
@@ -128,7 +135,7 @@ Thank you for shopping!`,
 /**
  * Mock structured response for development without API key
  */
-const mockStructuredResponse = (rawText: string): MistralStructuredResult => {
+export const mockStructuredResponse = (rawText: string): MistralStructuredResult => {
     // Try to extract a total from the raw text
     const totalMatch = rawText.match(/TOTAL[:\s]*\$?([\d.]+)/i);
     const total = totalMatch ? parseFloat(totalMatch[1]) : 27.49;

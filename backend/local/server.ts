@@ -61,7 +61,8 @@ app.post('/api/process', upload.single('file'), async (req: Request, res: Respon
         const receipt = await processReceiptHandler(
             req.file.buffer,
             req.file.originalname,
-            req.file.mimetype
+            req.file.mimetype,
+            typeof req.body?.model === 'string' ? req.body.model : undefined
         );
 
         res.json(receipt);
