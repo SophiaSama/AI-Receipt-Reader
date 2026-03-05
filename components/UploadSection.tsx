@@ -54,10 +54,11 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   return (
     <div className="w-full" data-testid="upload-section">
       <div className="mb-4">
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+        <label htmlFor="ai-model-select" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
           AI Model
         </label>
         <select
+          id="ai-model-select"
           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           value={modelId}
           onChange={(e) => onModelChange(e.target.value)}
