@@ -4,7 +4,7 @@ import { parseMultipart } from '../utils/parseMultipart';
 import { success, badRequest, serverError } from '../utils/responseHelper';
 import { uploadImage } from '../services/s3Service';
 import { saveReceipt } from '../services/dynamoService';
-import { extractTextFromImage, structureReceiptData } from '../services/mistralService';
+import { extractTextFromImage, structureReceiptData, resolveAiModel } from '../services/aiProviderService';
 
 /**
  * POST /api/process
@@ -47,13 +47,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const imageUrl = await uploadImage(file.content, file.filename, file.contentType);
         console.log(`Image uploaded: ${imageUrl}`);
 
-        // Step 2: Extract text using Mistral OCR
+        const modelId = parsed.fields.model || parsed.fields.modelId;
+        const resolvedModel = resolveAiModel(modelId);
+
+        // Step 2: Extract text using selected OCR model
         const imageBase64 = file.content.toString('base64');
-        const ocrResult = await extractTextFromImage(imageBase64, file.contentType);
+        const ocrResult = await extractTextFromImage(imageBase64, file.contentType, resolvedModel.id);
         console.log(`OCR complete, extracted ${ocrResult.rawText.length} characters`);
 
-        // Step 3: Structure data using Mistral LLM
-        const structuredData = await structureReceiptData(ocrResult.rawText);
+        // Step 3: Structure data using selected LLM
+        const structuredData = await structureReceiptData(ocrResult.rawText, resolvedModel.id);
         console.log(`Structured data: ${JSON.stringify(structuredData)}`);
 
         // Step 4: Create complete receipt record
@@ -86,7 +89,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 export const processReceiptHandler = async (
     fileBuffer: Buffer,
     filename: string,
-    contentType: string
+    contentType: string,
+    modelId?: string
 ): Promise<ReceiptData> => {
     // Validate file type
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
@@ -97,12 +101,14 @@ export const processReceiptHandler = async (
     // Step 1: Upload to S3/local storage
     const imageUrl = await uploadImage(fileBuffer, filename, contentType);
 
-    // Step 2: Extract text using Mistral OCR
-    const imageBase64 = fileBuffer.toString('base64');
-    const ocrResult = await extractTextFromImage(imageBase64, contentType);
+    const resolvedModel = resolveAiModel(modelId);
 
-    // Step 3: Structure data using Mistral LLM
-    const structuredData = await structureReceiptData(ocrResult.rawText);
+    // Step 2: Extract text using selected OCR model
+    const imageBase64 = fileBuffer.toString('base64');
+    const ocrResult = await extractTextFromImage(imageBase64, contentType, resolvedModel.id);
+
+    // Step 3: Structure data using selected LLM
+    const structuredData = await structureReceiptData(ocrResult.rawText, resolvedModel.id);
 
     // Step 4: Create complete receipt record
     const receipt: ReceiptData = {

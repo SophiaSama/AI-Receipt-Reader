@@ -7,9 +7,19 @@ const API_BASE = '/api';
  * According to architecture: 
  * Frontend -> API Gateway -> Lambda -> (S3 + Mistral OCR + Mistral LLM + DynamoDB)
  */
-export const processAndSaveReceipt = async (file: File): Promise<ReceiptData> => {
+export interface ProcessReceiptOptions {
+  modelId?: string;
+}
+
+export const processAndSaveReceipt = async (
+  file: File,
+  options: ProcessReceiptOptions = {}
+): Promise<ReceiptData> => {
   const formData = new FormData();
   formData.append('file', file);
+  if (options.modelId) {
+    formData.append('model', options.modelId);
+  }
 
   const response = await fetch(`${API_BASE}/process`, {
     method: 'POST',

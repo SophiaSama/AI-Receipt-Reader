@@ -8,6 +8,7 @@ import processHandler from '@/api/process';
 import receiptsHandler from '@/api/receipts';
 import manualHandler from '@/api/receipts/manual';
 import deleteHandler from '@/api/receipts/delete';
+import { resolveAiModel, DEFAULT_AI_MODEL_ID } from '@backend/services/aiProviderService';
 
 // Helper to create mock Vercel request/response
 function createMockRequest(options: {
@@ -226,6 +227,35 @@ describe('API Integration Tests', () => {
 
     // Note: Testing with actual file upload requires multipart parsing
     // which is complex in unit tests. Consider E2E tests for full flow.
+  });
+
+  describe('AI Model Selection', () => {
+    it('should default to the configured model when omitted', () => {
+      const resolved = resolveAiModel();
+      if (process.env.OPENROUTER_API_KEY) {
+        expect(resolved.id).toBe(DEFAULT_AI_MODEL_ID);
+      } else {
+        expect(resolved.provider).toBe('mistral');
+      }
+    });
+
+    it('should accept a valid model id', () => {
+      const resolved = resolveAiModel('google/gemini-2.5-flash-lite');
+      if (process.env.OPENROUTER_API_KEY) {
+        expect(resolved.id).toBe('google/gemini-2.5-flash-lite');
+      } else {
+        expect(resolved.provider).toBe('mistral');
+      }
+    });
+
+    it('should fall back when model id is invalid', () => {
+      const resolved = resolveAiModel('invalid-model-id');
+      if (process.env.OPENROUTER_API_KEY) {
+        expect(resolved.id).toBe(DEFAULT_AI_MODEL_ID);
+      } else {
+        expect(resolved.provider).toBe('mistral');
+      }
+    });
   });
 
   describe('Full Workflow Integration', () => {

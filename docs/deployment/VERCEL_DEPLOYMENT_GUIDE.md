@@ -432,6 +432,10 @@ aws s3api put-bucket-policy `
 | Variable Name | Value | Description |
 |---------------|-------|-------------|
 | `MISTRAL_API_KEY` | `your-mistral-api-key` | Get from https://console.mistral.ai/ |
+| `OPENROUTER_API_KEY` | `your-openrouter-api-key` | Optional (missing key falls back to Mistral) |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Optional override |
+| `OPENROUTER_HTTP_REFERER` | `http://localhost:3000` | Optional referrer |
+| `OPENROUTER_APP_NAME` | `SmartReceiptReader` | Optional app name |
 | `USE_LOCAL_STORAGE` | `false` | Use AWS services (not in-memory) |
 | `AWS_REGION` | `ap-southeast-1` | Your AWS region |
 | `AWS_ACCESS_KEY_ID` | `AKIAIOSFODNN7EXAMPLE` | IAM user access key |
@@ -639,6 +643,10 @@ Add these environment variables in Vercel Dashboard:
 | `S3_BUCKET_NAME` | `smart-receipt-images-123456789` | Your S3 bucket |
 | `DYNAMODB_TABLE_NAME` | `smart-receipts` | Your DynamoDB table |
 | `MISTRAL_API_KEY` | `your-mistral-key` | Your Mistral API key |
+| `OPENROUTER_API_KEY` | `your-openrouter-key` | Optional (missing key falls back to Mistral) |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Optional override |
+| `OPENROUTER_HTTP_REFERER` | `http://localhost:3000` | Optional referrer |
+| `OPENROUTER_APP_NAME` | `SmartReceiptReader` | Optional app name |
 
 > **Note:** You may need minimal AWS credentials to initialize the STS client, or you can use Vercel's AWS integration if available.
 
@@ -998,7 +1006,7 @@ Before deploying to Vercel, ensure:
 - [ ] DynamoDB table `smart-receipts` created
 - [ ] S3 bucket created with CORS enabled
 - [ ] S3 bucket policy allows public read
-- [ ] Mistral API key obtained
+- [ ] Mistral/OpenRouter API keys obtained (as needed)
 - [ ] All environment variables configured in Vercel
 - [ ] Backend code compiled (`npm run build`)
 - [ ] Vercel CLI installed

@@ -15,6 +15,17 @@ const initialFilters: FilterCriteria = {
   endDate: '',
 };
 
+const aiModelOptions = [
+  { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { id: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+  { id: 'x-ai/grok-4-fast', label: 'Grok 4 Fast' },
+  { id: 'qwen/qwen-vl-plus', label: 'Qwen VL Plus' },
+  { id: 'pixtral-12b-2409', label: 'Pixtral 12B (Mistral)' },
+  { id: 'qwen/qwen3-vl-235b-a22b-instruct', label: 'Qwen3 VL 235B' },
+];
+
+const defaultAiModelId = 'google/gemini-2.5-flash';
+
 function App() {
   const [receipts, setReceipts] = useState<ReceiptData[]>([]);
   const [status, setStatus] = useState<ProcessingStatus>({ isProcessing: false, step: 'idle' });
@@ -22,6 +33,7 @@ function App() {
   const [filters, setFilters] = useState<FilterCriteria>(initialFilters);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState(defaultAiModelId);
 
   useEffect(() => {
     const loadData = async () => {
@@ -55,7 +67,7 @@ function App() {
 
     try {
       // Backend now handles S3, Mistral OCR, and DynamoDB in one go
-      const processedReceipt = await processAndSaveReceipt(file);
+      const processedReceipt = await processAndSaveReceipt(file, { modelId: selectedModelId });
 
       setReceipts(prev => [processedReceipt, ...prev]);
       setStatus({ isProcessing: false, step: 'complete' });
@@ -210,7 +222,13 @@ function App() {
                   isSubmitting={status.isProcessing}
                 />
               ) : (
-                <UploadSection onFileSelect={handleFileUpload} status={status} />
+                <UploadSection
+                  onFileSelect={handleFileUpload}
+                  status={status}
+                  modelId={selectedModelId}
+                  modelOptions={aiModelOptions}
+                  onModelChange={setSelectedModelId}
+                />
               )}
             </div>
           </div>

@@ -4,9 +4,18 @@ import { ProcessingStatus } from '../types';
 interface UploadSectionProps {
   onFileSelect: (file: File) => void;
   status: ProcessingStatus;
+  modelId: string;
+  modelOptions: { id: string; label: string }[];
+  onModelChange: (modelId: string) => void;
 }
 
-export const UploadSection: React.FC<UploadSectionProps> = ({ onFileSelect, status }) => {
+export const UploadSection: React.FC<UploadSectionProps> = ({
+  onFileSelect,
+  status,
+  modelId,
+  modelOptions,
+  onModelChange,
+}) => {
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -44,6 +53,24 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onFileSelect, stat
 
   return (
     <div className="w-full" data-testid="upload-section">
+      <div className="mb-4">
+        <label htmlFor="ai-model-select" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+          AI Model
+        </label>
+        <select
+          id="ai-model-select"
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          value={modelId}
+          onChange={(e) => onModelChange(e.target.value)}
+          disabled={isProcessing}
+        >
+          {modelOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
       <div
         className={`relative flex flex-col items-center justify-center w-full h-36 border-[1.5px] border-dashed rounded-xl transition-all duration-300 ease-out group/dropzone
           ${dragActive ? 'border-primary bg-primary/5' : 'border-pink-200 bg-blush/30'}

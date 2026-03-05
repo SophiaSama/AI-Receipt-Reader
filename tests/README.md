@@ -86,6 +86,11 @@ All endpoints support **test mode** for fast, reliable integration testing:
    - ✅ Rejects request without file
    - ✅ Rejects non-POST requests with 405
 
+6. **AI Model Selection**
+    - ✅ Defaults to the configured model when omitted
+    - ✅ Accepts valid model IDs
+    - ✅ Falls back on invalid model IDs
+
 ### Integration Workflows
 
 - ✅ **Full CRUD Workflow**: Create → List → Delete
@@ -151,6 +156,7 @@ Tests use the following environment:
 - `USE_LOCAL_STORAGE=true` - Enables in-memory storage mode
 - `NODE_ENV=test` - Test environment flag
 - `MISTRAL_API_KEY` - From your environment or defaults to 'test-key'
+- `OPENROUTER_API_KEY` - Optional (missing key falls back to Mistral)
 
 Set in `tests/setup.ts` automatically.
 
