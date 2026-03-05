@@ -52,6 +52,13 @@ const AI_MODEL_CATALOG: AiModelConfig[] = [
         ocrModel: 'pixtral-12b-2409',
         structModel: 'mistral-large-latest',
     },
+    {
+        id: 'qwen/qwen3-vl-235b-a22b-instruct',
+        label: 'Qwen3 VL 235B',
+        provider: 'openrouter',
+        ocrModel: 'qwen/qwen3-vl-235b-a22b-instruct',
+        structModel: 'qwen/qwen3-vl-235b-a22b-instruct',
+    },
 ];
 
 export const DEFAULT_AI_MODEL_ID = 'google/gemini-2.5-flash';

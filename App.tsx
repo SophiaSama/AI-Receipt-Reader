@@ -21,6 +21,7 @@ const aiModelOptions = [
   { id: 'x-ai/grok-4-fast', label: 'Grok 4 Fast' },
   { id: 'qwen/qwen-vl-plus', label: 'Qwen VL Plus' },
   { id: 'pixtral-12b-2409', label: 'Pixtral 12B (Mistral)' },
+  { id: 'qwen/qwen3-vl-235b-a22b-instruct', label: 'Qwen3 VL 235B' },
 ];
 
 const defaultAiModelId = 'google/gemini-2.5-flash';
