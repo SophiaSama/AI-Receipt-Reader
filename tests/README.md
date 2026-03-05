@@ -156,7 +156,7 @@ Tests use the following environment:
 - `USE_LOCAL_STORAGE=true` - Enables in-memory storage mode
 - `NODE_ENV=test` - Test environment flag
 - `MISTRAL_API_KEY` - From your environment or defaults to 'test-key'
-- `OPENROUTER_API_KEY` - Optional (only needed for non-Mistral models in E2E)
+- `OPENROUTER_API_KEY` - Optional (missing key falls back to Mistral)
 
 Set in `tests/setup.ts` automatically.
 

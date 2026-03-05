@@ -127,7 +127,7 @@ Before running E2E tests, ensure:
 - [ ] **Python venv setup**: `cd tests/e2e/playwright && .\setup.ps1`
 - [ ] **Dev server running**: `npm run dev` (in separate terminal)
 - [ ] **Server accessible**: Open http://localhost:3000 in browser
-- [ ] **OpenRouter key (optional)**: Set `OPENROUTER_API_KEY` if testing non-Mistral models
+- [ ] **OpenRouter key (optional)**: Set `OPENROUTER_API_KEY` if testing non-Mistral models (missing key falls back to Mistral)
 
 ---
 

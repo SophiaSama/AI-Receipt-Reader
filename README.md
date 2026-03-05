@@ -124,7 +124,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - npm 10.x or higher (comes with Node.js)
 - AWS Account (for production deployment)
 - Mistral AI API Key ([Get one here](https://console.mistral.ai/))
-- OpenRouter API Key (required for non-Mistral models)
+- OpenRouter API Key (optional; missing key falls back to Mistral)
 
 ### 1️⃣ Clone & Install
 
@@ -367,7 +367,7 @@ vercel
 **Environment Variables in Vercel Dashboard:**
 
 - `MISTRAL_API_KEY` - Your Mistral API key
-- `OPENROUTER_API_KEY` - Required for non-Mistral models
+- `OPENROUTER_API_KEY` - Optional (missing key falls back to Mistral)
 - `OPENROUTER_BASE_URL` - Optional override
 - `OPENROUTER_HTTP_REFERER` - Optional referrer
 - `OPENROUTER_APP_NAME` - Optional app name
@@ -534,7 +534,7 @@ For development without AI provider keys:
 # In backend/.env
 MISTRAL_API_KEY=your_mistral_api_key_here
 # (Keep default value)
-# Optional: only set if you want real OpenRouter responses
+# Optional: only set if you want real OpenRouter responses (missing key falls back to Mistral)
 # OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 

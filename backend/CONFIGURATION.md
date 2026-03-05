@@ -10,7 +10,7 @@ Create a `.env` file in the `backend/` directory with the following variables:
 # Mistral AI API Key (get from https://console.mistral.ai/)
 MISTRAL_API_KEY=your_actual_mistral_api_key_here
 
-# OpenRouter API Key (required for non-Mistral models)
+# OpenRouter API Key (optional; if missing, Mistral is used by default)
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 
 # OpenRouter configuration (optional)
@@ -43,7 +43,7 @@ When deploying to Vercel, set these in the Vercel dashboard:
 2. Navigate to "Environment Variables"
 3. Add:
    - `MISTRAL_API_KEY` (your API key)
-   - `OPENROUTER_API_KEY` (required for non-Mistral models)
+   - `OPENROUTER_API_KEY` (optional; missing key falls back to Mistral)
    - `OPENROUTER_BASE_URL` (optional override)
    - `OPENROUTER_HTTP_REFERER` (optional)
    - `OPENROUTER_APP_NAME` (optional)
@@ -68,4 +68,4 @@ When deploying to Vercel, set these in the Vercel dashboard:
 
 The backend includes mock responses for development without an API key. Just keep `MISTRAL_API_KEY` as the default value or don't set it.
 
-If `OPENROUTER_API_KEY` is missing, OpenRouter-backed models also fall back to mock responses.
+If `OPENROUTER_API_KEY` is missing, the backend defaults to Mistral for AI processing. OpenRouter-backed models fall back to mock responses when selected without a key.

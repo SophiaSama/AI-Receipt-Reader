@@ -5,7 +5,7 @@ The frontend has been refactored to align with the **Backend-Orchestrated AI** a
 ## Architecture Flow
 `User App` -> `API Gateway` -> `Lambda` -> `(S3 + OCR/LLM (Mistral/OpenRouter) + DynamoDB)`
 
-When a non-Mistral model is selected, the Lambda uses OpenRouter for OCR and structuring. Ensure `OPENROUTER_API_KEY` is configured in your environment.
+When a non-Mistral model is selected, the Lambda uses OpenRouter for OCR and structuring. If `OPENROUTER_API_KEY` is missing, it falls back to the default Mistral model.
 
 ## Required API Endpoints
 

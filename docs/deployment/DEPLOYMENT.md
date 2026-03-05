@@ -71,7 +71,7 @@
 - Mock data appears instead of real OCR results
 
 **Solutions:**
-1. Verify `MISTRAL_API_KEY` and/or `OPENROUTER_API_KEY` are set correctly
+1. Verify `MISTRAL_API_KEY` is set; set `OPENROUTER_API_KEY` only if using non-Mistral models
 2. Check API keys are valid: https://console.mistral.ai/ or https://openrouter.ai/
 3. Verify API key permissions and account limits
 4. If using OpenRouter, confirm `OPENROUTER_HTTP_REFERER` and `OPENROUTER_APP_NAME` are set if required

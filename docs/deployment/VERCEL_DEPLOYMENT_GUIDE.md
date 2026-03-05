@@ -432,7 +432,7 @@ aws s3api put-bucket-policy `
 | Variable Name | Value | Description |
 |---------------|-------|-------------|
 | `MISTRAL_API_KEY` | `your-mistral-api-key` | Get from https://console.mistral.ai/ |
-| `OPENROUTER_API_KEY` | `your-openrouter-api-key` | Required for non-Mistral models |
+| `OPENROUTER_API_KEY` | `your-openrouter-api-key` | Optional (missing key falls back to Mistral) |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Optional override |
 | `OPENROUTER_HTTP_REFERER` | `http://localhost:3000` | Optional referrer |
 | `OPENROUTER_APP_NAME` | `SmartReceiptReader` | Optional app name |
@@ -643,7 +643,7 @@ Add these environment variables in Vercel Dashboard:
 | `S3_BUCKET_NAME` | `smart-receipt-images-123456789` | Your S3 bucket |
 | `DYNAMODB_TABLE_NAME` | `smart-receipts` | Your DynamoDB table |
 | `MISTRAL_API_KEY` | `your-mistral-key` | Your Mistral API key |
-| `OPENROUTER_API_KEY` | `your-openrouter-key` | Required for non-Mistral models |
+| `OPENROUTER_API_KEY` | `your-openrouter-key` | Optional (missing key falls back to Mistral) |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Optional override |
 | `OPENROUTER_HTTP_REFERER` | `http://localhost:3000` | Optional referrer |
 | `OPENROUTER_APP_NAME` | `SmartReceiptReader` | Optional app name |

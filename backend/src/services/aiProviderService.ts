@@ -63,15 +63,35 @@ const openRouterAppName = process.env.OPENROUTER_APP_NAME || 'SmartReceiptReader
 
 export const listAiModels = (): AiModelConfig[] => [...AI_MODEL_CATALOG];
 
+const getMistralFallbackModel = (): AiModelConfig => {
+    return (
+        AI_MODEL_CATALOG.find((model) => model.provider === 'mistral') ||
+        AI_MODEL_CATALOG[AI_MODEL_CATALOG.length - 1]
+    );
+};
+
 export const resolveAiModel = (requestedId?: string): AiModelConfig => {
     if (requestedId) {
         const match = AI_MODEL_CATALOG.find((model) => model.id === requestedId);
         if (match) {
+            if (match.provider === 'openrouter' && !openRouterApiKey) {
+                console.warn('OPENROUTER_API_KEY not configured - falling back to Mistral model');
+                return getMistralFallbackModel();
+            }
             return match;
         }
     }
 
-    return AI_MODEL_CATALOG.find((model) => model.id === DEFAULT_AI_MODEL_ID) || AI_MODEL_CATALOG[0];
+    const defaultModel =
+        AI_MODEL_CATALOG.find((model) => model.id === DEFAULT_AI_MODEL_ID) ||
+        AI_MODEL_CATALOG[0];
+
+    if (defaultModel.provider === 'openrouter' && !openRouterApiKey) {
+        console.warn('OPENROUTER_API_KEY not configured - defaulting to Mistral model(pixtral-12b-2409)');
+        return getMistralFallbackModel();
+    }
+
+    return defaultModel;
 };
 
 export const extractTextFromImage = async (
