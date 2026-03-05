@@ -22,12 +22,13 @@
 
 ## 📖 Overview
 
-SmartReceipt is a modern, cloud-native expense tracking application that uses **Mistral AI** to automatically extract and structure receipt data. Simply upload a receipt image, and let AI handle the rest - no manual data entry required!
+SmartReceipt is a modern, cloud-native expense tracking application that uses **Mistral AI** and **OpenRouter-powered models** to automatically extract and structure receipt data. Simply upload a receipt image, choose an AI model if desired, and let AI handle the rest - no manual data entry required!
 
 ### 🎯 Key Highlights
 
-- 🤖 **AI-Powered OCR** - Mistral AI extracts text from receipt images
+- 🤖 **AI-Powered OCR** - Extract text from receipt images with multiple model choices
 - 🧠 **Smart Parsing** - LLM structures data automatically (merchant, date, items, total)
+- 🎛️ **Model Selection** - Choose between Mistral and OpenRouter-backed models
 - ☁️ **Cloud Backend** - Serverless architecture on AWS Lambda or Vercel
 - 🎨 **Soft UI** - Beautiful light glassmorphism aesthetic with pink/lavender accents
 - 📊 **Rich Dashboard** - Compact statistics and expense visualization
@@ -52,7 +53,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 ### 🚀 Backend
 
 - **Serverless Architecture** - AWS Lambda or Vercel Functions
-- **Mistral AI Integration** - Vision API for OCR + LLM for parsing
+- **Multi-Provider AI** - Mistral + OpenRouter models for OCR + parsing
 - **AWS Services** - DynamoDB + S3 for storage
 - **RESTful API** - Clean endpoint design
 - **Local Dev Mode** - In-memory storage for development
@@ -97,8 +98,9 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
        │                  │
        ▼                  ▼
 ┌─────────────┐    ┌─────────────┐
-│  Mistral AI │    │  DynamoDB   │
-│  OCR + LLM  │    │  + S3       │
+│  AI Models  │    │  DynamoDB   │
+│ Mistral +   │    │  + S3       │
+│ OpenRouter  │    │            │
 └─────────────┘    └─────────────┘
 ```
 
@@ -106,10 +108,11 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 
 1. **Upload** → User uploads receipt image
 2. **S3 Storage** → Backend saves image to S3
-3. **OCR** → Mistral AI extracts text from image
-4. **Parse** → Mistral LLM structures text into JSON
-5. **Store** → Receipt data saved to DynamoDB
-6. **Display** → Frontend shows structured receipt
+3. **Model Selection** → UI sends selected model (optional)
+4. **OCR** → Selected model extracts text from image
+5. **Parse** → Selected model structures text into JSON
+6. **Store** → Receipt data saved to DynamoDB
+7. **Display** → Frontend shows structured receipt
 
 ---
 
@@ -121,6 +124,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - npm 10.x or higher (comes with Node.js)
 - AWS Account (for production deployment)
 - Mistral AI API Key ([Get one here](https://console.mistral.ai/))
+- OpenRouter API Key (required for non-Mistral models)
 
 ### 1️⃣ Clone & Install
 
@@ -151,10 +155,14 @@ copy .env.example .env
 notepad .env
 ```
 
-**Add your Mistral API key:**
+**Add your AI provider keys:**
 
 ```bash
 MISTRAL_API_KEY=your_actual_mistral_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_HTTP_REFERER=http://localhost:3000
+OPENROUTER_APP_NAME=SmartReceiptReader
 USE_LOCAL_STORAGE=true
 PORT=3001
 ```
@@ -254,7 +262,7 @@ Process receipt image with AI
 **Request:**
 
 - Content-Type: `multipart/form-data`
-- Body: `file` (image)
+- Body: `file` (image), optional `model` or `modelId`
 
 **Response:**
 
@@ -327,7 +335,7 @@ sam deploy --guided
 
 - Stack name: `smart-receipt-stack`
 - AWS Region: `ap-southeast-1` (or your preferred region)
-- Mistral API Key: Your key
+- Mistral/OpenRouter API keys: Your keys (as needed)
 - Confirm changes: Y
 
 **After deployment:**
@@ -359,6 +367,10 @@ vercel
 **Environment Variables in Vercel Dashboard:**
 
 - `MISTRAL_API_KEY` - Your Mistral API key
+- `OPENROUTER_API_KEY` - Required for non-Mistral models
+- `OPENROUTER_BASE_URL` - Optional override
+- `OPENROUTER_HTTP_REFERER` - Optional referrer
+- `OPENROUTER_APP_NAME` - Optional app name
 - `USE_LOCAL_STORAGE` - `false` (use AWS services)
 - `AWS_REGION` - `ap-southeast-1` (your AWS region)
 - `AWS_ACCESS_KEY_ID` - IAM user access key
@@ -389,6 +401,7 @@ vercel
 - **Express 4.18** - Local development server
 - **TypeScript 5.3** - Type safety
 - **Mistral AI SDK** - AI integration
+- **OpenRouter API** - Multi-provider AI access
 - **AWS SDK v3** - DynamoDB & S3
 - **Busboy** - Multipart form parsing
 - **Multer** - File upload handling
@@ -515,15 +528,17 @@ This uses in-memory storage - data is lost on server restart.
 
 ### Mock AI Mode
 
-For development without Mistral API key:
+For development without AI provider keys:
 
 ```bash
 # In backend/.env
 MISTRAL_API_KEY=your_mistral_api_key_here
 # (Keep default value)
+# Optional: only set if you want real OpenRouter responses
+# OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
-Backend will return mock OCR results.
+Backend will return mock OCR/structured results.
 
 ---
 
@@ -543,7 +558,7 @@ Backend will return mock OCR results.
 
 ### AI processing fails
 
-- ✅ Verify Mistral API key is correct
+- ✅ Verify Mistral/OpenRouter API keys are correct
 - ✅ Check API quota/limits
 - ✅ View backend logs for details
 

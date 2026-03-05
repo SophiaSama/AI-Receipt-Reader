@@ -70,16 +70,20 @@ Test API routes end-to-end within the application:
 - Dual-mode API endpoints (production vs test)
 - Request body handling utilities (`readRawBody`)
 - Automatic store cleanup between tests
+- AI model selection default/validation checks
 
 ### 2. E2E Tests (`tests/e2e/`)
 
-Test against a live server (local or deployed):
-
+- Test against a live server (local or deployed):
 - Real HTTP requests with `fetch`
 - Tests full stack including routing and deployment
 - Can test against `vercel dev` or production
 - Slower execution (~10-30 seconds)
 - Requires actual backend services
+
+**E2E suites:**
+- **TypeScript API E2E**: `tests/e2e/api.e2e.test.ts` (runs via `npm run test:e2e`)
+- **Playwright UI E2E**: `tests/e2e/playwright/` (runs via `pytest` or runner scripts)
 
 **When to use:** Testing deployment, routing, real-world scenarios, production validation
 
@@ -252,6 +256,20 @@ npm run dev
 
 # Terminal 2: Run E2E tests
 npm run test:e2e
+```
+
+For Playwright UI E2E tests:
+
+```powershell
+cd tests\e2e\playwright
+.\.venv\Scripts\Activate.ps1
+pytest --headed
+```
+
+Or use the automated runner:
+
+```powershell
+.\tests\e2e\playwright\run-e2e-tests.ps1
 ```
 
 Or test against deployed app:

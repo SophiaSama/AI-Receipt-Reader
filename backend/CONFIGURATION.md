@@ -10,6 +10,14 @@ Create a `.env` file in the `backend/` directory with the following variables:
 # Mistral AI API Key (get from https://console.mistral.ai/)
 MISTRAL_API_KEY=your_actual_mistral_api_key_here
 
+# OpenRouter API Key (required for non-Mistral models)
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+# OpenRouter configuration (optional)
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_HTTP_REFERER=http://localhost:3000
+OPENROUTER_APP_NAME=SmartReceiptReader
+
 # Local Development Mode
 USE_LOCAL_STORAGE=true
 
@@ -35,6 +43,10 @@ When deploying to Vercel, set these in the Vercel dashboard:
 2. Navigate to "Environment Variables"
 3. Add:
    - `MISTRAL_API_KEY` (your API key)
+   - `OPENROUTER_API_KEY` (required for non-Mistral models)
+   - `OPENROUTER_BASE_URL` (optional override)
+   - `OPENROUTER_HTTP_REFERER` (optional)
+   - `OPENROUTER_APP_NAME` (optional)
    - `USE_LOCAL_STORAGE` = `false` (use cloud storage)
    - `AWS_REGION` = `us-east-1`
    - `S3_BUCKET_NAME` = your bucket name
@@ -48,9 +60,12 @@ When deploying to Vercel, set these in the Vercel dashboard:
 
 1. Copy `.env.example` to `.env`
 2. Update `MISTRAL_API_KEY` with your actual key
-3. Keep `USE_LOCAL_STORAGE=true` for development
-4. Run: `npm run dev`
+3. Add `OPENROUTER_API_KEY` if you plan to use non-Mistral models
+4. Keep `USE_LOCAL_STORAGE=true` for development
+5. Run: `npm run dev`
 
 ## Testing Without Mistral API Key
 
 The backend includes mock responses for development without an API key. Just keep `MISTRAL_API_KEY` as the default value or don't set it.
+
+If `OPENROUTER_API_KEY` is missing, OpenRouter-backed models also fall back to mock responses.

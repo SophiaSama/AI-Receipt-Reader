@@ -79,48 +79,21 @@ pytest tests/test_health.py -v
 
 ### Option 2: Single Command with Background Server
 
-Create a helper script to start server and run tests:
+Use the automated runner scripts:
 
-#### `run-e2e-tests.ps1` (New file - I can create this for you)
+**Windows (PowerShell):**
 ```powershell
-# Start dev server in background
-Start-Process powershell -ArgumentList "-Command", "npm run dev"
-
-# Wait for server to be ready
-Write-Host "⏳ Waiting for server to start..."
-Start-Sleep -Seconds 5
-
-# Check if server is up
-$maxAttempts = 10
-$attempt = 0
-$serverReady = $false
-
-while ($attempt -lt $maxAttempts -and -not $serverReady) {
-    try {
-        $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 2 -UseBasicParsing
-        $serverReady = $true
-        Write-Host "✅ Server is ready!"
-    }
-    catch {
-        $attempt++
-        Write-Host "Waiting... ($attempt/$maxAttempts)"
-        Start-Sleep -Seconds 2
-    }
-}
-
-if (-not $serverReady) {
-    Write-Host "❌ Server failed to start"
-    exit 1
-}
-
-# Run tests
-cd tests\e2e\playwright
-.\.venv\Scripts\Activate.ps1
-pytest
-
-# Cleanup (stop server)
-Get-Process -Name "node" | Where-Object {$_.MainWindowTitle -like "*vite*"} | Stop-Process
+cd d:\projects\SmartReceiptReader
+.\tests\e2e\playwright\run-e2e-tests.ps1
 ```
+
+**Mac/Linux (Bash):**
+```bash
+cd /path/to/SmartReceiptReader
+./tests/e2e/playwright/run-e2e-tests.sh
+```
+
+See `tests/e2e/playwright/tests/doc/AUTOMATED_RUNNER.md` for all options.
 
 ---
 
@@ -154,6 +127,7 @@ Before running E2E tests, ensure:
 - [ ] **Python venv setup**: `cd tests/e2e/playwright && .\setup.ps1`
 - [ ] **Dev server running**: `npm run dev` (in separate terminal)
 - [ ] **Server accessible**: Open http://localhost:3000 in browser
+- [ ] **OpenRouter key (optional)**: Set `OPENROUTER_API_KEY` if testing non-Mistral models
 
 ---
 
@@ -413,7 +387,7 @@ Your SmartReceiptReader uses:
 
 Would you like me to:
 
-1. ✅ **Create automated test runner scripts** (`run-e2e-tests.ps1`)
+1. ✅ **Use automated test runner scripts** (`run-e2e-tests.ps1`)
 2. ✅ **Add server health check** to test setup
 3. ✅ **Create VS Code tasks** for one-click test running
 4. ✅ **Add npm script** to run E2E tests with server auto-start

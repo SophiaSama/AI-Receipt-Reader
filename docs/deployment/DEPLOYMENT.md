@@ -8,7 +8,7 @@
 - [ ] SAM CLI installed (`npm install -g aws-sam-cli`)
 - [ ] Backend dependencies installed (`cd backend && npm install`)
 - [ ] Backend compiled (`cd backend && npm run build`)
-- [ ] `.env` file configured with Mistral API key
+- [ ] `.env` file configured with Mistral/OpenRouter API keys (as needed)
 - [ ] AWS credentials configured (`aws configure`)
 - [ ] Run deployment: `cd backend && npm run deploy`
 
@@ -64,17 +64,17 @@
 3. Check AWS permissions for Lambda to write to S3
 4. For local dev: Images are stored in memory, check `/images/` endpoint
 
-### Issue 4: Mistral AI errors
+### Issue 4: AI provider errors (Mistral/OpenRouter)
 
 **Symptoms:**
 - "Failed to extract text" errors
 - Mock data appears instead of real OCR results
 
 **Solutions:**
-1. Verify `MISTRAL_API_KEY` is set correctly
-2. Check API key is valid: test at https://console.mistral.ai/
-3. Verify API key has proper permissions
-4. Check Mistral API quota/limits
+1. Verify `MISTRAL_API_KEY` and/or `OPENROUTER_API_KEY` are set correctly
+2. Check API keys are valid: https://console.mistral.ai/ or https://openrouter.ai/
+3. Verify API key permissions and account limits
+4. If using OpenRouter, confirm `OPENROUTER_HTTP_REFERER` and `OPENROUTER_APP_NAME` are set if required
 
 ### Issue 5: TypeScript compilation errors
 

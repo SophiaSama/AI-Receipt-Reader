@@ -169,6 +169,8 @@ sam deploy --guided
 1. **Stack Name:** `smart-receipt-stack` (or your choice)
 2. **AWS Region:** `us-east-1` (or your preferred region)
 3. **Parameter MistralApiKey:** `your-mistral-api-key-here`
+
+**Optional OpenRouter support:** If you plan to use non-Mistral models, add `OPENROUTER_API_KEY` to the Lambda environment variables in [backend/template.yaml](../../backend/template.yaml) and pass it as a parameter during deployment.
 4. **Confirm changes before deploy:** `Y`
 5. **Allow SAM CLI IAM role creation:** `Y`
 6. **Disable rollback:** `N`

@@ -40,7 +40,11 @@ playwright install
 ```
 tests/e2e/playwright/
 ├── 📄 README.md                         # This file
-├── 📄 QUICK_REFERENCE.md                # Quick reference card
+├── 📁 tests/doc/                         # E2E documentation
+│   ├── TESTING_QUICK_REFERENCE.md        # Quick reference card
+│   ├── SERVER_REQUIREMENTS.md            # Server setup requirements
+│   ├── AUTOMATED_RUNNER.md               # Runner scripts usage
+│   └── ARCHITECTURE.md                   # Playwright architecture
 │
 ├── ⚙️ requirements.txt                  # Python dependencies
 ├── ⚙️ pytest.ini                        # Pytest configuration
@@ -102,6 +106,22 @@ pytest --tracing on
 # Run in parallel
 pytest -n auto
 ```
+
+### Automated Runner Scripts
+
+Use the helper scripts to start the dev server, wait for readiness, and run tests:
+
+```powershell
+# Windows (PowerShell)
+.\tests\e2e\playwright\run-e2e-tests.ps1
+```
+
+```bash
+# Mac/Linux
+./tests/e2e/playwright/run-e2e-tests.sh
+```
+
+See `tests/e2e/playwright/tests/doc/AUTOMATED_RUNNER.md` for all options.
 
 ### Advanced Options
 
@@ -214,6 +234,12 @@ def test_manual_entry(page: Page):
     
     # Verify success
     expect(page.locator(".success-message")).to_be_visible()
+
+# Selecting an AI model before upload
+def test_upload_with_model(page: Page):
+    home = HomePage(page)
+    home.select_ai_model("Gemini 2.5 Flash Lite")
+    home.upload_file("tests/fixtures/sample-receipt.png")
 ```
 
 ### API Mocking Example
