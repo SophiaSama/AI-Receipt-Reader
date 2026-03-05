@@ -153,6 +153,8 @@ class TestWithPageObjects:
         """Test uploading a receipt file (if feature exists)"""
         home = HomePage(page)
         receipt_list = ReceiptListPage(page)
+
+        home.select_ai_model("Gemini 2.5 Flash Lite")
         
         # Upload file
         home.upload_file(sample_receipt_image)
@@ -163,6 +165,14 @@ class TestWithPageObjects:
         # Verify receipt appears (depends on OCR implementation)
         receipt_list.wait_for_receipts_to_load()
         assert receipt_list.has_receipts()
+
+    def test_ai_model_selection_persists(self, page: Page):
+        """Test AI model selection stays set"""
+        home = HomePage(page)
+
+        home.select_ai_model("Gemini 2.5 Flash Lite")
+        selected = home.get_selected_ai_model_value()
+        assert selected == "google/gemini-2.5-flash-lite"
     
     def test_fluent_api_chaining(self, page: Page):
         """Demonstrate fluent API with method chaining"""

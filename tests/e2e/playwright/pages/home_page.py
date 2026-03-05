@@ -24,6 +24,7 @@ class HomePage(BasePage):
     FILE_INPUT = "input[type='file']"
     UPLOAD_SUBMIT = "button:has-text('Upload')" # Note: Upload is auto-triggered on drop/select usually
     UPLOAD_CANCEL = "button:has-text('Cancel')"
+    AI_MODEL_SELECT = "select:has(option)"
     
     # Export options
     EXPORT_CSV_BUTTON = "button:has-text('CSV')"
@@ -85,6 +86,16 @@ class HomePage(BasePage):
         # Wait for network idle to ensure data is fetched
         self.page.wait_for_load_state("networkidle")
         return self
+
+    def select_ai_model(self, model_label: str):
+        """Select an AI model from the dropdown"""
+        self.page.get_by_label("AI Model").select_option(label=model_label)
+        return self
+
+    def get_selected_ai_model_value(self) -> Optional[str]:
+        """Return the selected AI model id"""
+        select = self.page.get_by_label("AI Model")
+        return select.input_value()
     
     def cancel_upload(self):
         """Cancel upload dialog"""
