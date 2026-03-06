@@ -3,8 +3,9 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, ReceiptData } from '../typ
 import { parseMultipart } from '../utils/parseMultipart';
 import { success, badRequest, serverError } from '../utils/responseHelper';
 import { uploadImage } from '../services/s3Service';
-import { saveReceipt } from '../services/dynamoService';
+import { getReceipts, saveReceipt } from '../services/dynamoService';
 import { extractTextFromImage, structureReceiptData, resolveAiModel } from '../services/aiProviderService';
+import { computeImageHash, computeOcrFingerprint, findDuplicateReceipt } from '../utils/duplicateDetection';
 
 /**
  * POST /api/process
@@ -43,7 +44,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         console.log(`Processing file: ${file.filename}, type: ${file.contentType}, size: ${file.content.length} bytes`);
 
-        // Step 1: Upload to S3
+        // Compute image hash early (exact duplicate check)
+        const imageHash = computeImageHash(file.content);
+
+        // Step 1: Upload to S3 (kept early so we can clean up on ignore)
         const imageUrl = await uploadImage(file.content, file.filename, file.contentType);
         console.log(`Image uploaded: ${imageUrl}`);
 
@@ -59,7 +63,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const structuredData = await structureReceiptData(ocrResult.rawText, resolvedModel.id);
         console.log(`Structured data: ${JSON.stringify(structuredData)}`);
 
-        // Step 4: Create complete receipt record
+        // Step 4: Create complete receipt record (NOT saved yet if duplicate)
         const receipt: ReceiptData = {
             id: uuidv4(),
             merchantName: structuredData.merchantName,
@@ -68,9 +72,35 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             currency: structuredData.currency,
             items: structuredData.items,
             imageUrl: imageUrl,
+            imageHash,
             rawText: ocrResult.rawText,
             createdAt: Date.now(),
         };
+
+        receipt.ocrFingerprint = computeOcrFingerprint(receipt);
+
+        // Step 4.5: Duplicate detection after OCR/structuring, before persisting
+        const force = String((event.queryStringParameters || {})['force'] || '').toLowerCase();
+        const shouldForceSave = force === '1' || force === 'true' || force === 'yes';
+
+        if (!shouldForceSave) {
+            const existingReceipts = await getReceipts();
+            const match = findDuplicateReceipt(existingReceipts, receipt);
+            if (match) {
+                return success({
+                    duplicateDetected: true,
+                    matchType: match.matchType,
+                    candidateReceipt: {
+                        id: match.existingReceipt.id,
+                        merchantName: match.existingReceipt.merchantName,
+                        date: match.existingReceipt.date,
+                        total: match.existingReceipt.total,
+                        currency: match.existingReceipt.currency,
+                    },
+                    pendingReceipt: receipt,
+                });
+            }
+        }
 
         // Step 5: Save to DynamoDB
         await saveReceipt(receipt);
@@ -98,6 +128,9 @@ export const processReceiptHandler = async (
         throw new Error(`Invalid file type: ${contentType}. Only JPEG, PNG, and WebP images are supported.`);
     }
 
+    // Compute image hash early (exact duplicate check)
+    const imageHash = computeImageHash(fileBuffer);
+
     // Step 1: Upload to S3/local storage
     const imageUrl = await uploadImage(fileBuffer, filename, contentType);
 
@@ -119,9 +152,12 @@ export const processReceiptHandler = async (
         currency: structuredData.currency,
         items: structuredData.items,
         imageUrl: imageUrl,
+        imageHash,
         rawText: ocrResult.rawText,
         createdAt: Date.now(),
     };
+
+    receipt.ocrFingerprint = computeOcrFingerprint(receipt);
 
     // Step 5: Save to DynamoDB/local storage
     await saveReceipt(receipt);

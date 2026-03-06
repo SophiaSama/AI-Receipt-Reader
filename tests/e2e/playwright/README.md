@@ -63,6 +63,7 @@ tests/e2e/playwright/
 ├── tests/                               # Test files
 │   ├── test_health.py                  # Health check tests
 │   ├── test_manual_receipt.py          # Manual entry tests
+│   ├── test_duplicate_upload.py         # Duplicate upload confirmation
 │   ├── test_full_workflow.py           # Complete workflows
 │   ├── test_api_errors.py              # API error handling tests
 │   ├── test_page_objects.py            # POM usage examples
@@ -91,6 +92,9 @@ pytest tests/e2e/playwright/
 
 # Run specific test file
 pytest tests/e2e/playwright/tests/test_health.py
+
+# Run duplicate-upload flow tests
+pytest tests/e2e/playwright/tests/test_duplicate_upload.py
 
 # Run with specific browser
 pytest --browser chromium
@@ -153,6 +157,12 @@ Create `.env` file:
 BASE_URL=http://localhost:3000
 API_URL=http://localhost:3000/api
 
+# Optional API forwarding
+# If you run the backend separately (e.g. `BACKEND_ORIGIN=http://localhost:3001`),
+# you can forward the browser's /api/* calls to that origin.
+FORWARD_API_TO_BACKEND=false
+BACKEND_ORIGIN=http://localhost:3001
+
 # Test user (if authentication added)
 TEST_USER_EMAIL=test@example.com
 TEST_USER_PASSWORD=testpassword123
@@ -163,6 +173,9 @@ TEST_RECEIPT_IMAGE=tests/fixtures/sample-receipt.png
 # Browser settings
 HEADLESS=true
 SLOW_MO=0
+
+# Video recording (set to true to enable)
+RECORD_VIDEO=false
 ```
 
 ### pytest.ini
@@ -293,6 +306,14 @@ def test_with_mock_api(page: Page):
 - Verify in list
 - Delete receipt
 - Confirm deletion
+
+### 6. Duplicate Upload Confirmation
+
+- Upload a receipt twice
+- App detects possible duplicate after OCR
+- User chooses:
+    - **Yes (duplicate) — ignore** → does not add a new record
+    - **No — add new expense** → proceeds and adds the new record
 
 ## Debugging
 

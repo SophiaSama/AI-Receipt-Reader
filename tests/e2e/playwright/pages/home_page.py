@@ -80,7 +80,7 @@ class HomePage(BasePage):
             
         # Wait for processing messages to disappear
         self.page.locator("text=Uploading...").wait_for(state="hidden", timeout=30000)
-        self.page.locator("text=Mistral AI Analyzing").wait_for(state="hidden", timeout=30000)
+        self.page.locator("text=AI Analyzing").wait_for(state="hidden", timeout=30000)
         self.page.locator("text=Processing").wait_for(state="hidden", timeout=30000)
         
         # Wait for network idle to ensure data is fetched

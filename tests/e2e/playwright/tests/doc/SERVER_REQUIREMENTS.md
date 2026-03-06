@@ -140,9 +140,13 @@ Before running E2E tests, ensure:
 BASE_URL=http://localhost:3000
 API_URL=http://localhost:3000/api
 HEADLESS=false
+
+# Optional (only if you run backend separately)
+FORWARD_API_TO_BACKEND=false
+BACKEND_ORIGIN=http://localhost:3001
 ```
 
-**No separate backend URL needed** - API is served by Vite!
+**No separate backend URL is needed by default** - API is served by Vite. If you do run a separate backend, enable forwarding via `FORWARD_API_TO_BACKEND`.
 
 ---
 

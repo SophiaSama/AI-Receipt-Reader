@@ -21,33 +21,55 @@ This is the primary endpoint for automated scanning.
   1. **Upload to S3**: Store raw image and get `imageUrl`.
   2. **OCR**: Send image to the selected model for text extraction.
   3. **LLM Structuring**: Send raw text to the selected model for JSON structuring.
-  4. **DynamoDB**: Save the final `ReceiptData` record.
-  5. **Response**: Return the completed `ReceiptData` JSON object to the client.
+  4. **Duplicate Detection (post-OCR, pre-save)**: Compare the new receipt with existing records.
+     - Exact match: `imageHash` (sha256 of uploaded bytes)
+     - Metadata match: `ocrFingerprint` (normalized merchant/date/total/currency)
+  5. **DynamoDB**: Save the final `ReceiptData` record (only when not a duplicate, or when user confirms save).
+  6. **Response**:
+     - Normal: return completed `ReceiptData` JSON.
+     - Duplicate: return `{ duplicateDetected: true, candidateReceipt, pendingReceipt }` and wait for client confirmation.
 
 **Supported model IDs:**
 
 - `google/gemini-2.5-flash`
 - `google/gemini-2.5-flash-lite`
-- `x-ai/grok-4-fast`
 - `qwen/qwen-vl-plus`
 - `pixtral-12b-2409`
 - `qwen/qwen3-vl-235b-a22b-instruct`
 
 If `model`/`modelId` is omitted or invalid, the backend falls back to the default model.
 
-### 2. Manual Save
+#### Duplicate Confirmation
 
+When a duplicate is detected, the client must call:
+
+### 2. Confirm Duplicate / Save Anyway
+
+- **Endpoint**: `POST /api/receipts/confirm`
+- **Content-Type**: `application/json`
+- **Request Body**:
+
+```json
+{
+  "action": "ignore",
+  "pendingReceipt": { "...": "ReceiptData returned by /api/process" }
+}
+```
+
+- **Behavior**:
+  - `action=ignore`: best-effort cleanup (delete uploaded image from S3 and delete receipt from DynamoDB if it exists)
+  - `action=save`: persist `pendingReceipt` to DynamoDB and return it
+
+### 3. Manual Save
 - **Endpoint**: `POST /api/receipts/manual`
 - **Content-Type**: `multipart/form-data`
 - **Body**: `metadata` (JSON String), `file` (Optional Binary)
 - **Lambda Responsibility**: Save directly to DynamoDB and optionally handle S3.
 
-### 3. GET /api/receipts
-
+### 4. GET /api/receipts
 - **Responsibility**: Fetch all records from DynamoDB for the current user.
 
-### 4. DELETE /api/receipts/:id
-
+### 5. DELETE /api/receipts/:id
 - **Responsibility**: Cascade delete from DynamoDB and remove the object from S3 using the stored `imageUrl`.
 
 ## Data Schema (Expected return from AI)

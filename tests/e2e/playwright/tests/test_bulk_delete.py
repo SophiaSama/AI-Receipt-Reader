@@ -60,6 +60,13 @@ class TestBulkDelete:
         expect(page.locator(f"text={m1}")).not_to_be_visible(timeout=10000)
         expect(page.locator(f"text={m2}")).not_to_be_visible(timeout=10000)
 
+        # Refresh and verify deleted receipts stay deleted
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        page.wait_for_selector("[data-testid='empty-state'], [data-testid='receipt-item']", timeout=15000)
+        expect(page.locator(f"text={m1}")).not_to_be_visible(timeout=10000)
+        expect(page.locator(f"text={m2}")).not_to_be_visible(timeout=10000)
+
     def test_select_all_functionality(self, page: Page):
         """Test the 'Select All' toggle in the header"""
         # Clear existing selections if any
