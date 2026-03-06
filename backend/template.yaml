@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SmartReceiptReader Backend - Serverless API with Mistral AI
+Description: SmartReceiptReader Backend - Serverless API with AI providers
 
 Globals:
   Function:
@@ -12,12 +12,37 @@ Globals:
         DYNAMODB_TABLE_NAME: !Ref ReceiptsTable
         S3_BUCKET_NAME: !Ref ImagesBucket
         MISTRAL_API_KEY: !Ref MistralApiKey
+        OPENROUTER_API_KEY: !Ref OpenRouterApiKey
+        OPENROUTER_BASE_URL: !Ref OpenRouterBaseUrl
+        OPENROUTER_HTTP_REFERER: !Ref OpenRouterHttpReferer
+        OPENROUTER_APP_NAME: !Ref OpenRouterAppName
 
 Parameters:
   MistralApiKey:
     Type: String
     Description: Mistral AI API Key
     NoEcho: true
+
+  OpenRouterApiKey:
+    Type: String
+    Description: OpenRouter API Key (optional; required only for non-Mistral models)
+    Default: ''
+    NoEcho: true
+
+  OpenRouterBaseUrl:
+    Type: String
+    Description: OpenRouter base URL
+    Default: 'https://openrouter.ai/api/v1'
+
+  OpenRouterHttpReferer:
+    Type: String
+    Description: OpenRouter HTTP Referer header value
+    Default: 'https://localhost'
+
+  OpenRouterAppName:
+    Type: String
+    Description: OpenRouter X-Title header value
+    Default: 'SmartReceiptReader'
 
 Resources:
   # API Gateway
@@ -36,7 +61,7 @@ Resources:
     Properties:
       Handler: src/handlers/processReceipt.handler
       CodeUri: ./dist
-      Description: Process receipt image with Mistral AI OCR
+      Description: Process receipt image with AI OCR
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ReceiptsTable

@@ -33,7 +33,6 @@ This is the primary endpoint for automated scanning.
 
 - `google/gemini-2.5-flash`
 - `google/gemini-2.5-flash-lite`
-- `x-ai/grok-4-fast`
 - `qwen/qwen-vl-plus`
 - `pixtral-12b-2409`
 - `qwen/qwen3-vl-235b-a22b-instruct`

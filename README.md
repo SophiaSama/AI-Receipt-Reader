@@ -30,7 +30,6 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - 🧠 **Smart Parsing** - LLM structures data automatically (merchant, date, items, total)
 - 🎛️ **Model Selection** - Choose between Mistral and OpenRouter-backed models
 - ☁️ **Cloud Backend** - Serverless architecture on AWS Lambda or Vercel
-- 🎨 **Soft UI** - Beautiful light glassmorphism aesthetic with pink/lavender accents
 - 📊 **Rich Dashboard** - Compact statistics and expense visualization
 - 🔍 **Advanced Filtering** - Search and filter by merchant, amount, date range
 - 📥 **CSV Export** - Download your expense data anytime
@@ -123,8 +122,8 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - **Node.js 20.x LTS** or higher ([Download here](https://nodejs.org/))
 - npm 10.x or higher (comes with Node.js)
 - AWS Account (for production deployment)
-- Mistral AI API Key ([Get one here](https://console.mistral.ai/))
-- OpenRouter API Key (optional; missing key falls back to Mistral)
+- Mistral AI API Key ([Get one here for free](https://console.mistral.ai/))
+- OpenRouter API Key ([Get one here, credits top up needed to make API Calls](https://openrouter.ai/)) (optional; missing key falls back to Mistral)
 
 ### 1️⃣ Clone & Install
 
@@ -359,10 +358,10 @@ Delete receipt and image
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
-> **💡 Important:** You do NOT need to manually create Lambda functions! SAM automates everything.  
-> See **[AWS_DEPLOYMENT_GUIDE.md](./AWS_DEPLOYMENT_GUIDE.md)** for detailed instructions.
+> **Important:** You do NOT need to manually create Lambda functions! SAM automates everything.  
+> See **[docs/deployment/AWS_DEPLOYMENT_GUIDE.md](./docs/deployment/AWS_DEPLOYMENT_GUIDE.md)** for detailed instructions.
 
 ### Deploy to AWS Lambda
 
@@ -378,7 +377,7 @@ sam deploy --guided
 
 **What Gets Created Automatically:**
 
-- ✅ 4 Lambda Functions (Process, Manual, Get, Delete)
+- ✅ 5 Lambda Functions (Process, Manual, Get, Delete, Confirm)
 - ✅ API Gateway with endpoints
 - ✅ DynamoDB Table
 - ✅ S3 Bucket
@@ -401,7 +400,6 @@ sam deploy --guided
 ### Deploy to Vercel
 
 > **🔐 Important:** Vercel needs AWS IAM credentials to access DynamoDB and S3.  
-> See **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** for complete setup including project structure, IAM policies, and environment configuration.
 
 ```bash
 # Install Vercel CLI
@@ -472,22 +470,10 @@ vercel
 
 ## 📚 Documentation
 
-### Deployment Guides
-
-- **[AWS_DEPLOYMENT_GUIDE.md](./AWS_DEPLOYMENT_GUIDE.md)** - Deploy to AWS Lambda with SAM
-- **[VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)** - Deploy to Vercel (includes IAM setup and project structure)
-- **[VERCEL_DEVELOPMENT_GUIDE.md](./VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices, common pitfalls, and debugging strategies
-
-### Development Guides
-
-- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Comprehensive testing documentation
+### Test Guides
 - **[tests/README.md](./tests/README.md)** - Test structure and examples
 
-### Technical Reference
-
-- **[BACKEND_API_GUIDE.md](./BACKEND_API_GUIDE.md)** - Backend development guidelines
-- **[DYNAMODB_SCHEMA.md](./DYNAMODB_SCHEMA.md)** - Database schema & format
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - General deployment checklist & troubleshooting
+### Backend Technical Reference
 - **[backend/CONFIGURATION.md](./backend/CONFIGURATION.md)** - Environment setup and configuration
 
 ---
@@ -555,7 +541,7 @@ npm run test:coverage
 - ✅ **CI/CD friendly** - Works identically in all environments
 - ✅ **Full workflows** - Tests create → list → delete operations
 
-See **[docs/development/TESTING_GUIDE.md](./docs/development/TESTING_GUIDE.md)** for detailed testing documentation and **[TEST_MODE_ARCHITECTURE.md](./TEST_MODE_ARCHITECTURE.md)** for architecture details.
+See **[docs/development/TESTING_GUIDE.md](./docs/development/TESTING_GUIDE.md)** for detailed testing documentation.
 
 ### Build for Production
 
@@ -676,7 +662,6 @@ Need help? Check these resources:
 
 ### Planned Features
 
-- [x] Soft Feminine UI Redesign
 - [ ] Multi-user support with authentication
 - [ ] Mobile app (React Native)
 - [ ] Receipt categories & tags

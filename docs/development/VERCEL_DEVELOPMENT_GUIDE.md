@@ -391,6 +391,10 @@ git log --oneline
 **Required for Vercel:**
 ```
 MISTRAL_API_KEY=xxx
+OPENROUTER_API_KEY=xxx  # optional; missing key falls back to Mistral
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1  # optional
+OPENROUTER_HTTP_REFERER=http://localhost:3000  # optional
+OPENROUTER_APP_NAME=SmartReceiptReader  # optional
 USE_LOCAL_STORAGE=false
 AWS_REGION=ap-southeast-1
 AWS_ACCESS_KEY_ID=AKIA...

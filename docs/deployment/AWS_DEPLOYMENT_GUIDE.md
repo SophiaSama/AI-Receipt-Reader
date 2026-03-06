@@ -180,15 +180,17 @@ sam deploy --guided
 1. **Stack Name:** `smart-receipt-stack` (or your choice)
 2. **AWS Region:** `us-east-1` (or your preferred region)
 3. **Parameter MistralApiKey:** `your-mistral-api-key-here`
-
-**Optional OpenRouter support:** If you plan to use non-Mistral models, add `OPENROUTER_API_KEY` to the Lambda environment variables in [backend/template.yaml](../../backend/template.yaml) and pass it as a parameter during deployment.
-4. **Confirm changes before deploy:** `Y`
-5. **Allow SAM CLI IAM role creation:** `Y`
-6. **Disable rollback:** `N`
-7. **ProcessReceiptFunction has no auth:** `Y` (all functions)
-8. **Save arguments to config file:** `Y`
-9. **Config file name:** `samconfig.toml` (default)
-10. **Config environment:** `default` (default)
+4. **Parameter OpenRouterApiKey (optional):** leave empty to disable OpenRouter-backed models, or set your key to enable them
+5. **Parameter OpenRouterBaseUrl:** press Enter to accept default unless you need an override
+6. **Parameter OpenRouterHttpReferer:** press Enter to accept default (or set to your deployed app URL)
+7. **Parameter OpenRouterAppName:** press Enter to accept default
+8. **Confirm changes before deploy:** `Y`
+9. **Allow SAM CLI IAM role creation:** `Y`
+10. **Disable rollback:** `N`
+11. **ProcessReceiptFunction has no auth:** `Y` (all functions)
+12. **Save arguments to config file:** `Y`
+13. **Config file name:** `samconfig.toml` (default)
+14. **Config environment:** `default` (default)
 
 #### Step 4: Subsequent Deployments
 ```powershell

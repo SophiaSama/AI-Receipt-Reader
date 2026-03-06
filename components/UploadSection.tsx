@@ -90,7 +90,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                   <div className="absolute inset-0 w-8 h-8 border-t-2 border-primary rounded-full animate-spin"></div>
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-slate-700">{status.step === 'analyzing' ? 'Mistral AI Analyzing' : 'Uploading...'}</p>
+                  <p className="text-sm font-semibold text-slate-700">{status.step === 'analyzing' ? 'AI Analyzing' : 'Uploading...'}</p>
                   <p className="text-xs text-slate-400 italic">
                     "{status.message || 'Extracting data...'}"
                   </p>
