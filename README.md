@@ -18,7 +18,7 @@
 
 ## Demo
 
-![New UI](docs/assets/new_UI.png)
+![demo](docs/assets/ReceiptReaderDemo.gif)
 
 ## 📖 Overview
 
