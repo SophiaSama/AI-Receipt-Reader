@@ -46,6 +46,8 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
       onFileSelect(e.target.files[0]);
+      // Allow selecting the same file again (browser may not fire change otherwise)
+      e.target.value = '';
     }
   };
 

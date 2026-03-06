@@ -23,11 +23,13 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
     # Keep the initial list empty
     page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
 
-    # Allow deletes during test cleanup without hitting a real backend
-    page.route(
-        "**/api/receipts/**",
-        lambda route: _fulfill_json(route, 204, {}),
-    )
+    # Allow DELETEs during test cleanup without hitting a real backend
+    def _cleanup_delete_only(route):
+        if route.request.method.upper() == "DELETE":
+            return _fulfill_json(route, 204, {})
+        return route.continue_()
+
+    page.route("**/api/receipts/**", _cleanup_delete_only)
 
     # Mock /api/process: first call returns a normal saved receipt; second call returns duplicate prompt
     process_calls = {"n": 0}
@@ -100,7 +102,7 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
 
     # Duplicate modal should appear
     expect(page.get_by_text("Possible duplicate receipt")).to_be_visible(timeout=15000)
-    expect(page.get_by_text("Existing receipt")).to_be_visible()
+    expect(page.get_by_text("Existing receipt", exact=True)).to_be_visible()
     expect(page.get_by_text("E2E Coffee")).to_be_visible()
     expect(page.get_by_text("2026-03-06")).to_be_visible()
 
@@ -116,10 +118,12 @@ def test_duplicate_upload_no_proceeds_and_adds_new_record(page: Page, sample_rec
     """If the user says it's not a duplicate, the receipt should be added."""
 
     page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
-    page.route(
-        "**/api/receipts/**",
-        lambda route: _fulfill_json(route, 204, {}),
-    )
+    def _cleanup_delete_only(route):
+        if route.request.method.upper() == "DELETE":
+            return _fulfill_json(route, 204, {})
+        return route.continue_()
+
+    page.route("**/api/receipts/**", _cleanup_delete_only)
 
     process_calls = {"n": 0}
 
