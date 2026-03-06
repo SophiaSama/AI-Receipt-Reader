@@ -93,15 +93,22 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
     home = HomePage(page)
     receipts = ReceiptListPage(page)
 
-    home.upload_file(sample_receipt_image)
+    with page.expect_response("**/api/process") as first_resp:
+        home.upload_file(sample_receipt_image)
+    assert first_resp.value.ok
     receipts.wait_for_receipts_to_load(timeout=15000)
     expect(receipts.get_receipt_rows()).to_have_count(1)
     expect(page.get_by_text("E2E Coffee")).to_be_visible()
 
-    home.upload_file(sample_receipt_image)
+    with page.expect_response("**/api/process") as second_resp:
+        home.upload_file(sample_receipt_image)
+    assert second_resp.value.ok
+    # Ensure the mocked duplicate payload was actually returned
+    second_json = second_resp.value.json()
+    assert second_json.get("duplicateDetected") is True
 
     # Duplicate modal should appear
-    expect(page.get_by_text("Possible duplicate receipt")).to_be_visible(timeout=15000)
+    expect(page.get_by_role("heading", name="Possible duplicate receipt")).to_be_visible(timeout=15000)
     expect(page.get_by_text("Existing receipt", exact=True)).to_be_visible()
     expect(page.get_by_text("E2E Coffee")).to_be_visible()
     expect(page.get_by_text("2026-03-06")).to_be_visible()
@@ -183,13 +190,19 @@ def test_duplicate_upload_no_proceeds_and_adds_new_record(page: Page, sample_rec
     home = HomePage(page)
     receipts = ReceiptListPage(page)
 
-    home.upload_file(sample_receipt_image)
+    with page.expect_response("**/api/process") as first_resp:
+        home.upload_file(sample_receipt_image)
+    assert first_resp.value.ok
     receipts.wait_for_receipts_to_load(timeout=15000)
     expect(receipts.get_receipt_rows()).to_have_count(1)
 
-    home.upload_file(sample_receipt_image)
+    with page.expect_response("**/api/process") as second_resp:
+        home.upload_file(sample_receipt_image)
+    assert second_resp.value.ok
+    second_json = second_resp.value.json()
+    assert second_json.get("duplicateDetected") is True
 
-    expect(page.get_by_text("Possible duplicate receipt")).to_be_visible(timeout=15000)
+    expect(page.get_by_role("heading", name="Possible duplicate receipt")).to_be_visible(timeout=15000)
     page.get_by_role("button", name="No — add new expense").click()
 
     expect(page.get_by_text("Possible duplicate receipt")).not_to_be_visible(timeout=15000)

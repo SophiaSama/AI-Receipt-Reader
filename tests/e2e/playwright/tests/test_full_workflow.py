@@ -52,6 +52,12 @@ class TestFullWorkflow:
 
         expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
+        # Refresh and verify deleted receipt stays deleted
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        page.wait_for_selector("[data-testid='empty-state'], [data-testid='receipt-item']", timeout=15000)
+        expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
+
     def test_filter_and_search_workflow(self, page: Page, sample_receipt_data: dict):
         """Test filtering and searching receipts"""
 
