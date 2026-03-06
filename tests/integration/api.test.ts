@@ -8,6 +8,7 @@ import processHandler from '@/api/process';
 import receiptsHandler from '@/api/receipts';
 import manualHandler from '@/api/receipts/manual';
 import deleteHandler from '@/api/receipts/delete';
+import deleteByIdHandler from '@/api/receipts/[id]';
 import { resolveAiModel, DEFAULT_AI_MODEL_ID } from '@backend/services/aiProviderService';
 
 // Helper to create mock Vercel request/response
@@ -196,6 +197,72 @@ describe('API Integration Tests', () => {
       const res = createMockResponse();
 
       await deleteHandler(req, res);
+
+      expect(res.getStatus()).toBe(405);
+    });
+  });
+
+  describe('Delete Receipt - DELETE /api/receipts/:id', () => {
+    it('should require id parameter', async () => {
+      const req = createMockRequest({
+        method: 'DELETE',
+        query: {},
+      });
+      const res = createMockResponse();
+
+      await deleteByIdHandler(req, res);
+
+      expect(res.getStatus()).toBe(400);
+      expect(res.getData()).toHaveProperty('error');
+    });
+
+    it('should delete from test store when present', async () => {
+      const metadata = {
+        merchantName: 'DeleteById Store',
+        date: '2026-01-23',
+        total: 10.25,
+        currency: 'USD',
+        items: [],
+      };
+
+      const createReq = createMockRequest({
+        method: 'POST',
+        body: { metadata: JSON.stringify(metadata) },
+      });
+      const createRes = createMockResponse();
+      await manualHandler(createReq, createRes);
+      expect(createRes.getStatus()).toBe(200);
+
+      const created = createRes.getData();
+      expect(created).toHaveProperty('id');
+
+      const deleteReq = createMockRequest({
+        method: 'DELETE',
+        query: { id: created.id },
+      });
+      const deleteRes = createMockResponse();
+      await deleteByIdHandler(deleteReq, deleteRes);
+
+      expect(deleteRes.getStatus()).toBe(204);
+
+      const listReq = createMockRequest({ method: 'GET' });
+      const listRes = createMockResponse();
+      await receiptsHandler(listReq, listRes);
+
+      expect(listRes.getStatus()).toBe(200);
+      const receipts = listRes.getData();
+      expect(Array.isArray(receipts)).toBe(true);
+      expect(receipts.find((r: any) => r.id === created.id)).toBeUndefined();
+    });
+
+    it('should reject non-DELETE requests', async () => {
+      const req = createMockRequest({
+        method: 'GET',
+        query: { id: 'test-id' },
+      });
+      const res = createMockResponse();
+
+      await deleteByIdHandler(req, res);
 
       expect(res.getStatus()).toBe(405);
     });
