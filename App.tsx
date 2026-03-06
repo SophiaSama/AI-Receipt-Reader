@@ -4,7 +4,7 @@ import { ReceiptList } from './components/ReceiptList';
 import { StatsOverview } from './components/StatsOverview';
 import { ManualEntryForm } from './components/ManualEntryForm';
 import { ReceiptFilters, FilterCriteria } from './components/ReceiptFilters';
-import { processAndSaveReceipt, saveManualReceiptToDB, fetchReceiptsFromDB, deleteReceiptFromDB, deleteReceiptsFromDB } from './services/awsService';
+import { processAndSaveReceipt, confirmDuplicateReceiptDecision, saveManualReceiptToDB, fetchReceiptsFromDB, deleteReceiptFromDB, deleteReceiptsFromDB } from './services/awsService';
 import { ReceiptData, ProcessingStatus } from './types';
 
 const initialFilters: FilterCriteria = {
@@ -34,6 +34,11 @@ function App() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState(defaultAiModelId);
+  const [duplicatePrompt, setDuplicatePrompt] = useState<null | {
+    candidateReceipt: Pick<ReceiptData, 'id' | 'merchantName' | 'date' | 'total' | 'currency'>;
+    pendingReceipt: ReceiptData;
+    matchType: 'imageHash' | 'ocrFingerprint';
+  }>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -67,8 +72,21 @@ function App() {
 
     try {
       // Backend now handles S3, Mistral OCR, and DynamoDB in one go
-      const processedReceipt = await processAndSaveReceipt(file, { modelId: selectedModelId });
+      const result = await processAndSaveReceipt(file, { modelId: selectedModelId });
 
+      // If backend detects a likely duplicate, prompt the user to confirm
+      if (typeof result === 'object' && result !== null && 'duplicateDetected' in result && (result as any).duplicateDetected) {
+        const dup = result as any;
+        setDuplicatePrompt({
+          candidateReceipt: dup.candidateReceipt,
+          pendingReceipt: dup.pendingReceipt,
+          matchType: dup.matchType,
+        });
+        setStatus({ isProcessing: false, step: 'idle' });
+        return;
+      }
+
+      const processedReceipt = result as ReceiptData;
       setReceipts(prev => [processedReceipt, ...prev]);
       setStatus({ isProcessing: false, step: 'complete' });
 
@@ -78,6 +96,27 @@ function App() {
         isProcessing: false,
         step: 'error',
         message: error.message || 'Server error during AI processing.'
+      });
+    }
+  };
+
+  const handleDuplicateDecision = async (decision: 'ignore' | 'save') => {
+    if (!duplicatePrompt) return;
+    setStatus({ isProcessing: true, step: 'uploading', message: decision === 'save' ? 'Saving receipt...' : 'Ignoring duplicate...' });
+
+    try {
+      const result = await confirmDuplicateReceiptDecision(decision, duplicatePrompt.pendingReceipt);
+      if (decision === 'save') {
+        setReceipts(prev => [result as ReceiptData, ...prev]);
+      }
+      setDuplicatePrompt(null);
+      setStatus({ isProcessing: false, step: 'complete' });
+    } catch (error: any) {
+      console.error(error);
+      setStatus({
+        isProcessing: false,
+        step: 'error',
+        message: error.message || 'Failed to confirm duplicate decision.'
       });
     }
   };
@@ -282,6 +321,54 @@ function App() {
           </div>
         </div>
       </main>
+
+      {/* Duplicate confirmation prompt */}
+      {duplicatePrompt && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="glass-card max-w-md w-full p-5 animate-in zoom-in-95 duration-200 border-pink-100 shadow-glass-lg" role="dialog" aria-modal="true">
+            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Possible duplicate receipt</h3>
+            <p className="text-sm text-slate-500 mb-4">
+              We found an existing receipt that looks the same. Please confirm before adding a new expense.
+            </p>
+
+            <div className="bg-white/60 border border-pink-100 rounded-lg p-3 mb-5">
+              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Existing receipt</div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-700 truncate">{duplicatePrompt.candidateReceipt.merchantName}</div>
+                  <div className="text-xs text-slate-400 font-mono">{duplicatePrompt.candidateReceipt.date}</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-sm font-semibold text-slate-700 font-mono">
+                    {Number(duplicatePrompt.candidateReceipt.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-[10px] text-slate-400">{duplicatePrompt.candidateReceipt.currency}</div>
+                </div>
+              </div>
+              <div className="mt-2 text-[10px] text-slate-400">
+                Match: {duplicatePrompt.matchType === 'imageHash' ? 'same image' : 'same merchant/date/amount'}
+              </div>
+            </div>
+
+            <div className="flex w-full gap-3">
+              <button
+                onClick={() => handleDuplicateDecision('ignore')}
+                className="flex-1 py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-sm font-medium rounded-lg transition-colors border border-emerald-200 cursor-pointer"
+                disabled={status.isProcessing}
+              >
+                Yes (duplicate) — ignore
+              </button>
+              <button
+                onClick={() => handleDuplicateDecision('save')}
+                className="flex-1 py-2 px-3 bg-white hover:bg-blush text-slate-600 text-sm font-medium rounded-lg transition-colors border border-pink-100 cursor-pointer"
+                disabled={status.isProcessing}
+              >
+                No — add new expense
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bulk Delete Global Confirmation */}
       {showBulkDeleteConfirm && (

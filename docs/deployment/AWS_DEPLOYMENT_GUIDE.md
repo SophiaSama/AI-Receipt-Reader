@@ -2,7 +2,7 @@
 
 Your project uses **AWS SAM** which automatically creates ALL infrastructure when you deploy:
 
-1. ✅ **4 Lambda Functions** (automatically created)
+1. ✅ **5 Lambda Functions** (automatically created)
 2. ✅ **API Gateway** (automatically created)
 3. ✅ **DynamoDB Table** (automatically created)
 4. ✅ **S3 Bucket** (automatically created)
@@ -23,7 +23,9 @@ That's it! No manual AWS Console work needed. 🎉
 
 ## 📋 What Gets Created Automatically
 
-### 1️⃣ Lambda Functions (4 Total)
+### 1️⃣ Lambda Functions (5 Total)
+
+> Note: New deployments include **ConfirmReceiptFunction** used by the duplicate-upload confirmation flow.
 
 The SAM template defines these functions that are **automatically created**:
 
@@ -58,6 +60,15 @@ The SAM template defines these functions that are **automatically created**:
 - **Purpose:** Delete receipt and image
 - **Endpoint:** `DELETE /api/receipts/{id}`
 - **Handler:** `src/handlers/deleteReceipt.handler`
+- **Runtime:** Node.js 20.x
+- **Memory:** 512 MB
+- **Timeout:** 30 seconds
+- **Permissions:** DynamoDB + S3 read/write
+
+#### **ConfirmReceiptFunction**
+- **Purpose:** Confirm or ignore a possible duplicate receipt
+- **Endpoint:** `POST /api/receipts/confirm`
+- **Handler:** `src/handlers/confirmReceipt.handler`
 - **Runtime:** Node.js 20.x
 - **Memory:** 512 MB
 - **Timeout:** 30 seconds
@@ -357,7 +368,7 @@ aws cloudformation delete-stack --stack-name smart-receipt-stack
 ```
 
 **This removes:**
-- ✅ All 4 Lambda functions
+- ✅ All 5 Lambda functions
 - ✅ API Gateway
 - ✅ DynamoDB table (⚠️ data will be lost!)
 - ✅ S3 bucket (⚠️ images will be deleted!)
@@ -439,7 +450,7 @@ BucketName: !Sub 'smart-receipt-images-${AWS::AccountId}-${AWS::Region}'
 5. ✅ Deploy: `sam deploy --guided`
 
 ### What AWS SAM Does Automatically:
-1. ✅ Creates 4 Lambda functions
+1. ✅ Creates 5 Lambda functions
 2. ✅ Creates API Gateway
 3. ✅ Creates DynamoDB table
 4. ✅ Creates S3 bucket

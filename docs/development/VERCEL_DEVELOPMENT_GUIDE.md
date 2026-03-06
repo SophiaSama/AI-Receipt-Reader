@@ -515,6 +515,7 @@ vercel dev
 # 3. Test endpoints
 # POST http://localhost:3000/api/process
 # GET http://localhost:3000/api/receipts
+# POST http://localhost:3000/api/receipts/confirm
 # DELETE http://localhost:3000/api/receipts/delete?id=xxx
 
 # 4. If all works, deploy

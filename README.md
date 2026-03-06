@@ -233,6 +233,7 @@ SmartReceiptReader/
     ├── 📁 src/
     │   ├── 📁 handlers/          # Lambda functions
     │   │   ├── processReceipt.ts # Main OCR endpoint
+       │   │   ├── confirmReceipt.ts # Duplicate confirm/ignore
     │   │   ├── manualSave.ts     # Manual entry
     │   │   ├── getReceipts.ts    # Fetch all
     │   │   └── deleteReceipt.ts  # Delete receipt
@@ -244,6 +245,7 @@ SmartReceiptReader/
     │   │
     │   └── 📁 utils/             # Helpers
     │       ├── parseMultipart.ts # Form parsing
+       │       ├── duplicateDetection.ts # Duplicate matching
     │       └── responseHelper.ts # API responses
     │
     ├── 📁 dist/                  # Compiled JavaScript (generated)
@@ -264,7 +266,7 @@ Process receipt image with AI
 - Content-Type: `multipart/form-data`
 - Body: `file` (image), optional `model` or `modelId`
 
-**Response:**
+**Response (normal save):**
 
 ```json
 {
@@ -275,9 +277,60 @@ Process receipt image with AI
   "currency": "SGD",
   "items": [...],
   "imageUrl": "https://...",
+       "imageHash": "sha256-hex",
+       "ocrFingerprint": "normalized-fingerprint",
   "createdAt": 1737475200000
 }
 ```
+
+**Response (duplicate detected — requires confirmation):**
+
+```json
+{
+       "duplicateDetected": true,
+       "matchType": "imageHash",
+       "candidateReceipt": {
+              "id": "existing-uuid",
+              "merchantName": "Whole Foods",
+              "date": "2026-01-21",
+              "total": 87.45,
+              "currency": "SGD"
+       },
+       "pendingReceipt": {
+              "id": "new-uuid",
+              "merchantName": "Whole Foods",
+              "date": "2026-01-21",
+              "total": 87.45,
+              "currency": "SGD",
+              "items": [],
+              "imageUrl": "https://...",
+              "imageHash": "sha256-hex",
+              "ocrFingerprint": "normalized-fingerprint",
+              "rawText": "...",
+              "createdAt": 1737475200000
+       }
+}
+```
+
+### `POST /api/receipts/confirm`
+
+Confirm whether a duplicate should be ignored or saved.
+
+**Request:**
+
+- Content-Type: `application/json`
+
+```json
+{
+       "action": "ignore",
+       "pendingReceipt": { "id": "new-uuid", "merchantName": "...", "date": "YYYY-MM-DD", "total": 0, "currency": "USD", "items": [], "imageUrl": "https://...", "createdAt": 1737475200000 }
+}
+```
+
+**Response:**
+
+- If `action=ignore`: `{ "ignored": true }` (and best-effort deletes from S3 + DynamoDB)
+- If `action=save`: returns the saved `ReceiptData`
 
 ### `POST /api/receipts/manual`
 

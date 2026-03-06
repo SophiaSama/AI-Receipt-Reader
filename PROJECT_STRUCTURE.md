@@ -11,6 +11,7 @@ SmartReceiptReader/
 │   ├── receipts.ts                   # GET /api/receipts (list all)
 │   ├── receipts/
 │   │   ├── manual.ts                 # POST /api/receipts/manual
+│   │   ├── confirm.ts                # POST /api/receipts/confirm
 │   │   └── delete.ts                 # DELETE /api/receipts/delete
 │   └── _lib/                         # Shared utilities for API
 │       ├── readRawBody.ts            # Request body reader (streams/objects/buffers)
@@ -23,8 +24,10 @@ SmartReceiptReader/
 │   │
 │   ├── src/                          # Source code (TypeScript)
 │   │   ├── handlers/                 # API handlers
+│   │   │   └── confirmReceipt.ts      # Confirm/ignore duplicate receipt
 │   │   ├── services/                 # Business logic
 │   │   └── utils/                    # Utilities
+│   │       └── duplicateDetection.ts  # Receipt duplicate matching
 │   │
 │   ├── dist/                         # Compiled JavaScript (generated)
 │   └── local/                        # Local dev server

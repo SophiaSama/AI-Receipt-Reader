@@ -11,6 +11,8 @@ export interface ReceiptData {
   merchantName: string;
   items: LineItem[];
   imageUrl?: string;
+  imageHash?: string;
+  ocrFingerprint?: string;
   rawText?: string;
   createdAt: number;
 }

@@ -11,6 +11,10 @@ export interface ReceiptData {
     merchantName: string;
     items: LineItem[];
     imageUrl?: string;
+    /** SHA-256 of the original uploaded image bytes (hex). Used for exact duplicate detection. */
+    imageHash?: string;
+    /** Normalized fingerprint from OCR fields for fuzzy-ish duplicate detection. */
+    ocrFingerprint?: string;
     rawText?: string;
     createdAt: number;
 }

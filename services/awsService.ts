@@ -2,10 +2,17 @@ import { ReceiptData } from "../types";
 
 const API_BASE = '/api';
 
+export type ProcessReceiptResponse = ReceiptData | {
+  duplicateDetected: true;
+  matchType: 'imageHash' | 'ocrFingerprint';
+  candidateReceipt: Pick<ReceiptData, 'id' | 'merchantName' | 'date' | 'total' | 'currency'>;
+  pendingReceipt: ReceiptData;
+};
+
 /**
  * Sends a receipt image to the backend for full processing.
  * According to architecture: 
- * Frontend -> API Gateway -> Lambda -> (S3 + Mistral OCR + Mistral LLM + DynamoDB)
+ * Frontend -> API Gateway -> Lambda -> (S3 + OCR/LLM + DynamoDB)
  */
 export interface ProcessReceiptOptions {
   modelId?: string;
@@ -14,7 +21,7 @@ export interface ProcessReceiptOptions {
 export const processAndSaveReceipt = async (
   file: File,
   options: ProcessReceiptOptions = {}
-): Promise<ReceiptData> => {
+): Promise<ProcessReceiptResponse> => {
   const formData = new FormData();
   formData.append('file', file);
   if (options.modelId) {
@@ -53,10 +60,40 @@ export const processAndSaveReceipt = async (
     throw new Error(errorMessage);
   }
 
-  // The backend returns the final saved ReceiptData object after OCR and DB save
   const data = await response.json();
   console.log('Upload successful, received data:', data);
   return data;
+};
+
+export const confirmDuplicateReceiptDecision = async (
+  action: 'ignore' | 'save',
+  pendingReceipt: ReceiptData
+): Promise<{ ignored: true } | ReceiptData> => {
+  const response = await fetch(`${API_BASE}/receipts/confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action, pendingReceipt }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Confirm failed: ${response.statusText} (${response.status})`;
+    try {
+      const errorText = await response.text();
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error) errorMessage = `Error: ${errorData.error}`;
+      } catch {
+        if (errorText) errorMessage += ` - ${errorText.substring(0, 200)}`;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
 };
 
 /**

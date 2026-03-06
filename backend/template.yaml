@@ -105,6 +105,25 @@ Resources:
             Path: /api/receipts/{id}
             Method: DELETE
 
+  ConfirmReceiptFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/confirmReceipt.handler
+      CodeUri: ./dist
+      Description: Confirm or ignore duplicate receipt
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReceiptsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+      Events:
+        ConfirmReceipt:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ReceiptApi
+            Path: /api/receipts/confirm
+            Method: POST
+
   # DynamoDB Table
   ReceiptsTable:
     Type: AWS::DynamoDB::Table

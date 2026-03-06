@@ -63,6 +63,7 @@ tests/e2e/playwright/
 ├── tests/                               # Test files
 │   ├── test_health.py                  # Health check tests
 │   ├── test_manual_receipt.py          # Manual entry tests
+│   ├── test_duplicate_upload.py         # Duplicate upload confirmation
 │   ├── test_full_workflow.py           # Complete workflows
 │   ├── test_api_errors.py              # API error handling tests
 │   ├── test_page_objects.py            # POM usage examples
@@ -91,6 +92,9 @@ pytest tests/e2e/playwright/
 
 # Run specific test file
 pytest tests/e2e/playwright/tests/test_health.py
+
+# Run duplicate-upload flow tests
+pytest tests/e2e/playwright/tests/test_duplicate_upload.py
 
 # Run with specific browser
 pytest --browser chromium
@@ -293,6 +297,14 @@ def test_with_mock_api(page: Page):
 - Verify in list
 - Delete receipt
 - Confirm deletion
+
+### 6. Duplicate Upload Confirmation
+
+- Upload a receipt twice
+- App detects possible duplicate after OCR
+- User chooses:
+    - **Yes (duplicate) — ignore** → does not add a new record
+    - **No — add new expense** → proceeds and adds the new record
 
 ## Debugging
 
