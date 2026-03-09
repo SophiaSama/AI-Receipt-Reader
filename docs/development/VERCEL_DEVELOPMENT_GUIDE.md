@@ -391,6 +391,10 @@ git log --oneline
 **Required for Vercel:**
 ```
 MISTRAL_API_KEY=xxx
+OPENROUTER_API_KEY=xxx  # optional; missing key falls back to Mistral
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1  # optional
+OPENROUTER_HTTP_REFERER=http://localhost:3000  # optional
+OPENROUTER_APP_NAME=SmartReceiptReader  # optional
 USE_LOCAL_STORAGE=false
 AWS_REGION=ap-southeast-1
 AWS_ACCESS_KEY_ID=AKIA...
@@ -515,6 +519,7 @@ vercel dev
 # 3. Test endpoints
 # POST http://localhost:3000/api/process
 # GET http://localhost:3000/api/receipts
+# POST http://localhost:3000/api/receipts/confirm
 # DELETE http://localhost:3000/api/receipts/delete?id=xxx
 
 # 4. If all works, deploy

@@ -13,6 +13,7 @@ import { manualSaveHandler } from '../src/handlers/manualSave';
 import { getReceiptsHandler } from '../src/handlers/getReceipts';
 import { deleteReceiptHandler } from '../src/handlers/deleteReceipt';
 import { batchDeleteReceiptsHandler } from '../src/handlers/batchDeleteReceipts';
+import { handler as confirmReceiptLambdaHandler } from '../src/handlers/confirmReceipt';
 import { getLocalImage } from '../src/services/s3Service';
 
 const app = express();
@@ -133,6 +134,46 @@ app.post('/api/receipts/manual', upload.single('file'), async (req: Request, res
 });
 
 /**
+ * POST /api/receipts/confirm
+ * Confirm/ignore a possible duplicate receipt.
+ */
+app.post('/api/receipts/confirm', async (req: Request, res: Response) => {
+    try {
+        const event = {
+            body: JSON.stringify(req.body || {}),
+            headers: {
+                'content-type': String(req.headers['content-type'] || 'application/json'),
+                'Content-Type': String(req.headers['content-type'] || 'application/json'),
+            },
+            httpMethod: 'POST',
+            isBase64Encoded: false,
+            path: '/api/receipts/confirm',
+            pathParameters: null,
+            queryStringParameters: null,
+            requestContext: {},
+        };
+
+        const result = await confirmReceiptLambdaHandler(event as any);
+
+        if (result.headers) {
+            for (const [k, v] of Object.entries(result.headers)) {
+                res.setHeader(k, String(v));
+            }
+        }
+
+        if (!result.body) {
+            return res.status(result.statusCode).send('');
+        }
+
+        // result.body is JSON (success/badRequest/serverError)
+        return res.status(result.statusCode).json(JSON.parse(result.body));
+    } catch (error: any) {
+        console.error('Error confirming receipt:', error);
+        return res.status(500).json({ error: error.message || 'Confirm failed' });
+    }
+});
+
+/**
  * GET /api/receipts
  * Get all receipts
  */
@@ -229,6 +270,7 @@ if (process.env.VERCEL !== '1') {
 ║  Endpoints:                                               ║
 ║    POST   /api/process         - Process receipt image    ║
 ║    POST   /api/receipts/manual - Manual entry             ║
+║    POST   /api/receipts/confirm - Confirm duplicate        ║
 ║    GET    /api/receipts        - Get all receipts         ║
 ║    DELETE /api/receipts/:id    - Delete receipt           ║
 ║    POST   /api/receipts/batch-delete - Bulk delete        ║

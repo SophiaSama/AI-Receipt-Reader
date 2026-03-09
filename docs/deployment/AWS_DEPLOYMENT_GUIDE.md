@@ -2,7 +2,7 @@
 
 Your project uses **AWS SAM** which automatically creates ALL infrastructure when you deploy:
 
-1. ✅ **4 Lambda Functions** (automatically created)
+1. ✅ **5 Lambda Functions** (automatically created)
 2. ✅ **API Gateway** (automatically created)
 3. ✅ **DynamoDB Table** (automatically created)
 4. ✅ **S3 Bucket** (automatically created)
@@ -23,7 +23,9 @@ That's it! No manual AWS Console work needed. 🎉
 
 ## 📋 What Gets Created Automatically
 
-### 1️⃣ Lambda Functions (4 Total)
+### 1️⃣ Lambda Functions (5 Total)
+
+> Note: New deployments include **ConfirmReceiptFunction** used by the duplicate-upload confirmation flow.
 
 The SAM template defines these functions that are **automatically created**:
 
@@ -58,6 +60,15 @@ The SAM template defines these functions that are **automatically created**:
 - **Purpose:** Delete receipt and image
 - **Endpoint:** `DELETE /api/receipts/{id}`
 - **Handler:** `src/handlers/deleteReceipt.handler`
+- **Runtime:** Node.js 20.x
+- **Memory:** 512 MB
+- **Timeout:** 30 seconds
+- **Permissions:** DynamoDB + S3 read/write
+
+#### **ConfirmReceiptFunction**
+- **Purpose:** Confirm or ignore a possible duplicate receipt
+- **Endpoint:** `POST /api/receipts/confirm`
+- **Handler:** `src/handlers/confirmReceipt.handler`
 - **Runtime:** Node.js 20.x
 - **Memory:** 512 MB
 - **Timeout:** 30 seconds
@@ -169,15 +180,17 @@ sam deploy --guided
 1. **Stack Name:** `smart-receipt-stack` (or your choice)
 2. **AWS Region:** `us-east-1` (or your preferred region)
 3. **Parameter MistralApiKey:** `your-mistral-api-key-here`
-
-**Optional OpenRouter support:** If you plan to use non-Mistral models, add `OPENROUTER_API_KEY` to the Lambda environment variables in [backend/template.yaml](../../backend/template.yaml) and pass it as a parameter during deployment.
-4. **Confirm changes before deploy:** `Y`
-5. **Allow SAM CLI IAM role creation:** `Y`
-6. **Disable rollback:** `N`
-7. **ProcessReceiptFunction has no auth:** `Y` (all functions)
-8. **Save arguments to config file:** `Y`
-9. **Config file name:** `samconfig.toml` (default)
-10. **Config environment:** `default` (default)
+4. **Parameter OpenRouterApiKey (optional):** leave empty to disable OpenRouter-backed models, or set your key to enable them
+5. **Parameter OpenRouterBaseUrl:** press Enter to accept default unless you need an override
+6. **Parameter OpenRouterHttpReferer:** press Enter to accept default (or set to your deployed app URL)
+7. **Parameter OpenRouterAppName:** press Enter to accept default
+8. **Confirm changes before deploy:** `Y`
+9. **Allow SAM CLI IAM role creation:** `Y`
+10. **Disable rollback:** `N`
+11. **ProcessReceiptFunction has no auth:** `Y` (all functions)
+12. **Save arguments to config file:** `Y`
+13. **Config file name:** `samconfig.toml` (default)
+14. **Config environment:** `default` (default)
 
 #### Step 4: Subsequent Deployments
 ```powershell
@@ -357,7 +370,7 @@ aws cloudformation delete-stack --stack-name smart-receipt-stack
 ```
 
 **This removes:**
-- ✅ All 4 Lambda functions
+- ✅ All 5 Lambda functions
 - ✅ API Gateway
 - ✅ DynamoDB table (⚠️ data will be lost!)
 - ✅ S3 bucket (⚠️ images will be deleted!)
@@ -439,7 +452,7 @@ BucketName: !Sub 'smart-receipt-images-${AWS::AccountId}-${AWS::Region}'
 5. ✅ Deploy: `sam deploy --guided`
 
 ### What AWS SAM Does Automatically:
-1. ✅ Creates 4 Lambda functions
+1. ✅ Creates 5 Lambda functions
 2. ✅ Creates API Gateway
 3. ✅ Creates DynamoDB table
 4. ✅ Creates S3 bucket

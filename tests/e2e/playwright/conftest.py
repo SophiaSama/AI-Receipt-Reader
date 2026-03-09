@@ -14,6 +14,8 @@ load_dotenv()
 BASE_URL = os.getenv("BASE_URL", "http://localhost:3000")
 API_URL = os.getenv("API_URL", f"{BASE_URL}/api")
 HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
+FORWARD_API_TO_BACKEND = os.getenv("FORWARD_API_TO_BACKEND", "false").lower() == "true"
+RECORD_VIDEO = os.getenv("RECORD_VIDEO", "false").lower() == "true"
 
 
 @pytest.fixture(scope="session")
@@ -31,28 +33,29 @@ def api_url():
 @pytest.fixture(scope="function")
 def context(browser: Browser):
     """Browser context with custom settings"""
-    # WebKit is stricter about some CORS scenarios; avoid flaky console errors by routing
-    # frontend /api calls directly to the backend origin in tests.
+    # Optional: rewrite frontend /api calls directly to the backend origin.
+    # This is OFF by default because it can interfere with per-test network mocking
+    # (e.g. page.route("**/api/process", ...) for upload tests).
     backend_origin = os.getenv("BACKEND_ORIGIN", "http://localhost:3001")
 
     context = browser.new_context(
         viewport={"width": 1920, "height": 1080},
         locale="en-US",
         timezone_id="America/New_York",
-        record_video_dir="results/videos" if os.getenv("RECORD_VIDEO") else None,
+        record_video_dir="results/videos" if RECORD_VIDEO else None,
     )
 
-    # Route all /api/* requests (from the page) to the backend to reduce CORS issues in WebKit.
-    def _route_api(route):
-        url = route.request.url
-        # If the request is to the dev server /api, forward to backend directly.
-        if "/api/" in url or url.endswith("/api"):
-            path = url.split("/api", 1)[1]
-            target = f"{backend_origin}/api{path}"
-            return route.continue_(url=target)
-        return route.continue_()
+    if FORWARD_API_TO_BACKEND:
+        # Route all /api/* requests (from the page) to the backend.
+        def _route_api(route):
+            url = route.request.url
+            if "/api/" in url or url.endswith("/api"):
+                path = url.split("/api", 1)[1]
+                target = f"{backend_origin}/api{path}"
+                return route.continue_(url=target)
+            return route.continue_()
 
-    context.route("**/api/**", _route_api)
+        context.route("**/api/**", _route_api)
 
     yield context
     context.close()

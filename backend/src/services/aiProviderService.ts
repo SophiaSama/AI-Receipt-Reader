@@ -32,13 +32,6 @@ const AI_MODEL_CATALOG: AiModelConfig[] = [
         structModel: 'google/gemini-2.5-flash-lite',
     },
     {
-        id: 'x-ai/grok-4-fast',
-        label: 'Grok 4 Fast',
-        provider: 'openrouter',
-        ocrModel: 'x-ai/grok-4-fast',
-        structModel: 'x-ai/grok-4-fast',
-    },
-    {
         id: 'qwen/qwen-vl-plus',
         label: 'Qwen VL Plus',
         provider: 'openrouter',

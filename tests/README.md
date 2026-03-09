@@ -87,9 +87,13 @@ All endpoints support **test mode** for fast, reliable integration testing:
    - ✅ Rejects non-POST requests with 405
 
 6. **AI Model Selection**
-    - ✅ Defaults to the configured model when omitted
-    - ✅ Accepts valid model IDs
-    - ✅ Falls back on invalid model IDs
+  - ✅ Defaults to the configured model when omitted
+  - ✅ Accepts valid model IDs
+  - ✅ Falls back on invalid model IDs
+
+7. **Confirm Duplicate** - `POST /api/receipts/confirm`
+  - ✅ Accepts `action: ignore|save` with `pendingReceipt`
+  - ✅ Ignore path performs best-effort cleanup (S3 + DynamoDB)
 
 ### Integration Workflows
 

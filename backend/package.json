@@ -5,7 +5,7 @@
         "node": ">=20.0.0",
         "npm": ">=10.0.0"
     },
-    "description": "Serverless backend for SmartReceiptReader with Mistral AI integration",
+    "description": "Serverless backend for SmartReceiptReader with AI integration",
     "main": "dist/local/server.js",
     "scripts": {
         "build": "tsc",
