@@ -39,6 +39,32 @@ function App() {
     matchType: 'imageHash' | 'ocrFingerprint';
   }>(null);
 
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const refreshReceiptsAfterDelete = async (deletedIds: string[]) => {
+    const maxAttempts = 3;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const data = await fetchReceiptsFromDB();
+      const stillPresent = data.some(r => deletedIds.includes(r.id));
+      if (!stillPresent) {
+        setReceipts(data);
+        return true;
+      }
+      if (attempt < maxAttempts - 1) {
+        await sleep(500 * (attempt + 1));
+      }
+    }
+
+    // Keep UI consistent while signaling that delete did not persist server-side.
+    setReceipts(prev => prev.filter(r => !deletedIds.includes(r.id)));
+    setStatus({
+      isProcessing: false,
+      step: 'error',
+      message: 'Delete did not persist. Please refresh and try again.'
+    });
+    return false;
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -140,12 +166,12 @@ function App() {
 
   const handleDelete = async (id: string) => {
     const previousReceipts = receipts;
-    setReceipts(prev => prev.filter(r => r.id !== id));
-    setSelectedIds(prev => prev.filter(selId => selId !== id));
+    setStatus({ isProcessing: true, step: 'uploading', message: 'Deleting receipt...' });
     try {
       await deleteReceiptFromDB(id);
-      const data = await fetchReceiptsFromDB();
-      setReceipts(data);
+      setSelectedIds(prev => prev.filter(selId => selId !== id));
+      await refreshReceiptsAfterDelete([id]);
+      setStatus({ isProcessing: false, step: 'complete' });
     } catch (e) {
       console.error("Deletion failed", e);
       setReceipts(previousReceipts);
@@ -176,14 +202,14 @@ function App() {
 
     const idsToDelete = [...selectedIds];
     const previousReceipts = receipts;
-    setReceipts(prev => prev.filter(r => !idsToDelete.includes(r.id)));
-    setSelectedIds([]);
     setShowBulkDeleteConfirm(false);
+    setStatus({ isProcessing: true, step: 'uploading', message: 'Deleting receipts...' });
 
     try {
       await deleteReceiptsFromDB(idsToDelete);
-      const data = await fetchReceiptsFromDB();
-      setReceipts(data);
+      setSelectedIds([]);
+      await refreshReceiptsAfterDelete(idsToDelete);
+      setStatus({ isProcessing: false, step: 'complete' });
     } catch (e) {
       console.error("Bulk deletion failed", e);
       setReceipts(previousReceipts);
@@ -211,6 +237,8 @@ function App() {
     link.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
+
+  const isDeleting = status.isProcessing && typeof status.message === 'string' && status.message.toLowerCase().includes('deleting');
 
   return (
     <div className="min-h-screen text-slate-700 pb-12 font-sans selection:bg-primary/20">
@@ -295,6 +323,15 @@ function App() {
                 <h2 className="text-xl font-semibold text-slate-800 tracking-tight">Activity Log</h2>
                 <p className="text-xs text-slate-400">Recent Transactions</p>
               </div>
+
+              {isDeleting && (
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-100 text-rose-500 text-xs font-medium">
+                  <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
+                    <span className="h-3.5 w-3.5 rounded-full border-2 border-rose-200 border-t-rose-500 animate-spin"></span>
+                  </span>
+                  <span>{status.message}</span>
+                </div>
+              )}
 
               {selectedIds.length > 0 && (
                 <div className="animate-in fade-in slide-in-from-right-2 duration-200 flex items-center gap-2 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200">
