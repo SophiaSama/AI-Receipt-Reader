@@ -4,7 +4,11 @@ const rawApiBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | unde
 const API_BASE = rawApiBase && rawApiBase.trim().length > 0
   ? rawApiBase.trim().replace(/\/$/, '')
   : '/api';
-const DELETE_TIMEOUT_MS = 10_000;
+const deleteTimeoutEnv = (import.meta as any)?.env?.VITE_DELETE_TIMEOUT_MS as string | undefined;
+const parsedDeleteTimeout = deleteTimeoutEnv ? Number(deleteTimeoutEnv) : NaN;
+const DELETE_TIMEOUT_MS = Number.isFinite(parsedDeleteTimeout) && parsedDeleteTimeout > 0
+  ? parsedDeleteTimeout
+  : 10_000;
 
 const fetchWithTimeout = async (input: RequestInfo, init: RequestInit, timeoutMs: number) => {
   const controller = new AbortController();

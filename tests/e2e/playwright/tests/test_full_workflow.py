@@ -1,7 +1,12 @@
 """
 Full workflow E2E tests
 """
+import os
 import pytest
+import time
+
+DELETE_TIMEOUT_MS = int(os.getenv("VITE_DELETE_TIMEOUT_MS", "10000"))
+DELETE_ROUTE_DELAY_MS = DELETE_TIMEOUT_MS + 1_000
 from playwright.sync_api import Page, expect
 
 
@@ -166,7 +171,7 @@ class TestFullWorkflow:
         # Delay DELETE calls beyond the 10s timeout
         def delay_delete(route):
             if route.request.method.upper() == "DELETE":
-                page.wait_for_timeout(11000)
+                time.sleep(DELETE_ROUTE_DELAY_MS / 1000)
                 try:
                     return route.fulfill(status=504, body="")
                 except Exception:
@@ -192,6 +197,9 @@ class TestFullWorkflow:
         upload_section.scroll_into_view_if_needed()
         expect(upload_section.get_by_text("Delete timed out")).to_be_visible(timeout=20000)
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=10000)
+
+        # Prevent teardown errors if route handlers are still running
+        page.unroute_all(behavior="ignoreErrors")
 
     @pytest.mark.slow
     def test_statistics_update_workflow(self, page: Page, sample_receipt_data: dict):
