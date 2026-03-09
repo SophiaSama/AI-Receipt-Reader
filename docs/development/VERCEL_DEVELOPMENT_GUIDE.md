@@ -150,6 +150,10 @@ export default async function(req: VercelRequest, res: VercelResponse) {
 2. **Static routes are more reliable** than dynamic `[param]` routes
 3. **Test routing thoroughly** before deploying
 
+**Bulk Delete Behavior:**
+- `/api/receipts/batch-delete` uses the in-memory store **only in test mode** (`NODE_ENV=test`).
+- In Preview/Production, it always delegates to the backend handler (AWS DynamoDB/S3).
+
 ### RESTful Alternatives
 
 If you need RESTful paths with dynamic IDs:

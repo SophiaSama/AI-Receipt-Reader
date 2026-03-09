@@ -69,8 +69,9 @@ When a duplicate is detected, the client must call:
 ### 4. GET /api/receipts
 - **Responsibility**: Fetch all records from DynamoDB for the current user.
 
-### 5. DELETE /api/receipts/:id
+### 5. DELETE /api/receipts/delete?id=xxx
 - **Responsibility**: Cascade delete from DynamoDB and remove the object from S3 using the stored `imageUrl`.
+- **Note**: This static route is preferred on Vercel for reliable routing. The backend still supports `DELETE /api/receipts/:id` for AWS API Gateway.
 
 ## Data Schema (Expected return from AI)
 
