@@ -1,6 +1,9 @@
 import { ReceiptData } from "../types";
 
-const API_BASE = '/api';
+const rawApiBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
+const API_BASE = rawApiBase && rawApiBase.trim().length > 0
+  ? rawApiBase.trim().replace(/\/$/, '')
+  : '/api';
 const DELETE_TIMEOUT_MS = 10_000;
 
 const fetchWithTimeout = async (input: RequestInfo, init: RequestInit, timeoutMs: number) => {
@@ -159,11 +162,11 @@ export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
 };
 
 export const deleteReceiptFromDB = async (id: string): Promise<void> => {
-  // Backend exposes DELETE /api/receipts/:id (see backend/local/server.ts)
+  // Use static delete endpoint for Vercel reliability; backend/local server supports this too.
   let response: Response;
   try {
     response = await fetchWithTimeout(
-      `${API_BASE}/receipts/${encodeURIComponent(id)}`,
+      `${API_BASE}/receipts/delete?id=${encodeURIComponent(id)}`,
       { method: 'DELETE' },
       DELETE_TIMEOUT_MS
     );
