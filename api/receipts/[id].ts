@@ -21,6 +21,13 @@ export default async function (req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    console.log('Vercel delete (id) request', {
+      method: req.method,
+      id: req.query?.id,
+      hasAwsRegion: Boolean(process.env.AWS_REGION),
+      hasTable: Boolean(process.env.DYNAMODB_TABLE_NAME),
+      hasBucket: Boolean(process.env.S3_BUCKET_NAME),
+    });
     const id =
       typeof req.query.id === 'string'
         ? req.query.id
@@ -66,6 +73,11 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     };
 
     const result = await deleteHandler(event as any);
+
+    console.log('Vercel delete (id) backend result', {
+      statusCode: result.statusCode,
+      hasBody: Boolean(result.body),
+    });
 
     if (result.headers) {
       for (const [k, v] of Object.entries(result.headers)) {

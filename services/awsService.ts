@@ -165,11 +165,14 @@ export const deleteReceiptFromDB = async (id: string): Promise<void> => {
   // Use static delete endpoint for Vercel reliability; backend/local server supports this too.
   let response: Response;
   try {
+    const url = `${API_BASE}/receipts/delete?id=${encodeURIComponent(id)}`;
+    console.log('[deleteReceiptFromDB] DELETE', url);
     response = await fetchWithTimeout(
-      `${API_BASE}/receipts/delete?id=${encodeURIComponent(id)}`,
+      url,
       { method: 'DELETE' },
       DELETE_TIMEOUT_MS
     );
+    console.log('[deleteReceiptFromDB] status', response.status);
   } catch (error: any) {
     if (error?.name === 'AbortError') {
       throw new Error('Delete timed out. Please try again.');
