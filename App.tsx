@@ -139,12 +139,21 @@ function App() {
   };
 
   const handleDelete = async (id: string) => {
+    const previousReceipts = receipts;
     setReceipts(prev => prev.filter(r => r.id !== id));
     setSelectedIds(prev => prev.filter(selId => selId !== id));
     try {
       await deleteReceiptFromDB(id);
+      const data = await fetchReceiptsFromDB();
+      setReceipts(data);
     } catch (e) {
       console.error("Deletion failed", e);
+      setReceipts(previousReceipts);
+      setStatus({
+        isProcessing: false,
+        step: 'error',
+        message: e?.message || 'Delete failed. Please try again.'
+      });
     }
   };
 
@@ -166,15 +175,23 @@ function App() {
     if (selectedIds.length === 0) return;
 
     const idsToDelete = [...selectedIds];
+    const previousReceipts = receipts;
     setReceipts(prev => prev.filter(r => !idsToDelete.includes(r.id)));
     setSelectedIds([]);
     setShowBulkDeleteConfirm(false);
 
     try {
       await deleteReceiptsFromDB(idsToDelete);
+      const data = await fetchReceiptsFromDB();
+      setReceipts(data);
     } catch (e) {
       console.error("Bulk deletion failed", e);
-      // Optional: re-fetch or show error toast
+      setReceipts(previousReceipts);
+      setStatus({
+        isProcessing: false,
+        step: 'error',
+        message: 'Bulk delete failed. Please try again.'
+      });
     }
   };
 
@@ -269,7 +286,7 @@ function App() {
                 />
               )}
             </div>
-          </div>
+                  message: e?.message || 'Bulk delete failed. Please try again.'
 
           {/* RIGHT PANEL: ACTIVITY LOG */}
           <div className="lg:col-span-8 space-y-3">

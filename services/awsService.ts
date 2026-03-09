@@ -1,6 +1,17 @@
 import { ReceiptData } from "../types";
 
 const API_BASE = '/api';
+const DELETE_TIMEOUT_MS = 10_000;
+
+const fetchWithTimeout = async (input: RequestInfo, init: RequestInit, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 export type ProcessReceiptResponse = ReceiptData | {
   duplicateDetected: true;
@@ -149,9 +160,19 @@ export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
 
 export const deleteReceiptFromDB = async (id: string): Promise<void> => {
   // Backend exposes DELETE /api/receipts/:id (see backend/local/server.ts)
-  const response = await fetch(`${API_BASE}/receipts/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      `${API_BASE}/receipts/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+      DELETE_TIMEOUT_MS
+    );
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Delete timed out. Please try again.');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     let message = `Failed to delete receipt: ${response.statusText} (${response.status})`;
@@ -176,13 +197,25 @@ export const deleteReceiptFromDB = async (id: string): Promise<void> => {
 export const deleteReceiptsFromDB = async (ids: string[]): Promise<void> => {
   if (!ids || ids.length === 0) return;
 
-  const response = await fetch(`${API_BASE}/receipts/batch-delete`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ ids }),
-  });
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      `${API_BASE}/receipts/batch-delete`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids }),
+      },
+      DELETE_TIMEOUT_MS
+    );
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Bulk delete timed out. Please try again.');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     let message = `Failed to bulk delete receipts: ${response.statusText} (${response.status})`;
