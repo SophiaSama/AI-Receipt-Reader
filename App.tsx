@@ -286,7 +286,7 @@ function App() {
                 />
               )}
             </div>
-                  message: e?.message || 'Bulk delete failed. Please try again.'
+          </div>
 
           {/* RIGHT PANEL: ACTIVITY LOG */}
           <div className="lg:col-span-8 space-y-3">
