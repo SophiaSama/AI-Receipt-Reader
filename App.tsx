@@ -238,7 +238,8 @@ function App() {
     link.click();
   };
 
-  const isDeleting = status.isProcessing && typeof status.message === 'string' && status.message.toLowerCase().includes('deleting');
+  const bulkDeleteInProgress = status.isProcessing && typeof status.message === 'string' && status.message.toLowerCase().includes('deleting receipts');
+  const bulkDeleteFailed = status.step === 'error' && typeof status.message === 'string' && status.message.toLowerCase().includes('bulk delete');
 
   return (
     <div className="min-h-screen text-slate-700 pb-12 font-sans selection:bg-primary/20">
@@ -324,15 +325,6 @@ function App() {
                 <p className="text-xs text-slate-400">Recent Transactions</p>
               </div>
 
-              {isDeleting && (
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-100 text-rose-500 text-xs font-medium">
-                  <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
-                    <span className="h-3.5 w-3.5 rounded-full border-2 border-rose-200 border-t-rose-500 animate-spin"></span>
-                  </span>
-                  <span>{status.message}</span>
-                </div>
-              )}
-
               {selectedIds.length > 0 && (
                 <div className="animate-in fade-in slide-in-from-right-2 duration-200 flex items-center gap-2 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200">
                   <span className="text-xs font-medium text-rose-500">{selectedIds.length} Selected</span>
@@ -342,6 +334,20 @@ function App() {
                   >
                     PURGE
                   </button>
+                  {(bulkDeleteInProgress || bulkDeleteFailed) && (
+                    <div className={`flex items-center gap-1 text-[11px] font-semibold ${bulkDeleteFailed ? 'text-amber-600' : 'text-rose-500'}`}>
+                      {bulkDeleteFailed ? (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                      ) : (
+                        <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
+                          <span className="h-3.5 w-3.5 rounded-full border-2 border-rose-200 border-t-rose-500 animate-spin"></span>
+                        </span>
+                      )}
+                      <span>{bulkDeleteFailed ? 'Delete failed' : 'Deleting...'}</span>
+                    </div>
+                  )}
                   <div className="w-px h-3 bg-rose-200"></div>
                   <button
                     onClick={() => setSelectedIds([])}
