@@ -93,6 +93,8 @@ describe('API Integration Tests', () => {
       await receiptsHandler(req, res);
 
       expect(res.getStatus()).toBe(200);
+      const headers = res.getHeaders();
+      expect(String(headers['Cache-Control'] || headers['cache-control'] || '')).toContain('no-store');
       const data = res.getData();
       expect(Array.isArray(data)).toBe(true);
     });
@@ -248,6 +250,8 @@ describe('API Integration Tests', () => {
       await deleteByIdHandler(deleteReq, deleteRes);
 
       expect(deleteRes.getStatus()).toBe(204);
+      const deleteHeaders = deleteRes.getHeaders();
+      expect(String(deleteHeaders['Cache-Control'] || deleteHeaders['cache-control'] || '')).toContain('no-store');
 
       const listReq = createMockRequest({ method: 'GET' });
       const listRes = createMockResponse();

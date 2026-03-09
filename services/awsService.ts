@@ -136,7 +136,7 @@ export const saveManualReceiptToDB = async (receipt: Partial<ReceiptData>, file?
  * Fetch all receipts from DynamoDB
  */
 export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
-  const response = await fetch(`${API_BASE}/receipts`);
+  const response = await fetch(`${API_BASE}/receipts`, { cache: 'no-store' });
 
   if (!response.ok) {
     console.warn("Failed to fetch receipts, returning empty list.");
