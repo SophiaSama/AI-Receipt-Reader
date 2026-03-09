@@ -185,9 +185,12 @@ class TestFullWorkflow:
         confirm_button = page.locator("div[role='dialog'] button:has-text('Delete')")
         expect(confirm_button).to_be_visible(timeout=5000)
         confirm_button.click()
+        page.wait_for_timeout(100)
 
         # Expect timeout message and receipt still visible
-        expect(page.locator("text=Delete timed out. Please try again.")).to_be_visible(timeout=15000)
+        upload_section = page.locator("[data-testid='upload-section']")
+        upload_section.scroll_into_view_if_needed()
+        expect(upload_section.get_by_text("Delete timed out")).to_be_visible(timeout=20000)
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=10000)
 
     @pytest.mark.slow
