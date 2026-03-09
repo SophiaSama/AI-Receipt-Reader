@@ -51,6 +51,7 @@ export const getReceipts = async (): Promise<ReceiptData[]> => {
 
     const command = new ScanCommand({
         TableName: TABLE_NAME,
+        ConsistentRead: true,
     });
 
     const result = await dynamoClient!.send(command);
@@ -68,6 +69,7 @@ export const getReceiptById = async (id: string): Promise<ReceiptData | null> =>
     const command = new GetCommand({
         TableName: TABLE_NAME,
         Key: { id },
+        ConsistentRead: true,
     });
 
     const result = await dynamoClient!.send(command);

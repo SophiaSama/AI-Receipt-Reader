@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { readRawBody } from '../_lib/readRawBody.js';
 
 /**
  * Vercel Serverless Function:
@@ -21,7 +22,22 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const { ids } = req.body;
+        let body: any = req.body;
+        if (!body || typeof body === 'string') {
+            const rawBody = await readRawBody(req);
+            const rawText = rawBody.toString('utf8');
+            body = rawText ? JSON.parse(rawText) : {};
+        }
+
+        const { ids } = body;
+
+        console.log('Vercel batch-delete request', {
+            method: req.method,
+            idsCount: Array.isArray(ids) ? ids.length : 0,
+            hasAwsRegion: Boolean(process.env.AWS_REGION),
+            hasTable: Boolean(process.env.DYNAMODB_TABLE_NAME),
+            hasBucket: Boolean(process.env.S3_BUCKET_NAME),
+        });
 
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             res.status(400).json({ error: 'Array of receipt IDs is required' });
@@ -31,7 +47,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         // TEST MODE: Check if we should use in-memory store
         try {
             const { batchDeleteReceipts } = await import('../_lib/receiptsStore.js');
-            if (batchDeleteReceipts) {
+            if (batchDeleteReceipts && process.env.NODE_ENV === 'test') {
                 await batchDeleteReceipts(ids);
                 return res.status(204).send('');
             }

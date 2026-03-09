@@ -18,6 +18,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return badRequest('Receipt ID is required');
         }
 
+        console.log('Delete receipt request received', {
+            id,
+            requestId: event.requestContext?.requestId,
+            sourceIp: event.requestContext?.identity?.sourceIp,
+        });
+
         // Get receipt to find S3 image URL
         const receipt = await getReceiptById(id);
 

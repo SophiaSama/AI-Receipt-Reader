@@ -1,6 +1,24 @@
 import { ReceiptData } from "../types";
 
-const API_BASE = '/api';
+const rawApiBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
+const API_BASE = rawApiBase && rawApiBase.trim().length > 0
+  ? rawApiBase.trim().replace(/\/$/, '')
+  : '/api';
+const deleteTimeoutEnv = (import.meta as any)?.env?.VITE_DELETE_TIMEOUT_MS as string | undefined;
+const parsedDeleteTimeout = deleteTimeoutEnv ? Number(deleteTimeoutEnv) : NaN;
+const DELETE_TIMEOUT_MS = Number.isFinite(parsedDeleteTimeout) && parsedDeleteTimeout > 0
+  ? parsedDeleteTimeout
+  : 10_000;
+
+const fetchWithTimeout = async (input: RequestInfo, init: RequestInit, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 export type ProcessReceiptResponse = ReceiptData | {
   duplicateDetected: true;
@@ -136,7 +154,7 @@ export const saveManualReceiptToDB = async (receipt: Partial<ReceiptData>, file?
  * Fetch all receipts from DynamoDB
  */
 export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
-  const response = await fetch(`${API_BASE}/receipts`);
+  const response = await fetch(`${API_BASE}/receipts`, { cache: 'no-store' });
 
   if (!response.ok) {
     console.warn("Failed to fetch receipts, returning empty list.");
@@ -148,10 +166,23 @@ export const fetchReceiptsFromDB = async (): Promise<ReceiptData[]> => {
 };
 
 export const deleteReceiptFromDB = async (id: string): Promise<void> => {
-  // Backend exposes DELETE /api/receipts/:id (see backend/local/server.ts)
-  const response = await fetch(`${API_BASE}/receipts/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
+  // Use static delete endpoint for Vercel reliability; backend/local server supports this too.
+  let response: Response;
+  try {
+    const url = `${API_BASE}/receipts/delete?id=${encodeURIComponent(id)}`;
+    console.log('[deleteReceiptFromDB] DELETE', url);
+    response = await fetchWithTimeout(
+      url,
+      { method: 'DELETE' },
+      DELETE_TIMEOUT_MS
+    );
+    console.log('[deleteReceiptFromDB] status', response.status);
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Delete timed out. Please try again.');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     let message = `Failed to delete receipt: ${response.statusText} (${response.status})`;
@@ -176,13 +207,25 @@ export const deleteReceiptFromDB = async (id: string): Promise<void> => {
 export const deleteReceiptsFromDB = async (ids: string[]): Promise<void> => {
   if (!ids || ids.length === 0) return;
 
-  const response = await fetch(`${API_BASE}/receipts/batch-delete`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ ids }),
-  });
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      `${API_BASE}/receipts/batch-delete`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids }),
+      },
+      DELETE_TIMEOUT_MS
+    );
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Bulk delete timed out. Please try again.');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     let message = `Failed to bulk delete receipts: ${response.statusText} (${response.status})`;

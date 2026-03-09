@@ -1,7 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import receiptsHandler from '@/api/receipts';
 import manualHandler from '@/api/receipts/manual';
-import batchDeleteHandler from '@/api/receipts/batch-delete';
 
 // Helper to create mock Vercel request/response
 function createMockRequest(options: {
@@ -53,6 +52,7 @@ function createMockResponse() {
 
 describe('Bulk Delete Integration Tests', () => {
     it('should delete multiple receipts', async () => {
+        const { default: batchDeleteHandler } = await import('@/api/receipts/batch-delete');
         // 1. Create a few receipts
         const idsToCreate = ['Bulk1', 'Bulk2', 'Bulk3'];
         const createdIds: string[] = [];
@@ -114,6 +114,7 @@ describe('Bulk Delete Integration Tests', () => {
     });
 
     it('should validate request body', async () => {
+        const { default: batchDeleteHandler } = await import('@/api/receipts/batch-delete');
         const req = createMockRequest({
             method: 'POST',
             body: {}, // Missing ids
@@ -121,5 +122,77 @@ describe('Bulk Delete Integration Tests', () => {
         const res = createMockResponse();
         await batchDeleteHandler(req, res);
         expect(res.getStatus()).toBe(400);
+    });
+
+    it('should accept raw JSON string body (Vercel-style)', async () => {
+        const { default: batchDeleteHandler } = await import('@/api/receipts/batch-delete');
+
+        // Create two receipts
+        const idsToCreate = ['BulkRaw1', 'BulkRaw2'];
+        const createdIds: string[] = [];
+
+        for (const name of idsToCreate) {
+            const metadata = {
+                merchantName: name,
+                date: '2026-02-01',
+                total: 15.00,
+                currency: 'USD',
+                items: [],
+            };
+            const req = createMockRequest({
+                method: 'POST',
+                body: { metadata: JSON.stringify(metadata) },
+            });
+            const res = createMockResponse();
+            await manualHandler(req, res);
+            expect(res.getStatus()).toBe(200);
+            createdIds.push(res.getData().id);
+        }
+
+        // Delete via raw JSON string body
+        const deleteReq = createMockRequest({
+            method: 'POST',
+            body: JSON.stringify({ ids: createdIds }),
+        });
+        const deleteRes = createMockResponse();
+        await batchDeleteHandler(deleteReq, deleteRes);
+
+        expect(deleteRes.getStatus()).toBe(204);
+
+        // Verify deletion
+        const verifyReq = createMockRequest({ method: 'GET' });
+        const verifyRes = createMockResponse();
+        await receiptsHandler(verifyReq, verifyRes);
+        const currentReceipts = verifyRes.getData();
+
+        for (const id of createdIds) {
+            expect(currentReceipts.find((r: any) => r.id === id)).toBeUndefined();
+        }
+    });
+
+    it('should use backend handler when not in test mode', async () => {
+        const originalNodeEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'production';
+
+        vi.doMock('../../api/_lib/receiptsStore.js', () => ({
+            batchDeleteReceipts: vi.fn(() => {
+                throw new Error('receiptsStore should not be used in production');
+            }),
+        }));
+
+        try {
+            const { default: batchDeleteHandler } = await import('@/api/receipts/batch-delete');
+            const req = createMockRequest({
+                method: 'POST',
+                body: { ids: ['nonexistent-id'] },
+            });
+            const res = createMockResponse();
+            await batchDeleteHandler(req, res);
+            expect(res.getStatus()).toBe(204);
+        } finally {
+            process.env.NODE_ENV = originalNodeEnv;
+            vi.resetModules();
+            vi.unmock('../../api/_lib/receiptsStore.js');
+        }
     });
 });

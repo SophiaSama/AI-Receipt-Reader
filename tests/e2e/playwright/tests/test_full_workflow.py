@@ -1,7 +1,12 @@
 """
 Full workflow E2E tests
 """
+import os
 import pytest
+import time
+
+DELETE_TIMEOUT_MS = int(os.getenv("VITE_DELETE_TIMEOUT_MS", "10000"))
+DELETE_ROUTE_DELAY_MS = DELETE_TIMEOUT_MS + 1_000
 from playwright.sync_api import Page, expect
 
 
@@ -83,6 +88,36 @@ class TestFullWorkflow:
             search_input.fill("NonExistent12345")
             expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
+    def test_delete_cancel_keeps_receipt(self, page: Page, sample_receipt_data: dict):
+        """Canceling delete should keep the receipt visible"""
+
+        # Create manual receipt
+        page.locator("button:has-text('Manual')").first.click()
+        page.wait_for_selector("input[name='merchantName'], #merchantName")
+
+        unique_merchant = f"CancelDelete {page.evaluate('Date.now()')}"
+        page.fill("input[name='merchantName'], #merchantName", unique_merchant)
+        page.fill("input[name='date'], #date, input[type='date']", sample_receipt_data["date"])
+        page.fill("input[name='total'], #total", str(sample_receipt_data["total"]))
+        page.locator("button[type='submit']").click()
+
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
+
+        # Trigger delete
+        receipt_row = page.locator("[data-testid='receipt-item']").filter(has_text=unique_merchant).first
+        receipt_row.hover()
+        delete_button = receipt_row.locator("button[title='Purge Record']")
+        delete_button.wait_for(state="visible", timeout=3000)
+        delete_button.click()
+
+        # Cancel delete
+        cancel_button = page.locator("div[role='dialog'] button:has-text('Cancel')")
+        expect(cancel_button).to_be_visible(timeout=5000)
+        cancel_button.click()
+
+        # Receipt should remain
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=10000)
+
     def test_export_csv_workflow(self, page: Page, sample_receipt_data: dict):
         """Test exporting receipts to CSV"""
 
@@ -116,6 +151,55 @@ class TestFullWorkflow:
             # Optional: verify CSV content
             csv_content = download.path().read_text()
             assert "merchantName" in csv_content or "Merchant" in csv_content
+
+    @pytest.mark.slow
+    def test_delete_timeout_shows_error(self, page: Page, sample_receipt_data: dict):
+        """Delete should time out after 10s and show an error message"""
+
+        # Create manual receipt
+        page.locator("button:has-text('Manual')").first.click()
+        page.wait_for_selector("input[name='merchantName'], #merchantName")
+
+        unique_merchant = f"TimeoutDelete {page.evaluate('Date.now()')}"
+        page.fill("input[name='merchantName'], #merchantName", unique_merchant)
+        page.fill("input[name='date'], #date, input[type='date']", sample_receipt_data["date"])
+        page.fill("input[name='total'], #total", str(sample_receipt_data["total"]))
+        page.locator("button[type='submit']").click()
+
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
+
+        # Delay DELETE calls beyond the 10s timeout
+        def delay_delete(route):
+            if route.request.method.upper() == "DELETE":
+                time.sleep(DELETE_ROUTE_DELAY_MS / 1000)
+                try:
+                    return route.fulfill(status=504, body="")
+                except Exception:
+                    return None
+            return route.continue_()
+
+        page.route("**/api/receipts/**", delay_delete)
+
+        # Trigger delete
+        receipt_row = page.locator("[data-testid='receipt-item']").filter(has_text=unique_merchant).first
+        receipt_row.hover()
+        delete_button = receipt_row.locator("button[title='Purge Record']")
+        delete_button.wait_for(state="visible", timeout=3000)
+        delete_button.click()
+
+        confirm_button = page.locator("div[role='dialog'] button:has-text('Delete')")
+        expect(confirm_button).to_be_visible(timeout=5000)
+        confirm_button.click()
+        page.wait_for_timeout(100)
+
+        # Expect timeout message and receipt still visible
+        upload_section = page.locator("[data-testid='upload-section']")
+        upload_section.scroll_into_view_if_needed()
+        expect(upload_section.get_by_text("Delete timed out")).to_be_visible(timeout=20000)
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=10000)
+
+        # Prevent teardown errors if route handlers are still running
+        page.unroute_all(behavior="ignoreErrors")
 
     @pytest.mark.slow
     def test_statistics_update_workflow(self, page: Page, sample_receipt_data: dict):

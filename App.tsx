@@ -39,6 +39,32 @@ function App() {
     matchType: 'imageHash' | 'ocrFingerprint';
   }>(null);
 
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const refreshReceiptsAfterDelete = async (deletedIds: string[]) => {
+    const maxAttempts = 3;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const data = await fetchReceiptsFromDB();
+      const stillPresent = data.some(r => deletedIds.includes(r.id));
+      if (!stillPresent) {
+        setReceipts(data);
+        return true;
+      }
+      if (attempt < maxAttempts - 1) {
+        await sleep(500 * (attempt + 1));
+      }
+    }
+
+    // Keep UI consistent while signaling that delete did not persist server-side.
+    setReceipts(prev => prev.filter(r => !deletedIds.includes(r.id)));
+    setStatus({
+      isProcessing: false,
+      step: 'error',
+      message: 'Delete did not persist. Please refresh and try again.'
+    });
+    return false;
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -139,12 +165,21 @@ function App() {
   };
 
   const handleDelete = async (id: string) => {
-    setReceipts(prev => prev.filter(r => r.id !== id));
-    setSelectedIds(prev => prev.filter(selId => selId !== id));
+    const previousReceipts = receipts;
+    setStatus({ isProcessing: true, step: 'uploading', message: 'Deleting receipt...' });
     try {
       await deleteReceiptFromDB(id);
+      setSelectedIds(prev => prev.filter(selId => selId !== id));
+      await refreshReceiptsAfterDelete([id]);
+      setStatus({ isProcessing: false, step: 'complete' });
     } catch (e) {
       console.error("Deletion failed", e);
+      setReceipts(previousReceipts);
+      setStatus({
+        isProcessing: false,
+        step: 'error',
+        message: e?.message || 'Delete failed. Please try again.'
+      });
     }
   };
 
@@ -166,15 +201,23 @@ function App() {
     if (selectedIds.length === 0) return;
 
     const idsToDelete = [...selectedIds];
-    setReceipts(prev => prev.filter(r => !idsToDelete.includes(r.id)));
-    setSelectedIds([]);
+    const previousReceipts = receipts;
     setShowBulkDeleteConfirm(false);
+    setStatus({ isProcessing: true, step: 'uploading', message: 'Deleting receipts...' });
 
     try {
       await deleteReceiptsFromDB(idsToDelete);
+      setSelectedIds([]);
+      await refreshReceiptsAfterDelete(idsToDelete);
+      setStatus({ isProcessing: false, step: 'complete' });
     } catch (e) {
       console.error("Bulk deletion failed", e);
-      // Optional: re-fetch or show error toast
+      setReceipts(previousReceipts);
+      setStatus({
+        isProcessing: false,
+        step: 'error',
+        message: 'Bulk delete failed. Please try again.'
+      });
     }
   };
 
@@ -194,6 +237,9 @@ function App() {
     link.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
+
+  const bulkDeleteInProgress = status.isProcessing && typeof status.message === 'string' && status.message.toLowerCase().includes('deleting receipts');
+  const bulkDeleteFailed = status.step === 'error' && typeof status.message === 'string' && status.message.toLowerCase().includes('bulk delete');
 
   return (
     <div className="min-h-screen text-slate-700 pb-12 font-sans selection:bg-primary/20">
@@ -288,6 +334,20 @@ function App() {
                   >
                     PURGE
                   </button>
+                  {(bulkDeleteInProgress || bulkDeleteFailed) && (
+                    <div className={`flex items-center gap-1 text-[11px] font-semibold ${bulkDeleteFailed ? 'text-amber-600' : 'text-rose-500'}`}>
+                      {bulkDeleteFailed ? (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                      ) : (
+                        <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
+                          <span className="h-3.5 w-3.5 rounded-full border-2 border-rose-200 border-t-rose-500 animate-spin"></span>
+                        </span>
+                      )}
+                      <span>{bulkDeleteFailed ? 'Delete failed' : 'Deleting...'}</span>
+                    </div>
+                  )}
                   <div className="w-px h-3 bg-rose-200"></div>
                   <button
                     onClick={() => setSelectedIds([])}
