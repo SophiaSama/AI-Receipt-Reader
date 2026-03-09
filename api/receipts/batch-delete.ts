@@ -31,7 +31,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         // TEST MODE: Check if we should use in-memory store
         try {
             const { batchDeleteReceipts } = await import('../_lib/receiptsStore.js');
-            if (batchDeleteReceipts) {
+            if (batchDeleteReceipts && process.env.NODE_ENV === 'test') {
                 await batchDeleteReceipts(ids);
                 return res.status(204).send('');
             }
