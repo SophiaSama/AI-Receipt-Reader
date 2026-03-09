@@ -124,6 +124,52 @@ describe('Bulk Delete Integration Tests', () => {
         expect(res.getStatus()).toBe(400);
     });
 
+    it('should accept raw JSON string body (Vercel-style)', async () => {
+        const { default: batchDeleteHandler } = await import('@/api/receipts/batch-delete');
+
+        // Create two receipts
+        const idsToCreate = ['BulkRaw1', 'BulkRaw2'];
+        const createdIds: string[] = [];
+
+        for (const name of idsToCreate) {
+            const metadata = {
+                merchantName: name,
+                date: '2026-02-01',
+                total: 15.00,
+                currency: 'USD',
+                items: [],
+            };
+            const req = createMockRequest({
+                method: 'POST',
+                body: { metadata: JSON.stringify(metadata) },
+            });
+            const res = createMockResponse();
+            await manualHandler(req, res);
+            expect(res.getStatus()).toBe(200);
+            createdIds.push(res.getData().id);
+        }
+
+        // Delete via raw JSON string body
+        const deleteReq = createMockRequest({
+            method: 'POST',
+            body: JSON.stringify({ ids: createdIds }),
+        });
+        const deleteRes = createMockResponse();
+        await batchDeleteHandler(deleteReq, deleteRes);
+
+        expect(deleteRes.getStatus()).toBe(204);
+
+        // Verify deletion
+        const verifyReq = createMockRequest({ method: 'GET' });
+        const verifyRes = createMockResponse();
+        await receiptsHandler(verifyReq, verifyRes);
+        const currentReceipts = verifyRes.getData();
+
+        for (const id of createdIds) {
+            expect(currentReceipts.find((r: any) => r.id === id)).toBeUndefined();
+        }
+    });
+
     it('should use backend handler when not in test mode', async () => {
         const originalNodeEnv = process.env.NODE_ENV;
         process.env.NODE_ENV = 'production';
