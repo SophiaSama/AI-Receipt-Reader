@@ -98,7 +98,8 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
     assert first_resp.value.ok
     receipts.wait_for_receipts_to_load(timeout=15000)
     expect(receipts.get_receipt_rows()).to_have_count(1)
-    expect(page.get_by_text("E2E Coffee")).to_be_visible()
+    # Avoid strict-mode ambiguity if the same merchant text appears in multiple places
+    expect(receipts.get_receipt_by_merchant("E2E Coffee")).to_be_visible()
 
     with page.expect_response("**/api/process") as second_resp:
         home.upload_file(sample_receipt_image)
@@ -110,8 +111,9 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
     # Duplicate modal should appear
     expect(page.get_by_role("heading", name="Possible duplicate receipt")).to_be_visible(timeout=15000)
     expect(page.get_by_text("Existing receipt", exact=True)).to_be_visible()
-    expect(page.get_by_text("E2E Coffee")).to_be_visible()
-    expect(page.get_by_text("2026-03-06")).to_be_visible()
+    dialog = page.get_by_role("dialog")
+    expect(dialog.get_by_text("E2E Coffee")).to_be_visible()
+    expect(dialog.get_by_text("2026-03-06")).to_be_visible()
 
     # User confirms it's a duplicate -> ignore
     page.get_by_role("button", name="Yes (duplicate) — ignore").click()

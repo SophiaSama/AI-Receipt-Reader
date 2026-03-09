@@ -42,6 +42,10 @@ function createMockResponse() {
       responseData = data;
       return this;
     },
+    send: function (data?: any) {
+      responseData = data ?? responseData;
+      return this;
+    },
     setHeader: function (key: string, value: string) {
       headers[key] = value;
       return this;
