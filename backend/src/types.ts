@@ -19,6 +19,56 @@ export interface ReceiptData {
     createdAt: number;
 }
 
+export type AiProvider = 'mistral' | 'openrouter';
+
+export interface AiModelConfig {
+    id: string;
+    label: string;
+    provider: AiProvider;
+    ocrModel: string;
+    structModel: string;
+}
+
+export const AI_MODEL_CATALOG: AiModelConfig[] = [
+    {
+        id: 'google/gemini-2.5-flash',
+        label: 'Gemini 2.5 Flash',
+        provider: 'openrouter',
+        ocrModel: 'google/gemini-2.5-flash',
+        structModel: 'google/gemini-2.5-flash',
+    },
+    {
+        id: 'google/gemini-2.5-flash-lite',
+        label: 'Gemini 2.5 Flash Lite',
+        provider: 'openrouter',
+        ocrModel: 'google/gemini-2.5-flash-lite',
+        structModel: 'google/gemini-2.5-flash-lite',
+    },
+    {
+        id: 'qwen/qwen-vl-plus',
+        label: 'Qwen VL Plus',
+        provider: 'openrouter',
+        ocrModel: 'qwen/qwen-vl-plus',
+        structModel: 'qwen/qwen-vl-plus',
+    },
+    {
+        id: 'pixtral-12b-2409',
+        label: 'Pixtral 12B (Mistral)',
+        provider: 'mistral',
+        ocrModel: 'pixtral-12b-2409',
+        structModel: 'mistral-large-latest',
+    },
+    {
+        id: 'qwen/qwen3-vl-235b-a22b-instruct',
+        label: 'Qwen3 VL 235B',
+        provider: 'openrouter',
+        ocrModel: 'qwen/qwen3-vl-235b-a22b-instruct',
+        structModel: 'qwen/qwen3-vl-235b-a22b-instruct',
+    },
+];
+
+export const DEFAULT_AI_MODEL_ID = 'google/gemini-2.5-flash';
+
 export interface APIGatewayProxyEvent {
     body: string | null;
     headers: { [key: string]: string | undefined };

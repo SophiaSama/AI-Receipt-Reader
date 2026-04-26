@@ -1,60 +1,10 @@
-import { MistralOCRResult, MistralStructuredResult } from '../types';
+import { MistralOCRResult, MistralStructuredResult, AiModelConfig, AI_MODEL_CATALOG, DEFAULT_AI_MODEL_ID } from '../types';
 import {
     extractTextFromImage as mistralExtractTextFromImage,
     structureReceiptData as mistralStructureReceiptData,
     mockOCRResponse,
     mockStructuredResponse,
 } from './mistralService';
-
-type AiProvider = 'mistral' | 'openrouter';
-
-export interface AiModelConfig {
-    id: string;
-    label: string;
-    provider: AiProvider;
-    ocrModel: string;
-    structModel: string;
-}
-
-const AI_MODEL_CATALOG: AiModelConfig[] = [
-    {
-        id: 'google/gemini-2.5-flash',
-        label: 'Gemini 2.5 Flash',
-        provider: 'openrouter',
-        ocrModel: 'google/gemini-2.5-flash',
-        structModel: 'google/gemini-2.5-flash',
-    },
-    {
-        id: 'google/gemini-2.5-flash-lite',
-        label: 'Gemini 2.5 Flash Lite',
-        provider: 'openrouter',
-        ocrModel: 'google/gemini-2.5-flash-lite',
-        structModel: 'google/gemini-2.5-flash-lite',
-    },
-    {
-        id: 'qwen/qwen-vl-plus',
-        label: 'Qwen VL Plus',
-        provider: 'openrouter',
-        ocrModel: 'qwen/qwen-vl-plus',
-        structModel: 'qwen/qwen-vl-plus',
-    },
-    {
-        id: 'pixtral-12b-2409',
-        label: 'Pixtral 12B (Mistral)',
-        provider: 'mistral',
-        ocrModel: 'pixtral-12b-2409',
-        structModel: 'mistral-large-latest',
-    },
-    {
-        id: 'qwen/qwen3-vl-235b-a22b-instruct',
-        label: 'Qwen3 VL 235B',
-        provider: 'openrouter',
-        ocrModel: 'qwen/qwen3-vl-235b-a22b-instruct',
-        structModel: 'qwen/qwen3-vl-235b-a22b-instruct',
-    },
-];
-
-export const DEFAULT_AI_MODEL_ID = 'google/gemini-2.5-flash';
 
 const openRouterApiKey = process.env.OPENROUTER_API_KEY;
 const openRouterBaseUrl = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
@@ -146,7 +96,7 @@ export const extractTextFromImage = async (
             throw new Error(`OpenRouter OCR error (${response.status}): ${errorText.substring(0, 200)}`);
         }
 
-        const data = await response.json();
+        const data = await response.json() as any;
         const rawText = data?.choices?.[0]?.message?.content || '';
         return { rawText: typeof rawText === 'string' ? rawText : '' };
     } catch (error) {
@@ -216,7 +166,7 @@ Rules:
             throw new Error(`OpenRouter LLM error (${response.status}): ${errorText.substring(0, 200)}`);
         }
 
-        const data = await response.json();
+        const data = await response.json() as any;
         const content = data?.choices?.[0]?.message?.content || '{}';
         const parsed = JSON.parse(typeof content === 'string' ? content : '{}');
 
