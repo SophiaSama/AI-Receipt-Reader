@@ -4,18 +4,9 @@ import { ProcessingStatus } from '../types';
 interface UploadSectionProps {
   onFileSelect: (file: File) => void;
   status: ProcessingStatus;
-  modelId: string;
-  modelOptions: { id: string; label: string }[];
-  onModelChange: (modelId: string) => void;
 }
 
-export const UploadSection: React.FC<UploadSectionProps> = ({
-  onFileSelect,
-  status,
-  modelId,
-  modelOptions,
-  onModelChange,
-}) => {
+export const UploadSection: React.FC<UploadSectionProps> = ({ onFileSelect, status }) => {
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -46,67 +37,57 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
       onFileSelect(e.target.files[0]);
-      // Allow selecting the same file again (browser may not fire change otherwise)
-      e.target.value = '';
     }
   };
 
   const isProcessing = status.step === 'uploading' || status.step === 'analyzing';
 
   return (
-    <div className="w-full" data-testid="upload-section">
-      <div className="mb-4">
-        <label htmlFor="ai-model-select" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-          AI Model
-        </label>
-        <select
-          id="ai-model-select"
-          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          value={modelId}
-          onChange={(e) => onModelChange(e.target.value)}
-          disabled={isProcessing}
-        >
-          {modelOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
+    <div className="w-full">
       <div
-        className={`relative flex flex-col items-center justify-center w-full h-36 border-[1.5px] border-dashed rounded-xl transition-all duration-300 ease-out group/dropzone
-          ${dragActive ? 'border-primary bg-primary/5' : 'border-pink-200 bg-blush/30'}
-          ${isProcessing ? 'opacity-70 pointer-events-none' : 'hover:border-primary/50 hover:bg-blush/50 cursor-pointer'}
+        className={`relative flex flex-col items-center justify-center w-full h-80 border-2 border-dashed rounded-3xl transition-all duration-700 ease-in-out group/dropzone overflow-hidden
+          ${dragActive ? 'border-accent bg-accent/5' : 'border-white/5 bg-black/20'}
+          ${isProcessing ? 'opacity-50 pointer-events-none' : 'hover:border-accent/40 hover:bg-white/[0.03] cursor-pointer'}
         `}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
       >
-        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-full cursor-pointer relative z-10 px-4">
+        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-full cursor-pointer relative z-10 px-8">
           <div className="flex flex-col items-center justify-center">
             {isProcessing ? (
-              <div className="flex items-center gap-3">
-                <div className="relative flex-shrink-0">
-                  <div className="w-8 h-8 border-2 border-primary/20 rounded-full animate-[spin_3s_linear_infinite]"></div>
-                  <div className="absolute inset-0 w-8 h-8 border-t-2 border-primary rounded-full animate-spin"></div>
+              <div className="flex flex-col items-center gap-8 animate-in fade-in duration-500">
+                <div className="relative">
+                  <div className="w-24 h-24 border-4 border-accent/10 rounded-full"></div>
+                  <div className="absolute inset-0 w-24 h-24 border-t-4 border-accent rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-accent animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-slate-700">{status.step === 'analyzing' ? 'AI Analyzing' : 'Uploading...'}</p>
-                  <p className="text-xs text-slate-400 italic">
-                    "{status.message || 'Extracting data...'}"
+                <div className="text-center">
+                  <p className="text-2xl font-black text-foreground mb-2 tracking-tight uppercase">{status.step === 'analyzing' ? 'Mistral Core' : 'Uploading'}</p>
+                  <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.2em] max-w-[240px] mx-auto leading-relaxed">
+                    {status.message || 'Extracting schema objects from document...'}
                   </p>
                 </div>
               </div>
             ) : (
               <>
-                <div className="mb-2 p-2.5 bg-lavender-50 rounded-xl border border-lavender-100 group-hover/dropzone:scale-110 group-hover/dropzone:border-primary/20 transition-all duration-300">
-                  <svg className="w-5 h-5 text-secondary group-hover/dropzone:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mb-8 p-6 bg-white/[0.03] rounded-3xl border border-white/5 group-hover/dropzone:scale-110 group-hover/dropzone:bg-accent/10 group-hover/dropzone:border-accent/20 transition-all duration-500 shadow-inner">
+                  <svg className="w-12 h-12 text-slate-500 group-hover/dropzone:text-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                   </svg>
                 </div>
-                <h3 className="text-sm font-semibold text-slate-600 mb-0.5">Click to upload receipt, or drag and drop</h3>
-                <p className="text-xs text-slate-400 font-medium text-center">Supports PNG, JPG (Max 10MB)</p>
+                <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">DROP SOURCE</h3>
+                <p className="text-slate-500 font-medium mb-10 text-center max-w-[280px] text-sm leading-relaxed tracking-wide">AI-driven extraction for merchant data, line items, and VAT summaries.</p>
+
+                <div className="flex flex-wrap justify-center gap-4">
+                  <span className="px-3 py-1 bg-white/[0.03] rounded-lg text-[9px] font-black text-slate-600 uppercase tracking-widest border border-white/5">Raw Image</span>
+                  <span className="px-3 py-1 bg-white/[0.03] rounded-lg text-[9px] font-black text-slate-600 uppercase tracking-widest border border-white/5">Mistral ready</span>
+                </div>
               </>
             )}
           </div>
@@ -119,14 +100,25 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
             disabled={isProcessing}
           />
         </label>
+
+        {/* Decorative corner accents */}
+        <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-white/5 rounded-tl-lg"></div>
+        <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-white/5 rounded-tr-lg"></div>
+        <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-white/5 rounded-bl-lg"></div>
+        <div className="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-white/5 rounded-br-lg"></div>
       </div>
 
       {status.step === 'error' && (
-        <div className="mt-3 p-2.5 bg-rose-50 text-rose-500 rounded-xl flex items-center gap-2.5 text-xs border border-rose-200">
-          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
-          </svg>
-          <span className="font-medium">{status.message}</span>
+        <div className="mt-8 p-6 bg-red-500/[0.03] text-red-400 rounded-3xl flex items-center gap-5 border border-red-500/10 animate-in slide-in-from-top-2 duration-500">
+          <div className="p-3 bg-red-500/10 rounded-2xl border border-red-500/20">
+            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-black text-[10px] uppercase tracking-widest mb-1 text-red-500">System Error</span>
+            <span className="text-sm font-medium opacity-80">{status.message}</span>
+          </div>
         </div>
       )}
     </div>

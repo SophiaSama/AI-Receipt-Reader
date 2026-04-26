@@ -25,13 +25,13 @@ class TestHealthCheck:
     def test_main_sections_visible(self, page: Page):
         """Test that main sections of the app are visible"""
         # Check upload section
-        expect(page.locator("text=Click to upload receipt")).to_be_visible()
+        expect(page.locator("text=DROP SOURCE")).to_be_visible()
         
         # Check manual entry section
-        expect(page.locator("text=Manual Entry").or_(page.locator("button:has-text('Manual')"))).to_be_visible()
+        expect(page.locator("text=Manual Override").or_(page.locator("button:has-text('Manual')"))).to_be_visible()
         
         # Check receipts list section
-        expect(page.locator("text=Receipt").first).to_be_visible()
+        expect(page.locator("text=SmartReceipt").first).to_be_visible()
     
     @pytest.mark.smoke
     def test_api_health_endpoint(self, api_page: Page, api_url: str):

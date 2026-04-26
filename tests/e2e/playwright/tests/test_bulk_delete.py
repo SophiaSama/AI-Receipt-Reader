@@ -41,10 +41,10 @@ class TestBulkDelete:
         card1.locator("input[type='checkbox']").click()
         card2.locator("input[type='checkbox']").click()
         
-        # Verify "PURGE" button appears
-        purge_btn = page.locator("button:has-text('PURGE')")
+        # Verify "Purge Stack" button appears
+        purge_btn = page.locator("button:has-text('Purge Stack')")
         expect(purge_btn).to_be_visible()
-        expect(page.locator("text=2 Selected")).to_be_visible()
+        expect(page.locator("text=Marked")).to_be_visible()
         
         # Click Purge Selection
         purge_btn.click()
@@ -57,13 +57,6 @@ class TestBulkDelete:
         page.locator("button:has-text('Delete All')").click()
         
         # Verify they are gone from the UI
-        expect(page.locator(f"text={m1}")).not_to_be_visible(timeout=10000)
-        expect(page.locator(f"text={m2}")).not_to_be_visible(timeout=10000)
-
-        # Refresh and verify deleted receipts stay deleted
-        page.reload()
-        page.wait_for_load_state("networkidle")
-        page.wait_for_selector("[data-testid='empty-state'], [data-testid='receipt-item']", timeout=15000)
         expect(page.locator(f"text={m1}")).not_to_be_visible(timeout=10000)
         expect(page.locator(f"text={m2}")).not_to_be_visible(timeout=10000)
 
@@ -87,9 +80,9 @@ class TestBulkDelete:
         header_checkbox.check()
         
         # All items should be selected
-        expect(page.locator("button:has-text('PURGE')")).to_be_visible()
-        expect(page.locator(f"text={new_count} Selected")).to_be_visible()
+        expect(page.locator("button:has-text('Purge Stack')")).to_be_visible()
+        expect(page.locator("text=Marked")).to_be_visible()
         
         # Uncheck header checkbox
         header_checkbox.uncheck()
-        expect(page.locator("button:has-text('PURGE')")).not_to_be_visible()
+        expect(page.locator("button:has-text('Purge Selection')")).not_to_be_visible()

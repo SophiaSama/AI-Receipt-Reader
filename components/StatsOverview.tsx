@@ -37,58 +37,83 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ receipts }) => {
   }
 
   return (
-    <div className="p-3" data-testid="stats-overview">
-      <div className="flex justify-between items-end mb-3">
+    <div className="p-8" data-testid="stats-overview">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-12">
         <div>
-          <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-0.5">Total Expenses</h3>
-          <p className="text-2xl font-semibold text-slate-800 tracking-tight">
-            ${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-xl font-bold text-foreground tracking-tight uppercase">Capital Streams</h2>
+            <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_10px_rgba(37,99,235,0.5)]"></div>
+          </div>
+          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">Aggregate Daily Indices</p>
         </div>
-        <div className="bg-lavender-50 rounded-lg px-2 py-0.5">
-          <span className="text-[10px] font-mono text-secondary">Last 30 Days</span>
+        <div className="text-right bg-black/20 px-5 py-3 rounded-2xl border border-white/5 shadow-inner">
+          <p className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-[0.15em] mb-1.5" data-testid="total-receipts">Nodes: {receipts.length}</p>
+          <p className="text-3xl font-black text-foreground font-mono tracking-tighter" data-testid="total-amount">
+            <span className="text-accent mr-1">$</span>{totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
         </div>
       </div>
 
-      <div className="h-32 w-full">
+      <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={dailyData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
+          <BarChart data={dailyData} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
             <defs>
               <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#E879A0" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#C4B5FD" stopOpacity={0.4} />
+                <stop offset="0%" stopColor="#2563EB" stopOpacity={1} />
+                <stop offset="100%" stopColor="#2563EB" stopOpacity={0.4} />
               </linearGradient>
             </defs>
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 9, fill: '#94a3b8' }}
+              tick={{ fontSize: 9, fill: '#475569', fontWeight: 700, fontFamily: 'monospace' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(value) => {
-                const d = new Date(value);
-                return !isNaN(d.getTime()) ? `${d.getDate()}/${d.getMonth() + 1}` : '';
+                if (!value) return '';
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) {
+                  return `${date.getDate()}/${date.getMonth() + 1}`;
+                }
+                const parts = String(value).split(/[-/]/);
+                if (parts.length >= 3) {
+                  const day = parts[parts.length - 1];
+                  const month = parts[parts.length - 2];
+                  if (day.length <= 2 && month.length <= 2) {
+                    return `${day}/${month}`;
+                  }
+                }
+                return String(value).substring(0, 10);
               }}
-              minTickGap={10}
             />
             <YAxis
-              tick={{ fontSize: 9, fill: '#94a3b8' }}
+              tick={{ fontSize: 9, fill: '#475569', fontWeight: 700, fontFamily: 'monospace' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `${value / 1000}k`}
+              tickFormatter={(value) => `$${value}`}
             />
             <Tooltip
-              cursor={{ fill: 'rgba(232, 121, 160, 0.06)' }}
+              cursor={{ fill: 'rgba(255, 255, 255, 0.03)', radius: 12 }}
               contentStyle={{
-                backgroundColor: '#ffffff',
-                borderColor: '#FFE4E9',
-                borderRadius: '8px',
-                fontSize: '11px',
-                boxShadow: '0 4px 12px rgba(232, 121, 160, 0.1)',
+                backgroundColor: 'rgba(2, 6, 23, 0.95)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.8)',
+                padding: '16px'
               }}
-              labelStyle={{ color: '#64748b' }}
-              itemStyle={{ color: '#E879A0' }}
+              labelStyle={{ color: '#64748b', fontWeight: 800, textTransform: 'uppercase', fontSize: '9px', marginBottom: '8px', letterSpacing: '0.1em' }}
+              itemStyle={{ color: '#FFFFFF', fontWeight: 900, fontSize: '15px', fontFamily: 'monospace' }}
+              labelFormatter={(value) => `Commit Date: ${value}`}
+              formatter={(value: number) => [`$${value.toFixed(2)}`, 'Aggregate']}
             />
-            <Bar dataKey="total" radius={[4, 4, 0, 0]} fill="url(#barGradient)" maxBarSize={32} />
+            <Bar dataKey="total" radius={[8, 8, 2, 2]} fill="url(#barGradient)">
+              {dailyData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  className="hover:opacity-80 transition-opacity cursor-crosshair"
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

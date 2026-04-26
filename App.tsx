@@ -39,6 +39,22 @@ function App() {
     matchType: 'imageHash' | 'ocrFingerprint';
   }>(null);
 
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const refreshReceiptsAfterDelete = async (deletedIds: string[]) => {
@@ -238,65 +254,101 @@ function App() {
     link.click();
   };
 
-  const bulkDeleteInProgress = status.isProcessing && typeof status.message === 'string' && status.message.toLowerCase().includes('deleting receipts');
-  const bulkDeleteFailed = status.step === 'error' && typeof status.message === 'string' && status.message.toLowerCase().includes('bulk delete');
-
   return (
-    <div className="min-h-screen text-slate-700 pb-12 font-sans selection:bg-primary/20">
-      {/* Soft Gradient Blurs */}
+    <div className="min-h-screen bg-background text-foreground pb-20 font-sans selection:bg-accent/30">
+      {/* Dynamic Background Noise/Glow */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/8 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/8 rounded-full blur-[120px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent/5 rounded-full blur-[160px] opacity-50"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[160px] opacity-30"></div>
       </div>
 
-      <header className="glass-header">
-        <div className="max-w-[1600px] mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5 group cursor-pointer">
-            <div className="bg-lavender-50 rounded-lg p-1.5 transition-transform duration-300">
-              <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center space-x-4 group cursor-pointer">
+            <div className="bg-accent/10 border border-accent/20 rounded-xl p-2 shadow-[0_0_15px_rgba(37,99,235,0.1)] transform group-hover:scale-105 transition-transform duration-300">
+              <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
               </svg>
             </div>
-            <span className="font-semibold text-lg tracking-tight text-slate-700">SmartReceipt <span className="text-primary font-normal">Pro</span></span>
+            <div className="flex flex-col">
+              <span className="font-mono font-bold text-lg tracking-tight text-foreground leading-none">SmartReceipt<span className="text-accent underline decoration-accent/30 underline-offset-4 ml-1">Pro</span></span>
+              <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-[0.2em] mt-1.5">Intelligence Kernel v1.0</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={handleExportCSV} className="text-xs font-medium text-slate-400 hover:text-primary transition-colors cursor-pointer">
-              Export CSV
+          <div className="hidden sm:flex items-center gap-6">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2.5 bg-white/[0.03] hover:bg-accent/10 text-slate-500 hover:text-accent rounded-xl border border-white/5 hover:border-accent/30 transition-all shadow-inner group/theme"
+              title={theme === 'dark' ? 'Activate Day Mode' : 'Activate Night Mode'}
+            >
+              {theme === 'dark' ? (
+                <svg className="w-5 h-5 group-hover/theme:rotate-90 transition-transform duration-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707.707M12 5a7 7 0 100 14 7 7 0 000-14z"></path>
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 group-hover/theme:-rotate-12 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+              )}
             </button>
-            <div className="w-px h-4 bg-pink-100"></div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-              <span className="text-xs font-medium text-slate-400">System Active</span>
+            <div className="flex items-center gap-2.5 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5 shadow-inner">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+              <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Vision Engine: Mistral</span>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-4 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          {/* LEFT PANEL: DASHBOARD */}
-          <div className="lg:col-span-4 space-y-3 sticky top-20">
-            <div className="space-y-0.5 mb-3">
-              <h1 className="text-xl font-semibold text-slate-800 tracking-tight">Dashboard</h1>
-              <p className="text-xs text-slate-400">Overview & Actions</p>
-            </div>
+      <main className="max-w-5xl mx-auto px-6 py-16">
+        <div className="text-center mb-20">
+          <div className="inline-block relative mb-6">
+            <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full"></div>
+            <h1 className="relative text-5xl md:text-6xl font-black text-foreground tracking-tighter leading-none">
+              Expense <span className="text-accent">Reimagined</span>
+            </h1>
+          </div>
+          <p className="mt-6 text-slate-400 text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+            Precision OCR meets high-density intelligence. Upload your documents and extract semantic data in milliseconds.
+          </p>
 
-            {/* Stats Card */}
-            <div className="glass-card">
-              <StatsOverview receipts={receipts} />
-            </div>
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
+            {filteredReceipts.length > 0 && (
+              <button
+                onClick={handleExportCSV}
+                className="btn-secondary h-11 text-xs"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Generate CSV Summary
+              </button>
+            )}
+          </div>
+        </div>
 
-            {/* Upload/Entry Card */}
-            <div className="glass-card p-4 overflow-hidden relative">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xs font-medium text-slate-500 uppercase tracking-wider">Input Source</h2>
-                <button
-                  onClick={() => setShowManualForm(!showManualForm)}
-                  className="text-xs text-primary hover:text-primary/70 transition-colors cursor-pointer"
-                >
-                  {showManualForm ? 'Switch to Upload' : 'Switch to Manual'}
-                </button>
+        <div className="max-w-3xl mx-auto space-y-16">
+          <section className="glass-card p-1 relative group overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-accent/5 rounded-full -mr-24 -mt-24 blur-3xl group-hover:bg-accent/10 transition-all duration-700"></div>
+
+            <div className="p-8 relative z-10">
+              <div className="flex justify-between items-center mb-10">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-accent/10 border border-accent/20 rounded-xl">
+                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-foreground tracking-tight">Entry Portal</h2>
+                </div>
+                {!showManualForm && (
+                  <button
+                    onClick={() => setShowManualForm(true)}
+                    className="text-[10px] font-black text-slate-500 hover:text-accent transition-all uppercase tracking-[0.15em] px-4 py-2 rounded-lg border border-white/5 hover:border-accent/30 hover:bg-accent/5"
+                  >
+                    Manual Override
+                  </button>
+                )}
               </div>
 
               {showManualForm ? (
@@ -315,68 +367,59 @@ function App() {
                 />
               )}
             </div>
-          </div>
+          </section>
 
-          {/* RIGHT PANEL: ACTIVITY LOG */}
-          <div className="lg:col-span-8 space-y-3">
-            <div className="flex justify-between items-end mb-3">
-              <div className="space-y-0.5">
-                <h2 className="text-xl font-semibold text-slate-800 tracking-tight">Activity Log</h2>
-                <p className="text-xs text-slate-400">Recent Transactions</p>
-              </div>
+          <div className="space-y-16">
+            <StatsOverview receipts={receipts} />
 
-              {selectedIds.length > 0 && (
-                <div className="animate-in fade-in slide-in-from-right-2 duration-200 flex items-center gap-2 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200">
-                  <span className="text-xs font-medium text-rose-500">{selectedIds.length} Selected</span>
-                  <button
-                    onClick={() => setShowBulkDeleteConfirm(true)}
-                    className="text-xs font-bold text-rose-600 hover:text-rose-500 transition-colors cursor-pointer"
-                  >
-                    PURGE
-                  </button>
-                  {(bulkDeleteInProgress || bulkDeleteFailed) && (
-                    <div className={`flex items-center gap-1 text-[11px] font-semibold ${bulkDeleteFailed ? 'text-amber-600' : 'text-rose-500'}`}>
-                      {bulkDeleteFailed ? (
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                        </svg>
-                      ) : (
-                        <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
-                          <span className="h-3.5 w-3.5 rounded-full border-2 border-rose-200 border-t-rose-500 animate-spin"></span>
-                        </span>
-                      )}
-                      <span>{bulkDeleteFailed ? 'Delete failed' : 'Deleting...'}</span>
-                    </div>
-                  )}
-                  <div className="w-px h-3 bg-rose-200"></div>
-                  <button
-                    onClick={() => setSelectedIds([])}
-                    className="text-xs text-rose-400 hover:text-rose-500 transition-colors cursor-pointer"
-                  >
-                    X
-                  </button>
+            <section>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl font-bold text-foreground tracking-tight">Intelligence Log</h2>
+                  <div className="flex items-center gap-2.5 bg-white/[0.03] px-3 py-1 rounded-full border border-white/5">
+                    <span className="text-[10px] font-mono font-black text-slate-500 tracking-wider">
+                      {filteredReceipts.length} NODES
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Filters & List */}
-            <div className="space-y-3">
-              <ReceiptFilters
-                filters={filters}
-                onFilterChange={setFilters}
-                onClear={handleClearFilters}
-              />
-
-              <div className="glass-card min-h-[400px]">
-                <ReceiptList
-                  receipts={filteredReceipts}
-                  onDelete={handleDelete}
-                  selectedIds={selectedIds}
-                  onToggleSelect={handleToggleSelect}
-                  onToggleSelectAll={handleToggleSelectAll}
-                />
+                {selectedIds.length > 0 && (
+                  <div className="flex items-center gap-4 animate-in fade-in slide-in-from-right-3 duration-300">
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{selectedIds.length} Marked</span>
+                    <button
+                      onClick={() => setShowBulkDeleteConfirm(true)}
+                      className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-all flex items-center gap-2"
+                    >
+                      Purge Stack
+                    </button>
+                    <button
+                      onClick={() => setSelectedIds([])}
+                      className="text-[10px] font-black text-slate-500 hover:text-slate-300 uppercase tracking-widest transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
+
+              <div className="space-y-10">
+                <ReceiptFilters
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  onClear={handleClearFilters}
+                />
+
+                <div className="glass-card min-h-[400px]">
+                  <ReceiptList
+                    receipts={filteredReceipts}
+                    onDelete={handleDelete}
+                    selectedIds={selectedIds}
+                    onToggleSelect={handleToggleSelect}
+                    onToggleSelectAll={handleToggleSelectAll}
+                  />
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </main>
@@ -384,45 +427,53 @@ function App() {
       {/* Duplicate confirmation prompt */}
       {duplicatePrompt && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="glass-card max-w-md w-full p-5 animate-in zoom-in-95 duration-200 border-pink-100 shadow-glass-lg" role="dialog" aria-modal="true">
-            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Possible duplicate receipt</h3>
-            <p className="text-sm text-slate-500 mb-4">
+          <div className="glass-card max-w-md w-full p-5 animate-in zoom-in-95 duration-200 border-white/5 shadow-2xl" role="dialog" aria-modal="true">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Possible duplicate receipt</h3>
+            </div>
+            <p className="text-sm text-slate-500 mb-6 font-medium">
               We found an existing receipt that looks the same. Please confirm before adding a new expense.
             </p>
 
-            <div className="bg-white/60 border border-pink-100 rounded-lg p-3 mb-5">
-              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Existing receipt</div>
-              <div className="flex items-center justify-between gap-3">
+            <div className="bg-secondary/10 border border-white/5 rounded-2xl p-4 mb-8">
+              <div className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-black mb-3">Existing receipt</div>
+              <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-700 truncate">{duplicatePrompt.candidateReceipt.merchantName}</div>
-                  <div className="text-xs text-slate-400 font-mono">{duplicatePrompt.candidateReceipt.date}</div>
+                  <div className="text-sm font-bold text-foreground truncate">{duplicatePrompt.candidateReceipt.merchantName}</div>
+                  <div className="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-wider">{duplicatePrompt.candidateReceipt.date}</div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-semibold text-slate-700 font-mono">
-                    {Number(duplicatePrompt.candidateReceipt.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div className="text-lg font-black text-foreground font-mono leading-none">
+                    <span className="text-accent text-xs align-top mr-0.5">$</span>{Number(duplicatePrompt.candidateReceipt.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  <div className="text-[10px] text-slate-400">{duplicatePrompt.candidateReceipt.currency}</div>
+                  <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">{duplicatePrompt.candidateReceipt.currency}</div>
                 </div>
               </div>
-              <div className="mt-2 text-[10px] text-slate-400">
-                Match: {duplicatePrompt.matchType === 'imageHash' ? 'same image' : 'same merchant/date/amount'}
+              <div className="mt-4 pt-3 border-t border-white/5 text-[9px] font-black text-accent uppercase tracking-widest flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-accent animate-pulse"></div>
+                Match: {duplicatePrompt.matchType === 'imageHash' ? 'Fingerprint Collision' : 'Metadata Overlap'}
               </div>
             </div>
 
-            <div className="flex w-full gap-3">
+            <div className="flex w-full gap-4">
               <button
                 onClick={() => handleDuplicateDecision('ignore')}
-                className="flex-1 py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-sm font-medium rounded-lg transition-colors border border-emerald-200 cursor-pointer"
+                className="flex-1 py-3 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-emerald-500/20 cursor-pointer"
                 disabled={status.isProcessing}
               >
-                Yes (duplicate) — ignore
+                Yes — Ignore
               </button>
               <button
                 onClick={() => handleDuplicateDecision('save')}
-                className="flex-1 py-2 px-3 bg-white hover:bg-blush text-slate-600 text-sm font-medium rounded-lg transition-colors border border-pink-100 cursor-pointer"
+                className="flex-1 py-3 px-4 bg-white/[0.03] hover:bg-white/[0.08] text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5 cursor-pointer"
                 disabled={status.isProcessing}
               >
-                No — add new expense
+                No — Save Anyway
               </button>
             </div>
           </div>
@@ -432,27 +483,27 @@ function App() {
       {/* Bulk Delete Global Confirmation */}
       {showBulkDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="glass-card max-w-sm w-full p-8 animate-in zoom-in-95 duration-300 shadow-glass-lg border-rose-100" role="dialog" aria-modal="true">
+          <div className="glass-card max-w-sm w-full p-8 animate-in zoom-in-95 duration-300 shadow-2xl border-white/5" role="dialog" aria-modal="true">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mb-5 text-rose-500 border border-rose-200">
+              <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-5 text-red-500 border border-red-500/20">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Bulk Purge</h3>
-              <p className="text-slate-500 font-medium mb-6 leading-relaxed text-sm">
-                You are about to permanently delete <span className="text-slate-800 font-bold">{selectedIds.length}</span> entry records. This operation is non-reversible.
+              <h3 className="text-xl font-bold text-foreground mb-2 tracking-tight">Bulk Purge</h3>
+              <p className="text-slate-500 font-medium mb-8 leading-relaxed text-sm">
+                You are about to permanently delete <span className="text-foreground font-black underline decoration-red-500/30 underline-offset-4">{selectedIds.length}</span> nodes. This operation is non-reversible.
               </p>
-              <div className="flex w-full gap-3">
+              <div className="flex w-full gap-4">
                 <button
                   onClick={() => setShowBulkDeleteConfirm(false)}
-                  className="flex-1 py-2.5 px-4 bg-white hover:bg-blush text-slate-500 font-semibold rounded-xl transition-all border border-pink-100 cursor-pointer"
+                  className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-slate-400 font-bold rounded-xl transition-all border border-white/5"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleBulkDelete}
-                  className="flex-1 py-2.5 px-4 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl transition-all shadow-sm cursor-pointer"
+                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-500/20 cursor-pointer"
                 >
-                  Delete All
+                  Execute Purge
                 </button>
               </div>
             </div>

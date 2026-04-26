@@ -11,7 +11,7 @@ class ManualEntryPage(BasePage):
     """Page Object for manual receipt entry form"""
 
     # Selectors
-    MANUAL_ENTRY_BUTTON = "button:has-text('Switch to Manual')"
+    MANUAL_ENTRY_BUTTON = "button:has-text('Manual Override'), button:has-text('Manual')"
     MERCHANT_INPUT = "input[name='merchantName'], #merchantName"
     DATE_INPUT = "#date"  # Specific to manual entry form to avoid matching filter date inputs
     TOTAL_INPUT = "#total, input[name='total']"
@@ -19,7 +19,7 @@ class ManualEntryPage(BasePage):
     CATEGORY_SELECT = "select[name='category'], #category"
     NOTES_TEXTAREA = "textarea[name='notes'], #notes"
     SUBMIT_BUTTON = "button[type='submit']"
-    CANCEL_BUTTON = "button:has-text('Cancel'), button:has-text('Abort'), button.cancel"
+    CANCEL_BUTTON = "button:has-text('Abort'), button:has-text('Cancel'), button.cancel"
     
     def __init__(self, page: Page):
         super().__init__(page)
