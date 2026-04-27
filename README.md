@@ -27,6 +27,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 ### 🎯 Key Highlights
 
 - 🤖 **AI-Powered OCR** - Extract text from receipt images with multiple model choices
+- 🚀 **Smart OCR Routing** - Dynamically switches between Tesseract (free/local), Hybrid, and Vision LLM based on image quality to optimize for speed and cost
 - 🧠 **Smart Parsing** - LLM structures data automatically (merchant, date, items, total)
 - 🎛️ **Model Selection** - Choose between Mistral and OpenRouter-backed models
 - ☁️ **Cloud Backend** - Serverless architecture on AWS Lambda or Vercel
@@ -52,6 +53,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 ### 🚀 Backend
 
 - **Serverless Architecture** - AWS Lambda or Vercel Functions
+- **Smart Routing Pipeline** - 3-phase analysis (quality check → route decision → execution) for optimized processing
 - **Multi-Provider AI** - Mistral + OpenRouter models for OCR + parsing
 - **AWS Services** - DynamoDB + S3 for storage
 - **RESTful API** - Clean endpoint design
@@ -107,11 +109,12 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 
 1. **Upload** → User uploads receipt image
 2. **S3 Storage** → Backend saves image to S3
-3. **Model Selection** → UI sends selected model (optional)
-4. **OCR** → Selected model extracts text from image
-5. **Parse** → Selected model structures text into JSON
-6. **Store** → Receipt data saved to DynamoDB
-7. **Display** → Frontend shows structured receipt
+3. **Analyze** → Quick Tesseract scan + contrast/sharpness check for quality assessment
+4. **Route** → Choose between **Tesseract** (Fast/Free), **Hybrid**, or **Vision LLM** (Full accuracy) based on image quality
+5. **Execute** → Extract text using the chosen OCR route
+6. **Parse** → Small LLM structures text into JSON
+7. **Store** → Receipt data saved to DynamoDB with processing metrics
+8. **Display** → Frontend shows structured receipt and optimization stats
 
 ---
 
@@ -276,8 +279,14 @@ Process receipt image with AI
   "currency": "SGD",
   "items": [...],
   "imageUrl": "https://...",
-       "imageHash": "sha256-hex",
-       "ocrFingerprint": "normalized-fingerprint",
+  "imageHash": "sha256-hex",
+  "ocrFingerprint": "normalized-fingerprint",
+  "ocrRoute": "tesseract",
+  "processingMetrics": {
+    "route": "tesseract",
+    "durationMs": 120,
+    "tokensUsed": 0
+  },
   "createdAt": 1737475200000
 }
 ```
@@ -451,8 +460,10 @@ vercel
 - **Node.js 20+** - Runtime
 - **Express 4.18** - Local development server
 - **TypeScript 5.3** - Type safety
-- **Mistral AI SDK** - AI integration
+- **Mistral AI SDK** - AI integration for parsing and vision
 - **OpenRouter API** - Multi-provider AI access
+- **Tesseract.js** - Fast, local OCR for high-quality images
+- **Pixel Analysis** (jpeg-js, pngjs) - Image quality metrics
 - **AWS SDK v3** - DynamoDB & S3
 - **Busboy** - Multipart form parsing
 - **Multer** - File upload handling
@@ -471,9 +482,11 @@ vercel
 ## 📚 Documentation
 
 ### Test Guides
+
 - **[tests/README.md](./tests/README.md)** - Test structure and examples
 
 ### Backend Technical Reference
+
 - **[backend/CONFIGURATION.md](./backend/CONFIGURATION.md)** - Environment setup and configuration
 
 ---
