@@ -16,6 +16,8 @@ export interface ReceiptData {
     /** Normalized fingerprint from OCR fields for fuzzy-ish duplicate detection. */
     ocrFingerprint?: string;
     rawText?: string;
+    ocrRoute?: OcrRoute;
+    processingMetrics?: ProcessingMetrics;
     createdAt: number;
 }
 
@@ -55,4 +57,31 @@ export interface MistralStructuredResult {
     total: number;
     currency: string;
     items: LineItem[];
+}
+
+/** Phase 1: Image analysis output */
+export interface ImageAnalysisResult {
+    contrast: number;              // 0-1 normalized
+    sharpness: number;             // 0-1 normalized
+    tesseractConfidence: number;   // 0-100 from quick scan
+    isComplexLayout: boolean;
+    isHandwriting: boolean;
+    quickOcrText: string;          // text from quick Tesseract scan
+}
+
+/** Phase 2: Routing decision */
+export type OcrRoute = 'tesseract' | 'hybrid' | 'vision_llm';
+
+export interface RoutingDecision {
+    route: OcrRoute;
+    reason: string;
+    analysis: ImageAnalysisResult;
+}
+
+/** Phase 3: Execution metrics */
+export interface ProcessingMetrics {
+    route: OcrRoute;
+    durationMs: number;
+    tokensUsed?: number;
+    estimatedCost?: number;
 }

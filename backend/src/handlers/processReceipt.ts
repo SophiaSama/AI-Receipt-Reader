@@ -4,8 +4,10 @@ import { parseMultipart } from '../utils/parseMultipart';
 import { success, badRequest, serverError } from '../utils/responseHelper';
 import { uploadImage } from '../services/s3Service';
 import { getReceipts, saveReceipt } from '../services/dynamoService';
-import { extractTextFromImage, structureReceiptData, resolveAiModel } from '../services/aiProviderService';
+import { structureReceiptData, resolveAiModel } from '../services/aiProviderService';
 import { computeImageHash, computeOcrFingerprint, findDuplicateReceipt } from '../utils/duplicateDetection';
+import { analyzeImage } from '../services/imageAnalysisService';
+import { decideRoute, executeRoute } from '../services/ocrRoutingService';
 
 /**
  * POST /api/process
@@ -54,10 +56,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const modelId = parsed.fields.model || parsed.fields.modelId;
         const resolvedModel = resolveAiModel(modelId);
 
-        // Step 2: Extract text using selected OCR model
+        // Step 2: Smart OCR routing
         const imageBase64 = file.content.toString('base64');
-        const ocrResult = await extractTextFromImage(imageBase64, file.contentType, resolvedModel.id);
-        console.log(`OCR complete, extracted ${ocrResult.rawText.length} characters`);
+
+        // Phase 1: Analyze image quality
+        const analysis = await analyzeImage(file.content, file.contentType);
+        // Phase 2: Decide route
+        const decision = decideRoute(analysis);
+        console.log(`OCR route: ${decision.route} (reason: ${decision.reason})`);
+        // Phase 3: Execute chosen route
+        const { ocrResult, metrics } = await executeRoute(decision, imageBase64, file.contentType, resolvedModel.id);
+        console.log(`OCR complete via ${metrics.route} in ${metrics.durationMs}ms, extracted ${ocrResult.rawText.length} characters`);
 
         // Step 3: Structure data using selected LLM
         const structuredData = await structureReceiptData(ocrResult.rawText, resolvedModel.id);
@@ -74,6 +83,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             imageUrl: imageUrl,
             imageHash,
             rawText: ocrResult.rawText,
+            ocrRoute: decision.route,
+            processingMetrics: metrics,
             createdAt: Date.now(),
         };
 
@@ -136,9 +147,17 @@ export const processReceiptHandler = async (
 
     const resolvedModel = resolveAiModel(modelId);
 
-    // Step 2: Extract text using selected OCR model
+    // Step 2: Smart OCR routing
     const imageBase64 = fileBuffer.toString('base64');
-    const ocrResult = await extractTextFromImage(imageBase64, contentType, resolvedModel.id);
+
+    // Phase 1: Analyze image quality
+    const analysis = await analyzeImage(fileBuffer, contentType);
+    // Phase 2: Decide route
+    const decision = decideRoute(analysis);
+    console.log(`OCR route: ${decision.route} (reason: ${decision.reason})`);
+    // Phase 3: Execute chosen route
+    const { ocrResult, metrics } = await executeRoute(decision, imageBase64, contentType, resolvedModel.id);
+    console.log(`OCR complete via ${metrics.route} in ${metrics.durationMs}ms, extracted ${ocrResult.rawText.length} characters`);
 
     // Step 3: Structure data using selected LLM
     const structuredData = await structureReceiptData(ocrResult.rawText, resolvedModel.id);
@@ -154,6 +173,8 @@ export const processReceiptHandler = async (
         imageUrl: imageUrl,
         imageHash,
         rawText: ocrResult.rawText,
+        ocrRoute: decision.route,
+        processingMetrics: metrics,
         createdAt: Date.now(),
     };
 
