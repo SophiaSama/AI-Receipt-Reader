@@ -169,6 +169,22 @@ USE_LOCAL_STORAGE=true
 PORT=3001
 ```
 
+**Configure the frontend (Supabase):**
+
+```bash
+# From the project root
+copy .env.example .env.local
+```
+
+```bash
+# In .env.local — values from Supabase Dashboard -> Project Settings -> API
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-publishable-key
+```
+
+> The publishable (anon) key is safe to ship to the browser; RLS enforces
+> per-user access. Never put the `service_role` key in frontend env.
+
 ### 3️⃣ Build Backend
 
 ```bash
