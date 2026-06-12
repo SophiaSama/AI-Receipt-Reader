@@ -4,7 +4,7 @@ import { ReceiptList } from './components/ReceiptList';
 import { StatsOverview } from './components/StatsOverview';
 import { ManualEntryForm } from './components/ManualEntryForm';
 import { ReceiptFilters, FilterCriteria } from './components/ReceiptFilters';
-import { processAndSaveReceipt, confirmDuplicateReceiptDecision, saveManualReceiptToDB, fetchReceiptsFromDB, deleteReceiptFromDB, deleteReceiptsFromDB } from './services/awsService';
+import { processAndSaveReceipt, confirmDuplicateReceiptDecision, saveManualReceiptToDB, fetchReceiptsFromDB, deleteReceiptFromDB, deleteReceiptsFromDB } from './services/receiptService';
 import { AuthForm } from './components/AuthForm';
 import { getAuthService } from './services/authService';
 import type { Session } from '@supabase/supabase-js';
