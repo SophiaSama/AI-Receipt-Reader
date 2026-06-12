@@ -6,26 +6,25 @@ This document provides an overview of the project's organized file structure.
 SmartReceiptReader/
 │
 ├── 📁 api/                           # Vercel Serverless Functions
-│   ├── process.ts                    # POST /api/process (receipt OCR)
+│   ├── process.ts                    # POST /api/process (receipt OCR, requires Supabase JWT)
 │   ├── health.ts                     # GET /api/health (health check)
-│   ├── receipts.ts                   # GET /api/receipts (list all)
-│   ├── receipts/
-│   │   ├── manual.ts                 # POST /api/receipts/manual
-│   │   ├── confirm.ts                # POST /api/receipts/confirm
-│   │   └── delete.ts                 # DELETE /api/receipts/delete
 │   └── _lib/                         # Shared utilities for API
-│       ├── readRawBody.ts            # Request body reader (streams/objects/buffers)
-│       └── receiptsStore.ts          # In-memory storage for tests
+│       └── readRawBody.ts            # Request body reader (streams/objects/buffers)
 │
 ├── 📁 backend/                       # Backend Source Code
 │   ├── package.json                  # Backend dependencies
-│   ├── template.yaml                 # AWS SAM template
+│   ├── CONFIGURATION.md              # Backend env/config guide
 │   ├── .env.example                  # Environment template
 │   │
 │   ├── src/                          # Source code (TypeScript)
 │   │   ├── handlers/                 # API handlers
-│   │   │   └── confirmReceipt.ts      # Confirm/ignore duplicate receipt
+│   │   │   └── processReceipt.ts      # OCR/AI processing (core of /api/process)
 │   │   ├── services/                 # Business logic
+│   │   │   ├── aiProviderService.ts
+│   │   │   ├── imageAnalysisService.ts
+│   │   │   ├── mistralService.ts
+│   │   │   ├── ocrRoutingService.ts
+│   │   │   └── supabaseService.ts     # Supabase Postgres + Storage (per-user via JWT/RLS)
 │   │   └── utils/                    # Utilities
 │   │       └── duplicateDetection.ts  # Receipt duplicate matching
 │   │
@@ -40,18 +39,24 @@ SmartReceiptReader/
 │   ├── ManualEntryForm.tsx
 │   └── ReceiptFilters.tsx
 │
-├── 📁 services/                      # Frontend Services
-│   ├── awsService.ts                 # API client
-│   └── geminiService.ts              # (Legacy)
+├── 📁 services/                      # Frontend Services (talk directly to Supabase)
+│   ├── supabaseClient.ts             # Supabase browser client
+│   ├── authService.ts                # Email/password auth
+│   └── receiptService.ts             # Receipt CRUD + Storage
+│
+├── 📁 supabase/                      # Supabase project (source of truth)
+│   ├── config.toml                   # Local stack config
+│   ├── migrations/                   # Schema + RLS + bucket
+│   └── seed.sql                      # Seeded test users (local/CI only)
 │
 ├── 📁 tests/                         # Test Files
 │   ├── tsconfig.json                 # Test TypeScript config
-│   ├── setup.ts                      # Test setup (clears in-memory store)
+│   ├── setup.ts                      # Vitest setup (env + MSW lifecycle)
 │   ├── README.md                     # Test documentation
-│   ├── integration/                  # API integration tests
-│   │   └── api.test.ts               # Test mode integration tests
-│   ├── e2e/                          # End-to-end tests
-│   │   └── api.e2e.test.ts           # Tests against live server
+│   ├── services/                     # Frontend service tests (mocked)
+│   ├── backend/                      # Backend service tests (mocked)
+│   ├── integration/                  # MSW-backed integration tests
+│   ├── e2e/                          # Playwright e2e (local Supabase stack)
 │   └── helpers/                      # Test utilities
 │       └── testUtils.ts              # Mock helpers
 │
@@ -64,7 +69,7 @@ SmartReceiptReader/
 │   │   └── HistoryUI.png
 │   │
 │   ├── deployment/                   # Deployment guides
-│   │   ├── AWS_DEPLOYMENT_GUIDE.md   # AWS Lambda deployment
+│   │   ├── AWS_DEPLOYMENT_GUIDE.md   # Legacy (pre-Supabase AWS deployment)
 │   │   ├── VERCEL_DEPLOYMENT_GUIDE.md # Vercel deployment
 │   │   └── DEPLOYMENT.md             # General deployment
 │   │
@@ -72,7 +77,7 @@ SmartReceiptReader/
 │   │   ├── BACKEND_API_GUIDE.md      # Backend API guide
 │   │   ├── VERCEL_DEVELOPMENT_GUIDE.md # Best practices
 │   │   ├── TESTING_GUIDE.md          # Testing documentation
-│   │   └── DYNAMODB_SCHEMA.md        # Database schema
+│   │   └── DYNAMODB_SCHEMA.md        # Legacy (pre-Supabase DynamoDB schema)
 │   │
 │   ├── my_local_doc/                 # Local documentation
 │   │   └── CI_CD_TESTING.md          # CI/CD test setup guide
@@ -106,33 +111,35 @@ SmartReceiptReader/
 ├── 📄 LICENSE                        # MIT License
 │
 ├── 📄 README.md                      # Main readme
-├── 📄 PROJECT_STRUCTURE.md           # This file
-└── 📄 TEST_MODE_ARCHITECTURE.md      # Test mode documentation
+└── 📄 PROJECT_STRUCTURE.md           # This file
 ```
 
 ---
 
 ## 🏗️ Architecture Highlights
 
-### Test Mode System
+### Hybrid Supabase architecture
 
-The project uses a **dual-mode architecture** for API endpoints:
-
-- **Production Mode**: Uses AWS services, processes streams, requires multipart data
-- **Test Mode**: Uses in-memory storage, handles pre-parsed bodies, no external dependencies
+- **Frontend → Supabase (direct)**: Auth (email/password), receipt CRUD
+  (REST `/rest/v1/receipts`), and image Storage, all scoped per-user by
+  row-level security.
+- **Frontend → `/api/process` (server-side)**: Only OCR/AI processing runs on
+  the backend. The browser forwards the user's Supabase JWT
+  (`Authorization: Bearer <token>`); the backend writes under that user, with
+  RLS enforcing access. The `service_role` key is never used.
 
 Key files:
-- `api/_lib/receiptsStore.ts` - In-memory storage for tests
-- `api/_lib/readRawBody.ts` - Universal request body reader
-- `scripts/pre-test-build.cjs` - Automated backend build before tests
+- `services/supabaseClient.ts` - Supabase browser client
+- `services/authService.ts` / `services/receiptService.ts` - auth + CRUD
+- `backend/src/services/supabaseService.ts` - server-side Postgres + Storage
+- `api/_lib/readRawBody.ts` - universal request body reader
+- `supabase/` - schema, RLS policies, private bucket, seed users
 
-Benefits:
-- ✅ Fast, reliable integration tests (~2-5 seconds)
-- ✅ No AWS credentials needed for tests
-- ✅ CI/CD friendly
-- ✅ Same code handles both modes
+Testing:
+- Unit/integration tests mock the network (MSW + `vi.mock`) - no credentials.
+- E2E tests run against a local Supabase stack via the Supabase CLI.
 
-See `TEST_MODE_ARCHITECTURE.md` for detailed documentation.
+See `tests/README.md` for testing details.
 
 ## 📚 Quick Navigation
 
@@ -143,12 +150,13 @@ See `TEST_MODE_ARCHITECTURE.md` for detailed documentation.
 - [docs/development/BACKEND_API_GUIDE.md](docs/development/BACKEND_API_GUIDE.md) - Backend API development
 - [docs/development/VERCEL_DEVELOPMENT_GUIDE.md](docs/development/VERCEL_DEVELOPMENT_GUIDE.md) - Vercel best practices
 - [docs/development/TESTING_GUIDE.md](docs/development/TESTING_GUIDE.md) - Testing documentation
-- [docs/development/DYNAMODB_SCHEMA.md](docs/development/DYNAMODB_SCHEMA.md) - Database schema
 
 ### 🚢 Deployment
-- [docs/deployment/AWS_DEPLOYMENT_GUIDE.md](docs/deployment/AWS_DEPLOYMENT_GUIDE.md) - AWS Lambda deployment
 - [docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md](docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md) - Vercel deployment
 - [docs/deployment/DEPLOYMENT.md](docs/deployment/DEPLOYMENT.md) - General deployment checklist
+
+> Legacy (pre-Supabase) guides remain for history:
+> `docs/deployment/AWS_DEPLOYMENT_GUIDE.md`, `docs/development/DYNAMODB_SCHEMA.md`.
 
 ### 🧪 Testing
 - [tests/README.md](tests/README.md) - Test suite overview

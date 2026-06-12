@@ -222,7 +222,7 @@ page.wait_for_selector(".receipt-row", timeout=5000)
 page.wait_for_url("**/receipts")
 
 # Wait for network
-with page.expect_response("**/api/receipts") as response:
+with page.expect_response("**/rest/v1/receipts*") as response:
     page.click("#submit")
 print(response.value.json())
 
@@ -316,14 +316,14 @@ def test_multiple_receipts(page, merchant, total): pass
 ## 🔒 API Mocking
 
 ```python
-# Mock specific endpoint
-page.route("**/api/receipts", lambda route: route.fulfill(
+# Mock specific endpoint (receipts come from Supabase REST)
+page.route("**/rest/v1/receipts*", lambda route: route.fulfill(
     status=200,
-    json=[{"id": "1", "merchantName": "Mock", "total": 50}]
+    json=[{"id": "1", "merchant_name": "Mock", "total": 50}]
 ))
 
-# Mock all API calls
-page.route("**/api/**", lambda route: route.fulfill(status=200, json={}))
+# Mock the OCR endpoint
+page.route("**/api/process", lambda route: route.fulfill(status=200, json={}))
 
 # Intercept and modify
 def handle_route(route):
@@ -332,7 +332,7 @@ def handle_route(route):
     data['modified'] = True
     route.fulfill(response=response, json=data)
 
-page.route("**/api/receipts", handle_route)
+page.route("**/rest/v1/receipts*", handle_route)
 
 # Abort requests (e.g., block analytics)
 page.route("**/analytics/**", lambda route: route.abort())

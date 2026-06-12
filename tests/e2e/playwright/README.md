@@ -163,9 +163,16 @@ API_URL=http://localhost:3000/api
 FORWARD_API_TO_BACKEND=false
 BACKEND_ORIGIN=http://localhost:3001
 
-# Test user (if authentication added)
-TEST_USER_EMAIL=test@example.com
-TEST_USER_PASSWORD=testpassword123
+# Supabase (local stack defaults shown)
+SUPABASE_URL=http://localhost:54321
+SUPABASE_PUBLISHABLE_KEY=your_local_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_local_service_role_key
+
+# Seeded test users (see supabase/seed.sql)
+E2E_USER_A_EMAIL=test-user-a@example.com
+E2E_USER_A_PASSWORD=test-password-a
+E2E_USER_B_EMAIL=test-user-b@example.com
+E2E_USER_B_PASSWORD=test-password-b
 
 # Test data
 TEST_RECEIPT_IMAGE=tests/fixtures/sample-receipt.png
@@ -259,10 +266,10 @@ def test_upload_with_model(page: Page):
 
 ```python
 def test_with_mock_api(page: Page):
-    # Mock API response
-    page.route("**/api/receipts", lambda route: route.fulfill(
+    # Receipts are fetched directly from Supabase REST (/rest/v1/receipts)
+    page.route("**/rest/v1/receipts*", lambda route: route.fulfill(
         status=200,
-        body='[{"id": "123", "merchantName": "Test Store", "total": 50.00}]'
+        body='[{"id": "123", "merchant_name": "Test Store", "total": 50.00}]'
     ))
     
     page.goto("http://localhost:3000")

@@ -5,7 +5,7 @@
 ![SmartReceipt](https://img.shields.io/badge/AI-Mistral%20Powered-purple?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?style=for-the-badge&logo=typescript)
-![AWS](https://img.shields.io/badge/AWS-Lambda-orange?style=for-the-badge&logo=amazonaws)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ECF8E?style=for-the-badge&logo=supabase)
 ![Vercel](https://img.shields.io/badge/Vercel-Deploy-black?style=for-the-badge&logo=vercel)
 
 **Transform receipt images into structured expense data with AI-powered OCR**
@@ -22,7 +22,7 @@
 
 ## 📖 Overview
 
-SmartReceipt is a modern, cloud-native expense tracking application that uses **Mistral AI** and **OpenRouter-powered models** to automatically extract and structure receipt data. Simply upload a receipt image, choose an AI model if desired, and let AI handle the rest - no manual data entry required!
+SmartReceipt is a modern, cloud-native expense tracking application that uses **Mistral AI** and **OpenRouter-powered models** to automatically extract and structure receipt data. Simply upload a receipt image, choose an AI model if desired, and let AI handle the rest - no manual data entry required! Data lives in **Supabase** (Postgres + Storage) with per-user isolation enforced by Row Level Security.
 
 ### 🎯 Key Highlights
 
@@ -30,12 +30,12 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - 🚀 **Smart OCR Routing** - Dynamically switches between Tesseract (free/local), Hybrid, and Vision LLM based on image quality to optimize for speed and cost
 - 🧠 **Smart Parsing** - LLM structures data automatically (merchant, date, items, total)
 - 🎛️ **Model Selection** - Choose between Mistral and OpenRouter-backed models
-- ☁️ **Cloud Backend** - Serverless architecture on AWS Lambda or Vercel
+- 🔐 **Email/Password Auth** - Supabase Auth with per-user data isolation (RLS)
 - 📊 **Rich Dashboard** - Compact statistics and expense visualization
 - 🔍 **Advanced Filtering** - Search and filter by merchant, amount, date range
 - 📥 **CSV Export** - Download your expense data anytime
 - ✍️ **Manual Entry** - Optionally add receipts manually
-- 💾 **Persistent Storage** - DynamoDB for data, S3 for images
+- 💾 **Persistent Storage** - Supabase Postgres for data, Supabase Storage for images
 
 ---
 
@@ -52,12 +52,12 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 
 ### 🚀 Backend
 
-- **Serverless Architecture** - AWS Lambda or Vercel Functions
+- **Direct-to-Supabase data layer** - The browser talks directly to Supabase REST + Storage for all CRUD; only OCR/AI processing is server-side
 - **Smart Routing Pipeline** - 3-phase analysis (quality check → route decision → execution) for optimized processing
 - **Multi-Provider AI** - Mistral + OpenRouter models for OCR + parsing
-- **AWS Services** - DynamoDB + S3 for storage
-- **RESTful API** - Clean endpoint design
-- **Local Dev Mode** - In-memory storage for development
+- **Supabase Services** - Postgres + Storage with Row Level Security
+- **Stateless OCR endpoint** - `POST /api/process` authenticates the caller's Supabase JWT and writes under that user
+- **Local Dev Server** - Lightweight Express server for the processing endpoint
 - **CORS Enabled** - Ready for frontend integration
 
 ### 🔒 Production Ready
@@ -66,8 +66,8 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 - ✅ Error handling and validation
 - ✅ TypeScript for type safety
 - ✅ Optimized build pipeline
-- ✅ Secure AWS IAM policies
-- ✅ Public S3 bucket for images
+- ✅ Row Level Security (per-user data isolation)
+- ✅ Private Storage bucket with signed URLs
 
 ---
 
@@ -79,42 +79,34 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 │  (React)    │
 └──────┬──────┘
        │
-       ▼
-┌─────────────────┐
-│  API Gateway    │
-│  /api/*         │
-└──────┬──────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│         Lambda Functions            │
-│  ┌─────────────────────────────┐   │
-│  │  Process Receipt            │   │
-│  │  (OCR + Parse + Save)       │   │
-│  └─────────────────────────────┘   │
-│  ┌─────────────────────────────┐   │
-│  │  Manual Entry / Get / Delete│   │
-│  └─────────────────────────────┘   │
-└──────┬──────────────────┬───────────┘
-       │                  │
-       ▼                  ▼
-┌─────────────┐    ┌─────────────┐
-│  AI Models  │    │  DynamoDB   │
-│ Mistral +   │    │  + S3       │
-│ OpenRouter  │    │            │
-└─────────────┘    └─────────────┘
+       ├────────────────────────────┐
+       │ Auth + CRUD (REST/Storage)  │ OCR upload (multipart)
+       ▼                             ▼
+┌─────────────────┐         ┌─────────────────────┐
+│    Supabase     │◄────────│  /api/process       │
+│  Auth + Postgres│  JWT +  │  (OCR + Parse +     │
+│  + Storage (RLS)│  RLS    │   write via user)   │
+└─────────────────┘         └──────────┬──────────┘
+                                       │
+                                       ▼
+                            ┌─────────────────────┐
+                            │     AI Models       │
+                            │ Mistral + OpenRouter │
+                            │   + Tesseract OCR   │
+                            └─────────────────────┘
 ```
 
 ### Data Flow
 
-1. **Upload** → User uploads receipt image
-2. **S3 Storage** → Backend saves image to S3
-3. **Analyze** → Quick Tesseract scan + contrast/sharpness check for quality assessment
-4. **Route** → Choose between **Tesseract** (Fast/Free), **Hybrid**, or **Vision LLM** (Full accuracy) based on image quality
-5. **Execute** → Extract text using the chosen OCR route
-6. **Parse** → Small LLM structures text into JSON
-7. **Store** → Receipt data saved to DynamoDB with processing metrics
-8. **Display** → Frontend shows structured receipt and optimization stats
+1. **Sign in** → User authenticates with email/password (Supabase Auth)
+2. **Upload** → User uploads receipt image; the browser sends it to `POST /api/process` with its Supabase JWT
+3. **Storage** → Backend uploads the image to the private Supabase Storage bucket under the user's folder
+4. **Analyze** → Quick Tesseract scan + contrast/sharpness check for quality assessment
+5. **Route** → Choose between **Tesseract** (Fast/Free), **Hybrid**, or **Vision LLM** (Full accuracy) based on image quality
+6. **Execute** → Extract text using the chosen OCR route
+7. **Parse** → Small LLM structures text into JSON
+8. **Store** → Receipt row inserted into Postgres (under the user via RLS) with processing metrics
+9. **Display** → Frontend reads the user's receipts directly from Supabase (signed image URLs) and shows optimization stats
 
 ---
 
@@ -124,7 +116,7 @@ SmartReceipt is a modern, cloud-native expense tracking application that uses **
 
 - **Node.js 20.x LTS** or higher ([Download here](https://nodejs.org/))
 - npm 10.x or higher (comes with Node.js)
-- AWS Account (for production deployment)
+- A **Supabase project** (free tier works) ([supabase.com](https://supabase.com/))
 - Mistral AI API Key ([Get one here for free](https://console.mistral.ai/))
 - OpenRouter API Key ([Get one here, credits top up needed to make API Calls](https://openrouter.ai/)) (optional; missing key falls back to Mistral)
 
@@ -165,9 +157,14 @@ OPENROUTER_API_KEY=your_openrouter_api_key_here
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_HTTP_REFERER=http://localhost:3000
 OPENROUTER_APP_NAME=SmartReceiptReader
-USE_LOCAL_STORAGE=true
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your-anon-publishable-key
 PORT=3001
 ```
+
+> The backend uses the caller's Supabase JWT (forwarded from the browser) to write
+> under the authenticated user, so it only needs the project URL + publishable
+> (anon) key — not the `service_role` key.
 
 **Configure the frontend (Supabase):**
 
@@ -231,40 +228,31 @@ SmartReceiptReader/
 │   └── ReceiptFilters.tsx        # Search & filter
 │
 ├── 📁 services/                  # Frontend services
-│   ├── awsService.ts             # API communication
-│   └── geminiService.ts          # (Legacy)
+│   ├── supabaseClient.ts          # Supabase client singleton
+│   ├── authService.ts             # Email/password auth
+│   └── receiptService.ts          # Receipt CRUD (Supabase REST + Storage)
 │
 ├── 📁 api/                       # Vercel Serverless Functions
-│   ├── process.ts                # POST /api/process (receipt OCR)
-│   ├── health.ts                 # GET /api/health (health check)
-│   ├── receipts.ts               # GET /api/receipts (list all)
-│   └── receipts/                 # Receipt sub-routes
-│       ├── manual.ts             # POST /api/receipts/manual (manual entry)
-│       └── delete.ts             # DELETE /api/receipts/delete (delete by ID)
+│   ├── process.ts                 # POST /api/process (receipt OCR, JWT-authenticated)
+│   └── health.ts                  # GET /api/health (health check)
 │
-└── 📁 backend/                   # Backend code (AWS Lambda / Local)
+└── 📁 backend/                   # Backend code (OCR processing)
     ├── 📄 package.json           # Backend dependencies
-    ├── 📄 template.yaml          # AWS SAM template
     ├── 📄 tsconfig.json          # TypeScript config
     ├── 📄 .env.example           # Environment template
     │
     ├── 📁 src/
-    │   ├── 📁 handlers/          # Lambda functions
-    │   │   ├── processReceipt.ts # Main OCR endpoint
-       │   │   ├── confirmReceipt.ts # Duplicate confirm/ignore
-    │   │   ├── manualSave.ts     # Manual entry
-    │   │   ├── getReceipts.ts    # Fetch all
-    │   │   └── deleteReceipt.ts  # Delete receipt
+    │   ├── 📁 handlers/          # Request handlers
+    │   │   └── processReceipt.ts  # Main OCR endpoint (/api/process)
     │   │
     │   ├── 📁 services/          # Business logic
-    │   │   ├── mistralService.ts # AI integration
-    │   │   ├── s3Service.ts      # Image storage
-    │   │   └── dynamoService.ts  # Database
+    │   │   ├── mistralService.ts  # AI integration
+    │   │   └── supabaseService.ts # Storage + Postgres (per-user, RLS)
     │   │
     │   └── 📁 utils/             # Helpers
-    │       ├── parseMultipart.ts # Form parsing
-       │       ├── duplicateDetection.ts # Duplicate matching
-    │       └── responseHelper.ts # API responses
+    │       ├── parseMultipart.ts  # Form parsing
+    │       ├── duplicateDetection.ts # Duplicate matching
+    │       └── responseHelper.ts  # API responses
     │
     ├── 📁 dist/                  # Compiled JavaScript (generated)
     └── 📁 local/                 # Local development
@@ -277,12 +265,17 @@ SmartReceiptReader/
 
 ### `POST /api/process`
 
-Process receipt image with AI
+Process receipt image with AI. **Requires authentication.**
 
 **Request:**
 
+- Header: `Authorization: Bearer <supabase-access-token>`
 - Content-Type: `multipart/form-data`
 - Body: `file` (image), optional `model` or `modelId`
+- Optional query: `force=true` to skip duplicate detection
+
+Responds `401 Unauthorized` if no valid Supabase JWT is supplied. The image and
+receipt row are written under the authenticated user (enforced by RLS).
 
 **Response (normal save):**
 
@@ -336,95 +329,41 @@ Process receipt image with AI
 }
 ```
 
-### `POST /api/receipts/confirm`
+### Receipt CRUD (client-direct to Supabase)
 
-Confirm whether a duplicate should be ignored or saved.
+Listing, manual entry, duplicate confirm/ignore, and delete are **not** REST
+endpoints on this backend. The browser performs them directly against Supabase
+(`/rest/v1/receipts` + Storage) using the signed-in user's session, with Row
+Level Security guaranteeing each user only sees their own data:
 
-**Request:**
+| Operation | How it works |
+| --- | --- |
+| List receipts | `select` from `receipts` (ordered by `created_at`), images served via signed URLs |
+| Manual entry | `insert` a row + upload image to the user's Storage folder |
+| Confirm duplicate | `save` → `insert` the pending row; `ignore` → best-effort `storage.remove` of the pending image |
+| Delete / bulk delete | remove Storage objects then `delete` the row(s) |
 
-- Content-Type: `application/json`
-
-```json
-{
-       "action": "ignore",
-       "pendingReceipt": { "id": "new-uuid", "merchantName": "...", "date": "YYYY-MM-DD", "total": 0, "currency": "USD", "items": [], "imageUrl": "https://...", "createdAt": 1737475200000 }
-}
-```
-
-**Response:**
-
-- If `action=ignore`: `{ "ignored": true }` (and best-effort deletes from S3 + DynamoDB)
-- If `action=save`: returns the saved `ReceiptData`
-
-### `POST /api/receipts/manual`
-
-Save manual receipt entry
-
-**Request:**
-
-- Content-Type: `multipart/form-data`
-- Body: `metadata` (JSON string), `file` (optional)
-
-### `GET /api/receipts`
-
-Get all receipts
-
-**Response:** Array of receipt objects
-
-### `DELETE /api/receipts/delete`
-
-Delete receipt and image
-
-**Request:**
-
-- Query Parameter: `id` (receipt ID)
-
-**Response:** 204 No Content
+See [services/receiptService.ts](services/receiptService.ts) for the implementation.
 
 ---
 
 ## Deployment
 
-> **Important:** You do NOT need to manually create Lambda functions! SAM automates everything.  
-> See **[docs/deployment/AWS_DEPLOYMENT_GUIDE.md](./docs/deployment/AWS_DEPLOYMENT_GUIDE.md)** for detailed instructions.
+The app is two deployable pieces backed by Supabase:
 
-### Deploy to AWS Lambda
+1. **Supabase project** - Postgres schema, RLS policies, private Storage bucket,
+   and Auth. The `supabase/` directory (config, `migrations/`, `seed.sql`) is the
+   source of truth. Apply migrations with the Supabase CLI:
 
-```bash
-# Build the backend
-cd backend
-npm run build
+   ```bash
+   # Link once, then push the schema/RLS to your cloud project
+   npx supabase link --project-ref your-project-ref
+   npx supabase db push
+   ```
 
-# Deploy with SAM CLI (creates all resources automatically)
-sam build
-sam deploy --guided
-```
-
-**What Gets Created Automatically:**
-
-- ✅ 5 Lambda Functions (Process, Manual, Get, Delete, Confirm)
-- ✅ API Gateway with endpoints
-- ✅ DynamoDB Table
-- ✅ S3 Bucket
-- ✅ IAM Roles & Permissions
-
-**Configure During Deployment:**
-
-- Stack name: `smart-receipt-stack`
-- AWS Region: `ap-southeast-1` (or your preferred region)
-- Mistral/OpenRouter API keys: Your keys (as needed)
-- Confirm changes: Y
-
-**After deployment:**
-
-- Note the API Gateway endpoint URL from outputs
-- Update frontend to use production API (if needed)
-
-📚 **[Read Full AWS Deployment Guide →](./docs/deployment/AWS_DEPLOYMENT_GUIDE.md)**
+2. **Frontend + `/api/process`** - Deploy to Vercel.
 
 ### Deploy to Vercel
-
-> **🔐 Important:** Vercel needs AWS IAM credentials to access DynamoDB and S3.  
 
 ```bash
 # Install Vercel CLI
@@ -434,25 +373,25 @@ npm install -g vercel
 vercel
 ```
 
-**Prerequisites:**
-
-1. ✅ Create IAM user with DynamoDB + S3 permissions
-2. ✅ Create DynamoDB table: `smart-receipts`
-3. ✅ Create S3 bucket: `smart-receipt-images-{account-id}`
-
 **Environment Variables in Vercel Dashboard:**
+
+Frontend (build-time, `VITE_` prefix):
+
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` - Supabase anon/publishable key
+
+Serverless `/api/process` (runtime):
 
 - `MISTRAL_API_KEY` - Your Mistral API key
 - `OPENROUTER_API_KEY` - Optional (missing key falls back to Mistral)
 - `OPENROUTER_BASE_URL` - Optional override
 - `OPENROUTER_HTTP_REFERER` - Optional referrer
 - `OPENROUTER_APP_NAME` - Optional app name
-- `USE_LOCAL_STORAGE` - `false` (use AWS services)
-- `AWS_REGION` - `ap-southeast-1` (your AWS region)
-- `AWS_ACCESS_KEY_ID` - IAM user access key
-- `AWS_SECRET_ACCESS_KEY` - IAM user secret key
-- `S3_BUCKET_NAME` - Your S3 bucket name
-- `DYNAMODB_TABLE_NAME` - `smart-receipts`
+- `SUPABASE_URL` - Your Supabase project URL
+- `SUPABASE_PUBLISHABLE_KEY` - Supabase anon/publishable key
+
+> The `service_role` key is never required \u2014 `/api/process` acts on behalf of the
+> caller using their forwarded Supabase JWT, and RLS enforces per-user access.
 
 📚 **Documentation:**
 
@@ -470,6 +409,7 @@ vercel
 - **Vite 6.2** - Build tool & dev server
 - **Recharts 3.6** - Charts & visualization
 - **Tailwind CSS** - Styling (utility-first)
+- **Supabase JS** - Auth + data + Storage client
 
 ### Backend
 
@@ -480,18 +420,16 @@ vercel
 - **OpenRouter API** - Multi-provider AI access
 - **Tesseract.js** - Fast, local OCR for high-quality images
 - **Pixel Analysis** (jpeg-js, pngjs) - Image quality metrics
-- **AWS SDK v3** - DynamoDB & S3
+- **Supabase JS** - Postgres + Storage (per-user via JWT/RLS)
 - **Busboy** - Multipart form parsing
 - **Multer** - File upload handling
 
 ### Infrastructure
 
-- **AWS Lambda** - Serverless compute
-- **AWS API Gateway** - REST API
-- **AWS DynamoDB** - NoSQL database
-- **AWS S3** - Image storage
-- **AWS SAM** - Infrastructure as Code
-- **Vercel** - Alternative deployment
+- **Supabase Postgres** - Relational database (RLS per user)
+- **Supabase Storage** - Private image bucket with signed URLs
+- **Supabase Auth** - Email/password authentication
+- **Vercel** - Frontend hosting + `/api/process` serverless function
 
 ---
 
@@ -564,11 +502,11 @@ npm run test:coverage
 
 **Test Mode Features:**
 
-- ✅ **In-memory storage** - No AWS credentials needed
+- ✅ **Network-mocked** - MSW intercepts external calls; no real credentials needed
 - ✅ **Fast execution** - ~2-5 seconds for full suite
 - ✅ **Automatic setup** - Backend builds before tests run
 - ✅ **CI/CD friendly** - Works identically in all environments
-- ✅ **Full workflows** - Tests create → list → delete operations
+- ✅ **End-to-end coverage** - Playwright suite runs against a local Supabase stack
 
 See **[docs/development/TESTING_GUIDE.md](./docs/development/TESTING_GUIDE.md)** for detailed testing documentation.
 
@@ -583,16 +521,18 @@ cd backend
 npm run build
 ```
 
-### Local Storage Mode
+### Local Supabase Stack
 
-For development without AWS:
+For local development/testing against a real schema + RLS, run the Supabase CLI
+stack (requires Docker):
 
 ```bash
-# In backend/.env
-USE_LOCAL_STORAGE=true
+npx supabase start   # applies migrations + seed.sql
+npx supabase stop
 ```
 
-This uses in-memory storage - data is lost on server restart.
+Point the backend/frontend at the local stack via `SUPABASE_URL` /
+`VITE_SUPABASE_URL` (printed by `supabase status`).
 
 ### Mock AI Mode
 
@@ -620,9 +560,9 @@ Backend will return mock OCR/structured results.
 
 ### Images not loading
 
-- ✅ Verify S3 bucket CORS configuration
-- ✅ Check S3 bucket policy allows public read
-- ✅ In local mode: images stored in memory
+- ✅ Verify the `receipts` Storage bucket exists and is private
+- ✅ Signed URLs expire (default 1h) — they are regenerated on each fetch
+- ✅ Confirm the image path is under the user's folder (`{user_id}/...`)
 
 ### AI processing fails
 
@@ -632,9 +572,9 @@ Backend will return mock OCR/structured results.
 
 ### Data doesn't persist
 
-- ✅ Check `USE_LOCAL_STORAGE` setting
-- ✅ For production: use AWS services
-- ✅ Verify DynamoDB table exists
+- ✅ Confirm you are signed in (data is per-user via RLS)
+- ✅ Verify `SUPABASE_URL` / `VITE_SUPABASE_URL` point at the right project
+- ✅ Check the `receipts` table + RLS policies exist (run `supabase db push`)
 
 See **[docs/deployment/DEPLOYMENT.md](./docs/deployment/DEPLOYMENT.md)** for comprehensive troubleshooting.
 
@@ -669,7 +609,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **Mistral AI** - For powerful OCR and LLM capabilities
-- **AWS** - For serverless infrastructure
+- **Supabase** - For Postgres, Auth, and Storage
 - **Vercel** - For seamless deployment
 - **React Team** - For amazing UI framework
 - **TypeScript** - For type safety
@@ -714,7 +654,7 @@ Need help? Check these resources:
 
 <div align="center">
 
-**Built with ❤️ using Mistral AI, React, and AWS**
+**Built with ❤️ using Mistral AI, React, and Supabase**
 
 Made by [Ruiping Wang](https://github.com/SophiaSama) | January 2026
 

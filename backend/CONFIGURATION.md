@@ -18,21 +18,26 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_HTTP_REFERER=http://localhost:3000
 OPENROUTER_APP_NAME=SmartReceiptReader
 
-# Local Development Mode
-USE_LOCAL_STORAGE=true
+# Supabase (used by /api/process to read/write receipts + Storage)
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_publishable_key
 
 # Server Port
 PORT=3001
 ```
 
-### AWS Deployment Variables
+> The backend acts on behalf of the calling user using the Supabase JWT
+> forwarded by the frontend (`Authorization: Bearer <token>`). The `service_role`
+> key is intentionally **not** used — row-level security enforces per-user access.
 
-When deploying to AWS, these are managed by the SAM template:
+### Local Supabase Stack
+
+For local development against a real schema + RLS, start the Supabase CLI stack
+(requires Docker) and point `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` at it:
 
 ```bash
-AWS_REGION=us-east-1
-S3_BUCKET_NAME=smart-receipt-images-<your-account-id>
-DYNAMODB_TABLE_NAME=smart-receipts
+npx supabase start   # prints API URL + anon key via `supabase status`
+npx supabase stop
 ```
 
 ### Vercel Deployment Variables
@@ -47,21 +52,15 @@ When deploying to Vercel, set these in the Vercel dashboard:
    - `OPENROUTER_BASE_URL` (optional override)
    - `OPENROUTER_HTTP_REFERER` (optional)
    - `OPENROUTER_APP_NAME` (optional)
-   - `USE_LOCAL_STORAGE` = `false` (use cloud storage)
-   - `AWS_REGION` = `us-east-1`
-   - `S3_BUCKET_NAME` = your bucket name
-   - `DYNAMODB_TABLE_NAME` = `smart-receipts`
-
-**Note:** For Vercel, you need AWS credentials configured as well:
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
+   - `SUPABASE_URL` (your Supabase project URL)
+   - `SUPABASE_PUBLISHABLE_KEY` (Supabase anon/publishable key)
 
 ## Local Development
 
 1. Copy `.env.example` to `.env`
 2. Update `MISTRAL_API_KEY` with your actual key
 3. Add `OPENROUTER_API_KEY` if you plan to use non-Mistral models
-4. Keep `USE_LOCAL_STORAGE=true` for development
+4. Set `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` (cloud project or local stack)
 5. Run: `npm run dev`
 
 ## Testing Without Mistral API Key
