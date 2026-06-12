@@ -28,6 +28,10 @@ backend/.env
 backend/dist
 .aws-sam
 
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+
 # Local Docs
 docs/my_local_doc/*
 

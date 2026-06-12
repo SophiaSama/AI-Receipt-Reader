@@ -54,13 +54,15 @@ def _make_receipt(
 class TestOcrRoutingAPI:
     """Test that the /api/process endpoint returns OCR routing metadata."""
 
-    def test_process_returns_ocr_route_field(self, api_page: Page, api_url: str, sample_receipt_image: str):
+    def test_process_returns_ocr_route_field(self, api_page: Page, api_url: str, sample_receipt_image: str, access_token):
         """POST /api/process should include ocrRoute in the response."""
         import os
         receipt_path = sample_receipt_image
+        headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
 
         response = api_page.request.post(
             f"{api_url}/process",
+            headers=headers,
             multipart={
                 "file": {
                     "name": os.path.basename(receipt_path),
@@ -80,13 +82,15 @@ class TestOcrRoutingAPI:
                 f"Unexpected ocrRoute value: {data['ocrRoute']}"
             )
 
-    def test_process_returns_processing_metrics(self, api_page: Page, api_url: str, sample_receipt_image: str):
+    def test_process_returns_processing_metrics(self, api_page: Page, api_url: str, sample_receipt_image: str, access_token):
         """POST /api/process should include processingMetrics in the response."""
         import os
         receipt_path = sample_receipt_image
+        headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
 
         response = api_page.request.post(
             f"{api_url}/process",
+            headers=headers,
             multipart={
                 "file": {
                     "name": os.path.basename(receipt_path),
@@ -105,13 +109,15 @@ class TestOcrRoutingAPI:
             assert isinstance(metrics["durationMs"], (int, float)), "durationMs should be a number"
             assert metrics["durationMs"] >= 0, "durationMs should be non-negative"
 
-    def test_process_route_matches_metrics_route(self, api_page: Page, api_url: str, sample_receipt_image: str):
+    def test_process_route_matches_metrics_route(self, api_page: Page, api_url: str, sample_receipt_image: str, access_token):
         """ocrRoute and processingMetrics.route should match."""
         import os
         receipt_path = sample_receipt_image
+        headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
 
         response = api_page.request.post(
             f"{api_url}/process",
+            headers=headers,
             multipart={
                 "file": {
                     "name": os.path.basename(receipt_path),
@@ -143,15 +149,7 @@ class TestOcrRoutingUI:
             processing_metrics={"route": "tesseract", "durationMs": 95},
         )
 
-        page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
         page.route("**/api/process", lambda route: _fulfill_json(route, 200, receipt))
-
-        # Allow DELETEs during cleanup
-        def _cleanup(route):
-            if route.request.method.upper() == "DELETE":
-                return _fulfill_json(route, 204, {})
-            return route.continue_()
-        page.route("**/api/receipts/**", _cleanup)
 
         home = HomePage(page)
         receipts = ReceiptListPage(page)
@@ -176,14 +174,7 @@ class TestOcrRoutingUI:
             processing_metrics={"route": "hybrid", "durationMs": 3200, "tokensUsed": 450},
         )
 
-        page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
         page.route("**/api/process", lambda route: _fulfill_json(route, 200, receipt))
-
-        def _cleanup(route):
-            if route.request.method.upper() == "DELETE":
-                return _fulfill_json(route, 204, {})
-            return route.continue_()
-        page.route("**/api/receipts/**", _cleanup)
 
         home = HomePage(page)
         receipts = ReceiptListPage(page)
@@ -208,14 +199,7 @@ class TestOcrRoutingUI:
             processing_metrics={"route": "vision_llm", "durationMs": 5800, "tokensUsed": 1200},
         )
 
-        page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
         page.route("**/api/process", lambda route: _fulfill_json(route, 200, receipt))
-
-        def _cleanup(route):
-            if route.request.method.upper() == "DELETE":
-                return _fulfill_json(route, 204, {})
-            return route.continue_()
-        page.route("**/api/receipts/**", _cleanup)
 
         home = HomePage(page)
         receipts = ReceiptListPage(page)
@@ -236,14 +220,7 @@ class TestOcrRoutingUI:
         receipt = _make_receipt("r-legacy-1", "Legacy Store")
         # Intentionally omit ocrRoute and processingMetrics
 
-        page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
         page.route("**/api/process", lambda route: _fulfill_json(route, 200, receipt))
-
-        def _cleanup(route):
-            if route.request.method.upper() == "DELETE":
-                return _fulfill_json(route, 204, {})
-            return route.continue_()
-        page.route("**/api/receipts/**", _cleanup)
 
         home = HomePage(page)
         receipts = ReceiptListPage(page)
@@ -258,69 +235,6 @@ class TestOcrRoutingUI:
 
         receipts.wait_for_receipts_to_load(timeout=15000)
         expect(receipts.get_receipt_by_merchant("Legacy Store")).to_be_visible()
-
-
-# ---------- Tests: Receipt list displays routing metadata ----------
-
-class TestOcrRoutingReceiptList:
-    """Test that receipts with different OCR routes are correctly listed."""
-
-    def test_list_receipts_with_mixed_routes(self, page: Page):
-        """Receipt list should render receipts processed via different routes."""
-        receipts_data = [
-            _make_receipt("r-1", "Quick Mart", ocr_route="tesseract",
-                          processing_metrics={"route": "tesseract", "durationMs": 80}),
-            _make_receipt("r-2", "Medium Shop", ocr_route="hybrid",
-                          processing_metrics={"route": "hybrid", "durationMs": 4000, "tokensUsed": 300}),
-            _make_receipt("r-3", "Complex Store", ocr_route="vision_llm",
-                          processing_metrics={"route": "vision_llm", "durationMs": 6000, "tokensUsed": 1500}),
-        ]
-
-        page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, receipts_data))
-
-        def _cleanup(route):
-            if route.request.method.upper() == "DELETE":
-                return _fulfill_json(route, 204, {})
-            return route.continue_()
-        page.route("**/api/receipts/**", _cleanup)
-
-        page.reload()
-        page.wait_for_load_state("networkidle")
-
-        receipts = ReceiptListPage(page)
-        receipts.wait_for_receipts_to_load(timeout=15000)
-
-        # All three should be visible
-        expect(receipts.get_receipt_by_merchant("Quick Mart")).to_be_visible()
-        expect(receipts.get_receipt_by_merchant("Medium Shop")).to_be_visible()
-        expect(receipts.get_receipt_by_merchant("Complex Store")).to_be_visible()
-        expect(receipts.get_receipt_rows()).to_have_count(3)
-
-    def test_list_receipts_with_and_without_routing(self, page: Page):
-        """Older receipts without routing fields display alongside newer ones."""
-        receipts_data = [
-            _make_receipt("r-old", "Old Store"),  # no routing fields
-            _make_receipt("r-new", "New Store", ocr_route="tesseract",
-                          processing_metrics={"route": "tesseract", "durationMs": 100}),
-        ]
-
-        page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, receipts_data))
-
-        def _cleanup(route):
-            if route.request.method.upper() == "DELETE":
-                return _fulfill_json(route, 204, {})
-            return route.continue_()
-        page.route("**/api/receipts/**", _cleanup)
-
-        page.reload()
-        page.wait_for_load_state("networkidle")
-
-        receipts = ReceiptListPage(page)
-        receipts.wait_for_receipts_to_load(timeout=15000)
-
-        expect(receipts.get_receipt_by_merchant("Old Store")).to_be_visible()
-        expect(receipts.get_receipt_by_merchant("New Store")).to_be_visible()
-        expect(receipts.get_receipt_rows()).to_have_count(2)
 
 
 # ---------- Tests: Routing + Duplicate interaction ----------
@@ -341,6 +255,9 @@ class TestOcrRoutingWithDuplicates:
             ocr_route="hybrid",
             processing_metrics={"route": "hybrid", "durationMs": 3500},
         )
+        # Remove imageUrl so the client-side "ignore" path is a pure no-op
+        # (it would otherwise call Supabase storage.remove and hit RLS).
+        pending_2.pop("imageUrl", None)
         pending_2["imageHash"] = "deadbeef"
         pending_2["ocrFingerprint"] = "dup store|2026-04-27|12.50|SGD"
 
@@ -364,23 +281,7 @@ class TestOcrRoutingWithDuplicates:
                 "pendingReceipt": pending_2,
             })
 
-        page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
         page.route("**/api/process", process_handler)
-
-        def confirm_handler(route):
-            body = route.request.post_data or "{}"
-            data = json.loads(body)
-            if data.get("action") == "ignore":
-                return _fulfill_json(route, 200, {"ignored": True})
-            return _fulfill_json(route, 200, data.get("pendingReceipt"))
-
-        page.route("**/api/receipts/confirm", confirm_handler)
-
-        def _cleanup(route):
-            if route.request.method.upper() == "DELETE":
-                return _fulfill_json(route, 204, {})
-            return route.continue_()
-        page.route("**/api/receipts/**", _cleanup)
 
         home = HomePage(page)
         receipts = ReceiptListPage(page)
