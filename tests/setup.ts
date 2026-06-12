@@ -6,8 +6,13 @@ import { server } from './integration/mswServer';
 
 // Configure environment immediately for module initialization
 process.env.NODE_ENV = 'test';
-process.env.USE_LOCAL_STORAGE = 'true';
 process.env.MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || 'test-key';
+// Dummy Supabase config so client/server modules can initialize during tests
+// (network is mocked via MSW / vi.mock, so these values are never used for real calls).
+process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:54321';
+process.env.SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'test-anon-key';
+process.env.VITE_SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'http://localhost:54321';
+process.env.VITE_SUPABASE_PUBLISHABLE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'test-anon-key';
 
 
 // Set test environment variables
@@ -19,9 +24,6 @@ beforeAll(async () => {
   const backendDist = path.resolve(process.cwd(), 'backend', 'dist');
   const requiredHandlers = [
     'src/handlers/processReceipt.js',
-    'src/handlers/getReceipts.js',
-    'src/handlers/manualSave.js',
-    'src/handlers/deleteReceipt.js',
   ];
 
   const missingHandlers = requiredHandlers.filter(
@@ -41,16 +43,8 @@ beforeAll(async () => {
   console.log('✓ Test environment ready\n');
 });
 
-// Clear in-memory store before each test
+// Reset MSW handlers before each test
 beforeEach(async () => {
-  try {
-    const { clearReceipts } = await import('../api/_lib/receiptsStore.js');
-    await clearReceipts();
-  } catch (e) {
-    // Store may not be available in all tests, that's ok
-  }
-
-  // Reset MSW handlers
   server.resetHandlers();
 });
 

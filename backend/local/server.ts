@@ -7,14 +7,12 @@ import path from 'path';
 import { config } from 'dotenv';
 config({ path: path.join(__dirname, '..', '.env') });
 
-// Import handlers
-import { processReceiptHandler } from '../src/handlers/processReceipt';
-import { manualSaveHandler } from '../src/handlers/manualSave';
-import { getReceiptsHandler } from '../src/handlers/getReceipts';
-import { deleteReceiptHandler } from '../src/handlers/deleteReceipt';
-import { batchDeleteReceiptsHandler } from '../src/handlers/batchDeleteReceipts';
-import { handler as confirmReceiptLambdaHandler } from '../src/handlers/confirmReceipt';
-import { getLocalImage } from '../src/services/s3Service';
+import { processReceiptCore } from '../src/handlers/processReceipt';
+import {
+    createUserClient,
+    createSupabaseReceiptService,
+    extractBearerToken,
+} from '../src/services/supabaseService';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,216 +20,61 @@ const PORT = process.env.PORT || 3001;
 // Configure multer for file uploads
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 });
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Serve local images
-app.get('/images/*', (req: Request, res: Response) => {
-    const key = req.path.replace('/images/', '');
-    const imageData = getLocalImage(key);
-
-    if (!imageData) {
-        return res.status(404).json({ error: 'Image not found' });
-    }
-
-    res.contentType(imageData.contentType);
-    res.send(imageData.data);
-});
+function isTruthy(value: unknown): boolean {
+    const v = String(value ?? '').toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+}
 
 /**
  * POST /api/process
- * Unified receipt processing endpoint
+ * Authenticated, Supabase-backed receipt processing endpoint.
+ * The client sends an `Authorization: Bearer <jwt>` header; all storage/DB
+ * access runs under the caller's RLS context.
  */
 app.post('/api/process', upload.single('file'), async (req: Request, res: Response) => {
     try {
-        console.log('Received process request');
-        console.log('Headers:', req.headers['content-type']);
-        console.log('File present:', !!req.file);
+        const token = extractBearerToken(req.headers as Record<string, string | undefined>);
+        if (!token) {
+            return res.status(401).json({ error: 'Missing or invalid Authorization header.' });
+        }
 
         if (!req.file) {
-            console.error('No file in request. Multer failed or empty.');
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        console.log(`Processing file: ${req.file.originalname}`);
+        const client = createUserClient(token);
+        const service = createSupabaseReceiptService(client);
 
-        const receipt = await processReceiptHandler(
-            req.file.buffer,
-            req.file.originalname,
-            req.file.mimetype,
-            typeof req.body?.model === 'string' ? req.body.model : undefined
-        );
+        let userId: string;
+        try {
+            userId = await service.getUserId();
+        } catch {
+            return res.status(401).json({ error: 'Invalid or expired session.' });
+        }
 
-        res.json(receipt);
+        console.log(`Processing file: ${req.file.originalname} for user ${userId}`);
+
+        const result = await processReceiptCore({
+            service,
+            userId,
+            fileBuffer: req.file.buffer,
+            filename: req.file.originalname,
+            contentType: req.file.mimetype,
+            modelId: typeof req.body?.model === 'string' ? req.body.model : undefined,
+            force: isTruthy(req.query.force),
+        });
+
+        res.json(result);
     } catch (error: any) {
         console.error('Error processing receipt:', error);
         res.status(500).json({ error: error.message || 'Processing failed' });
-    }
-});
-
-/**
- * DELETE /api/receipts/delete?id=:id
- * Compatibility endpoint used by older clients/tests.
- */
-app.delete('/api/receipts/delete', async (req: Request, res: Response) => {
-    try {
-        const idRaw = req.query.id;
-        const id = typeof idRaw === 'string' ? idRaw.trim() : '';
-
-        if (!id) {
-            return res.status(400).json({ error: 'Receipt ID is required' });
-        }
-
-        await deleteReceiptHandler(id);
-        return res.status(204).send();
-    } catch (error: any) {
-        console.error('Error deleting receipt (compat):', error);
-        if (typeof error?.message === 'string' && error.message.includes('not found')) {
-            return res.status(404).json({ error: error.message });
-        }
-        return res.status(500).json({ error: error.message || 'Delete failed' });
-    }
-});
-
-/**
- * POST /api/receipts/manual
- * Manual receipt entry endpoint
- */
-app.post('/api/receipts/manual', upload.single('file'), async (req: Request, res: Response) => {
-    try {
-        const metadataStr = req.body.metadata;
-
-        if (!metadataStr) {
-            return res.status(400).json({ error: 'metadata field is required' });
-        }
-
-        let metadata;
-        try {
-            metadata = JSON.parse(metadataStr);
-        } catch (e) {
-            return res.status(400).json({ error: 'Invalid metadata JSON' });
-        }
-
-        const receipt = await manualSaveHandler(
-            metadata,
-            req.file?.buffer,
-            req.file?.originalname,
-            req.file?.mimetype
-        );
-
-        res.json(receipt);
-    } catch (error: any) {
-        console.error('Error saving manual receipt:', error);
-        if (error.message && error.message.includes('required')) {
-            return res.status(400).json({ error: error.message });
-        }
-        res.status(500).json({ error: error.message || 'Save failed' });
-    }
-});
-
-/**
- * POST /api/receipts/confirm
- * Confirm/ignore a possible duplicate receipt.
- */
-app.post('/api/receipts/confirm', async (req: Request, res: Response) => {
-    try {
-        const event = {
-            body: JSON.stringify(req.body || {}),
-            headers: {
-                'content-type': String(req.headers['content-type'] || 'application/json'),
-                'Content-Type': String(req.headers['content-type'] || 'application/json'),
-            },
-            httpMethod: 'POST',
-            isBase64Encoded: false,
-            path: '/api/receipts/confirm',
-            pathParameters: null,
-            queryStringParameters: null,
-            requestContext: {},
-        };
-
-        const result = await confirmReceiptLambdaHandler(event as any);
-
-        if (result.headers) {
-            for (const [k, v] of Object.entries(result.headers)) {
-                res.setHeader(k, String(v));
-            }
-        }
-
-        if (!result.body) {
-            return res.status(result.statusCode).send('');
-        }
-
-        // result.body is JSON (success/badRequest/serverError)
-        return res.status(result.statusCode).json(JSON.parse(result.body));
-    } catch (error: any) {
-        console.error('Error confirming receipt:', error);
-        return res.status(500).json({ error: error.message || 'Confirm failed' });
-    }
-});
-
-/**
- * GET /api/receipts
- * Get all receipts
- */
-app.get('/api/receipts', async (req: Request, res: Response) => {
-    try {
-        const receipts = await getReceiptsHandler();
-        res.json(receipts);
-    } catch (error: any) {
-        console.error('Error fetching receipts:', error);
-        res.status(500).json({ error: error.message || 'Fetch failed' });
-    }
-});
-
-/**
- * DELETE /api/receipts/:id
- * Delete a receipt
- */
-app.delete('/api/receipts/:id', async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-
-        if (!id) {
-            return res.status(400).json({ error: 'Receipt ID is required' });
-        }
-
-        await deleteReceiptHandler(id);
-        res.status(204).send();
-    } catch (error: any) {
-        console.error('Error deleting receipt:', error);
-
-        if (error.message.includes('not found')) {
-            return res.status(404).json({ error: error.message });
-        }
-
-        res.status(500).json({ error: error.message || 'Delete failed' });
-    }
-});
-
-/**
- * POST /api/receipts/batch-delete
- * Bulk delete receipts
- */
-app.post('/api/receipts/batch-delete', async (req: Request, res: Response) => {
-    try {
-        const { ids } = req.body;
-
-        if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ error: 'Array of receipt IDs is required' });
-        }
-
-        // Use the handler implementation that works for local too
-        const { batchDeleteReceiptsHandler } = await import('../src/handlers/batchDeleteReceipts');
-        await batchDeleteReceiptsHandler(ids);
-
-        res.status(204).send();
-    } catch (error: any) {
-        console.error('Error bulk deleting receipts:', error);
-        res.status(500).json({ error: error.message || 'Bulk delete failed' });
     }
 });
 
@@ -240,11 +83,9 @@ app.get('/api/health', (req: Request, res: Response) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        localMode: process.env.USE_LOCAL_STORAGE === 'true'
     });
 });
 
-// Return 405 for wrong methods to known endpoints tested by E2E
 app.all('/api/health', (req: Request, res: Response) => {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -255,30 +96,13 @@ app.all('/api/*', (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Not Found' });
 });
 
-// Start server
-// Start server only if not running in serverless environment
+// Start server only if not running in a serverless environment
 if (process.env.VERCEL !== '1') {
     app.listen(PORT, () => {
-        console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║           SmartReceipt Backend Server                     ║
-╠═══════════════════════════════════════════════════════════╣
-║  🚀 Server running on http://localhost:${PORT}              ║
-║  📦 Local storage mode: ${process.env.USE_LOCAL_STORAGE === 'true' ? 'ENABLED' : 'DISABLED'}                     ║
-║  🤖 Mistral AI: ${process.env.MISTRAL_API_KEY && process.env.MISTRAL_API_KEY !== 'your_mistral_api_key_here' ? 'CONFIGURED' : 'MOCK MODE (no API key)'}               ║
-╠═══════════════════════════════════════════════════════════╣
-║  Endpoints:                                               ║
-║    POST   /api/process         - Process receipt image    ║
-║    POST   /api/receipts/manual - Manual entry             ║
-║    POST   /api/receipts/confirm - Confirm duplicate        ║
-║    GET    /api/receipts        - Get all receipts         ║
-║    DELETE /api/receipts/:id    - Delete receipt           ║
-║    POST   /api/receipts/batch-delete - Bulk delete        ║
-║    GET    /api/health          - Health check             ║
-╚═══════════════════════════════════════════════════════════╝
-    `);
+        console.log(`SmartReceipt backend running on http://localhost:${PORT}`);
+        console.log(`  Supabase: ${process.env.SUPABASE_URL ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+        console.log(`  Endpoints: POST /api/process (auth), GET /api/health`);
     });
 }
 
 export default app;
-

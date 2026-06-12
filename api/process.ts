@@ -27,21 +27,29 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     const { handler: processHandler } = await import('../backend/dist/src/handlers/processReceipt.js');
 
     const contentType = req.headers['content-type'] || '';
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'] || '';
 
     // Use the robust utility that handles streams, rawBody, and body from various request shapes
     const rawBody = await readRawBody(req);
+
+    // Forward the `force` flag (used to bypass duplicate detection on user confirmation).
+    const force = typeof req.query?.force !== 'undefined'
+      ? String(Array.isArray(req.query.force) ? req.query.force[0] : req.query.force)
+      : undefined;
 
     const event = {
       body: rawBody.toString('base64'),
       headers: {
         'content-type': String(contentType),
         'Content-Type': String(contentType),
+        authorization: String(authHeader),
+        Authorization: String(authHeader),
       },
       httpMethod: 'POST',
       isBase64Encoded: true,
       path: '/api/process',
       pathParameters: null,
-      queryStringParameters: null,
+      queryStringParameters: force ? { force } : null,
       requestContext: {},
     };
 
