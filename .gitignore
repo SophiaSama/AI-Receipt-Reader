@@ -54,3 +54,4 @@ tests/e2e/playwright/.env
 .ruff_cache/*
 # Local settings
 .env
+.env.local

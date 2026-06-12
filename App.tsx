@@ -5,6 +5,9 @@ import { StatsOverview } from './components/StatsOverview';
 import { ManualEntryForm } from './components/ManualEntryForm';
 import { ReceiptFilters, FilterCriteria } from './components/ReceiptFilters';
 import { processAndSaveReceipt, confirmDuplicateReceiptDecision, saveManualReceiptToDB, fetchReceiptsFromDB, deleteReceiptFromDB, deleteReceiptsFromDB } from './services/awsService';
+import { AuthForm } from './components/AuthForm';
+import { getAuthService } from './services/authService';
+import type { Session } from '@supabase/supabase-js';
 import { ReceiptData, ProcessingStatus } from './types';
 
 const initialFilters: FilterCriteria = {
@@ -38,6 +41,8 @@ function App() {
     pendingReceipt: ReceiptData;
     matchType: 'imageHash' | 'ocrFingerprint';
   }>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -66,6 +71,20 @@ function App() {
   };
 
   useEffect(() => {
+    const auth = getAuthService();
+    auth.getSession()
+      .then(setSession)
+      .catch(err => console.error('Failed to read session', err))
+      .finally(() => setAuthReady(true));
+    const unsubscribe = auth.onAuthStateChange((s) => setSession(s));
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!session) {
+      setReceipts([]);
+      return;
+    }
     const loadData = async () => {
       try {
         const data = await fetchReceiptsFromDB();
@@ -75,7 +94,7 @@ function App() {
       }
     };
     loadData();
-  }, []);
+  }, [session]);
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter((receipt) => {
@@ -221,6 +240,14 @@ function App() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await getAuthService().signOut();
+    } catch (e) {
+      console.error('Sign out failed', e);
+    }
+  };
+
   const handleClearFilters = () => setFilters(initialFilters);
 
   const handleExportCSV = () => {
@@ -240,6 +267,16 @@ function App() {
 
   const bulkDeleteInProgress = status.isProcessing && typeof status.message === 'string' && status.message.toLowerCase().includes('deleting receipts');
   const bulkDeleteFailed = status.step === 'error' && typeof status.message === 'string' && status.message.toLowerCase().includes('bulk delete');
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-400 text-sm font-sans">Loading…</div>
+    );
+  }
+
+  if (!session) {
+    return <AuthForm />;
+  }
 
   return (
     <div className="min-h-screen text-slate-700 pb-12 font-sans selection:bg-primary/20">
@@ -268,6 +305,13 @@ function App() {
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
               <span className="text-xs font-medium text-slate-400">System Active</span>
+            </div>
+            <div className="w-px h-4 bg-pink-100"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-400 max-w-[160px] truncate">{session.user?.email}</span>
+              <button onClick={handleSignOut} className="text-xs font-medium text-slate-400 hover:text-rose-500 transition-colors cursor-pointer">
+                Sign Out
+              </button>
             </div>
           </div>
         </div>
