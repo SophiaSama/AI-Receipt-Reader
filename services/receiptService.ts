@@ -232,8 +232,10 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) {
-        console.warn('Failed to fetch receipts, returning empty list.', error.message);
-        return [];
+        // Previously this returned an empty list silently which caused the UI to appear blank.
+        // Throw instead so callers can surface the error to users and developers.
+        console.error('Failed to fetch receipts from Supabase:', error.message, error);
+        throw new Error(`Failed to fetch receipts: ${error.message}`);
       }
 
       const rows = (data ?? []) as ReceiptRow[];
