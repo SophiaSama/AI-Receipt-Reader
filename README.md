@@ -393,10 +393,18 @@ Serverless `/api/process` (runtime):
 > The `service_role` key is never required \u2014 `/api/process` acts on behalf of the
 > caller using their forwarded Supabase JWT, and RLS enforces per-user access.
 
+> **⚠️ Serverless limitation (Tesseract OCR):** On Vercel, the Tesseract WASM core is
+> not bundled into the function, so the local **Tesseract / Hybrid** OCR routes are
+> automatically disabled and all OCR is handled by the **Vision LLM** route. This keeps
+> production working but forgoes the free/local OCR cost optimization. To restore
+> Tesseract, the backend can be containerized — see the planned
+> **[Cloud Run migration](./docs/deployment/CLOUD_RUN_MIGRATION.md)**.
+
 📚 **Documentation:**
 
 - **[docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md](./docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md)** - Complete deployment setup
 - **[docs/development/VERCEL_DEVELOPMENT_GUIDE.md](./docs/development/VERCEL_DEVELOPMENT_GUIDE.md)** - Best practices & troubleshooting
+- **[docs/deployment/CLOUD_RUN_MIGRATION.md](./docs/deployment/CLOUD_RUN_MIGRATION.md)** - Planned containerized backend (Tesseract-enabled)
 
 ---
 
@@ -442,6 +450,11 @@ Serverless `/api/process` (runtime):
 ### Backend Technical Reference
 
 - **[backend/CONFIGURATION.md](./backend/CONFIGURATION.md)** - Environment setup and configuration
+
+### Deployment
+
+- **[docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md](./docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md)** - Vercel setup
+- **[docs/deployment/CLOUD_RUN_MIGRATION.md](./docs/deployment/CLOUD_RUN_MIGRATION.md)** - Planned: containerized backend on Cloud Run to re-enable Tesseract OCR
 
 ---
 
@@ -640,6 +653,7 @@ Need help? Check these resources:
 - [ ] Receipt splitting for shared expenses
 - [ ] Multiple currency support
 - [ ] Dark mode toggle
+- [ ] Containerized backend on Cloud Run to re-enable Tesseract/Hybrid OCR ([plan](./docs/deployment/CLOUD_RUN_MIGRATION.md))
 
 ---
 
