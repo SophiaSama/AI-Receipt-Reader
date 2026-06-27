@@ -1,5 +1,10 @@
 {
     "version": 2,
+    "functions": {
+        "api/process.ts": {
+            "maxDuration": 60
+        }
+    },
     "routes": [
         {
             "handle": "filesystem"

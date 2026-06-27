@@ -15,6 +15,18 @@ const getWorker = (): Promise<Worker> => {
 };
 
 /**
+ * Tesseract.js relies on a WASM core + downloaded language data that are not
+ * bundled into serverless deployments (e.g. Vercel's `/var/task`), where a
+ * missing `tesseract-core-simd.wasm` aborts the WASM runtime and crashes the
+ * whole function process. In those environments we skip the local Tesseract
+ * pass entirely and let the vision-LLM route handle OCR.
+ *
+ * Auto-disabled on Vercel; can also be forced off via DISABLE_TESSERACT_OCR.
+ */
+const isTesseractDisabled = (): boolean =>
+    process.env.DISABLE_TESSERACT_OCR === 'true' || process.env.VERCEL === '1';
+
+/**
  * Decode raw image bytes into a flat array of RGBA pixels.
  * Supports JPEG and PNG via pure-JS decoders (jpeg-js / pngjs).
  * Falls back to a zero-length buffer if decoding fails.
@@ -156,11 +168,19 @@ export const analyzeImage = async (
     imageBuffer: Buffer,
     mimeType: string
 ): Promise<ImageAnalysisResult> => {
-    // Run pixel analysis and Tesseract in parallel
+    // Run pixel analysis and Tesseract in parallel. When Tesseract is disabled
+    // (serverless), skip it and force the vision-LLM route via confidence 0.
+    const tesseractEnabled = !isTesseractDisabled();
     const [pixelData, tesseractResult] = await Promise.all([
         decodePixels(imageBuffer, mimeType),
-        runQuickTesseract(imageBuffer),
+        tesseractEnabled
+            ? runQuickTesseract(imageBuffer)
+            : Promise.resolve({ confidence: 0, text: '', words: [] }),
     ]);
+
+    if (!tesseractEnabled) {
+        console.log('Tesseract OCR disabled in this environment; routing to vision LLM.');
+    }
 
     const luminance = extractLuminance(pixelData.data);
 
