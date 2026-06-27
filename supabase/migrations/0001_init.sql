@@ -31,6 +31,17 @@ create index if not exists receipts_user_created_at_idx
   on public.receipts (user_id, created_at desc);
 
 -- ---------------------------------------------------------------------------
+-- Table privileges.
+-- Hosted Supabase auto-grants these to anon/authenticated/service_role via
+-- default privileges, but the local CLI stack (used in CI) does NOT, so without
+-- explicit grants every PostgREST request is denied at the privilege level
+-- (before RLS is evaluated): authenticated insert/select fail and the
+-- service_role cleanup returns 403. RLS below still restricts row access for
+-- anon/authenticated; service_role bypasses RLS.
+-- ---------------------------------------------------------------------------
+grant select, insert, update, delete on public.receipts to anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
 -- Row Level Security: a user can only touch their own rows.
 -- ---------------------------------------------------------------------------
 alter table public.receipts enable row level security;
