@@ -21,9 +21,9 @@ const initialFilters: FilterCriteria = {
 const aiModelOptions = [
   { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
   { id: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
-  { id: 'qwen/qwen-vl-plus', label: 'Qwen VL Plus' },
+  { id: 'qwen/qwen3.6-flash', label: 'Qwen3.6 Flash' },
   { id: 'pixtral-12b-2409', label: 'Pixtral 12B (Mistral)' },
-  { id: 'qwen/qwen3-vl-235b-a22b-instruct', label: 'Qwen3 VL 235B' },
+  { id: 'deepseek/deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
 ];
 
 const defaultAiModelId = 'google/gemini-2.5-flash';

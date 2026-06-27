@@ -174,13 +174,13 @@ class TestWithPageObjects:
         selected = home.get_selected_ai_model_value()
         assert selected == "google/gemini-2.5-flash-lite"
 
-    def test_ai_model_select_qwen3_vl(self, page: Page):
-        """Test selecting the Qwen3 VL 235B model"""
+    def test_ai_model_select_deepseek_v4(self, page: Page):
+        """Test selecting the DeepSeek V4 Flash model"""
         home = HomePage(page)
 
-        home.select_ai_model("Qwen3 VL 235B")
+        home.select_ai_model("DeepSeek V4 Flash")
         selected = home.get_selected_ai_model_value()
-        assert selected == "qwen/qwen3-vl-235b-a22b-instruct"
+        assert selected == "deepseek/deepseek-v4-flash"
     
     def test_fluent_api_chaining(self, page: Page):
         """Demonstrate fluent API with method chaining"""
