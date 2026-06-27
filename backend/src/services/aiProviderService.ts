@@ -45,13 +45,6 @@ const AI_MODEL_CATALOG: AiModelConfig[] = [
         ocrModel: 'pixtral-12b-2409',
         structModel: 'mistral-large-latest',
     },
-    {
-        id: 'deepseek/deepseek-v4-flash',
-        label: 'DeepSeek V4 Flash',
-        provider: 'openrouter',
-        ocrModel: 'deepseek/deepseek-v4-flash',
-        structModel: 'deepseek/deepseek-v4-flash',
-    },
 ];
 
 export const DEFAULT_AI_MODEL_ID = 'google/gemini-2.5-flash';

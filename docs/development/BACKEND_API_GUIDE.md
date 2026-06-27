@@ -35,7 +35,6 @@ This is the primary endpoint for automated scanning.
 - `google/gemini-2.5-flash-lite`
 - `qwen/qwen3.6-flash`
 - `pixtral-12b-2409`
-- `deepseek/deepseek-v4-flash`
 
 If `model`/`modelId` is omitted or invalid, the backend falls back to the default model.
 

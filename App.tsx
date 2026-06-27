@@ -23,7 +23,6 @@ const aiModelOptions = [
   { id: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
   { id: 'qwen/qwen3.6-flash', label: 'Qwen3.6 Flash' },
   { id: 'pixtral-12b-2409', label: 'Pixtral 12B (Mistral)' },
-  { id: 'deepseek/deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
 ];
 
 const defaultAiModelId = 'google/gemini-2.5-flash';
