@@ -23,7 +23,10 @@ class ReceiptListPage(BasePage):
     # The filter bar only exposes a merchant search box, a single start-date
     # input, and a Clear button (no merchant/category dropdowns or "To" date).
     SEARCH_INPUT = "input[placeholder*='Filter by merchant']"
-    FILTER_DATE_FROM = "input[type='date']"
+    # Scope to the filter bar's "From" input so it never collides with the
+    # manual entry form's own #date input (which can still be mounted while a
+    # previous save is in flight) -> avoids strict-mode "2 elements" errors.
+    FILTER_DATE_FROM = "input[type='date'][placeholder='From']"
     CLEAR_FILTERS_BUTTON = 'button:has-text("Clear")'
 
     # Stats

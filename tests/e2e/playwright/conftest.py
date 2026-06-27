@@ -169,7 +169,17 @@ def page(context: BrowserContext, base_url: str):
     page.goto(base_url)
 
     if E2E_USER_A_EMAIL and E2E_USER_A_PASSWORD:
-        AuthPage(page).login(E2E_USER_A_EMAIL, E2E_USER_A_PASSWORD)
+        # Log in AND wait for the app's initial receipts fetch to complete.
+        # App.tsx loads receipts in a `[session]` effect triggered by login; if
+        # that GET resolves *after* a test's first optimistic insert it would
+        # overwrite the UI with the DB's (possibly empty) list and silently drop
+        # the just-added row. Waiting for the GET here removes that race for all
+        # authenticated tests.
+        with page.expect_response(
+            lambda r: "/rest/v1/receipts" in r.url and r.request.method == "GET",
+            timeout=20000,
+        ):
+            AuthPage(page).login(E2E_USER_A_EMAIL, E2E_USER_A_PASSWORD)
 
     yield page
     page.close()
