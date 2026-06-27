@@ -81,9 +81,8 @@ home.click_export()
 home.upload_file("path/to/file.jpg")
 home.cancel_upload()
 
-# Export
+# Export (app currently supports CSV only)
 home.export_as_csv()
-home.export_as_pdf()
 
 # Assertions
 home.assert_on_home_page()
@@ -184,12 +183,10 @@ receipt = receipt_list.get_receipt_by_merchant("Store")
 receipt_list.delete_receipt_by_merchant("Store")
 receipt_list.edit_receipt_by_merchant("Store")
 
-# Search and filters
+# Search and filters (UI: merchant search + single start-date + Clear)
 receipt_list.search("coffee")
 receipt_list.clear_search()
-receipt_list.filter_by_merchant("Walmart")
-receipt_list.filter_by_date_range("2026-01-01", "2026-01-31")
-receipt_list.filter_by_category("Groceries")
+receipt_list.filter_by_date_range("2026-01-01")
 receipt_list.clear_filters()
 
 # Stats

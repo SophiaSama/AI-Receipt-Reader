@@ -31,6 +31,12 @@ export const badRequest = (message: string): APIGatewayProxyResult => ({
     body: JSON.stringify({ error: message }),
 });
 
+export const unauthorized = (message: string): APIGatewayProxyResult => ({
+    statusCode: 401,
+    headers: corsHeaders,
+    body: JSON.stringify({ error: message }),
+});
+
 export const notFound = (message: string): APIGatewayProxyResult => ({
     statusCode: 404,
     headers: corsHeaders,

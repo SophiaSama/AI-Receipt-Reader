@@ -80,6 +80,124 @@ tests/e2e/playwright/
     └── receipt_list_page.py             # Receipt list & filters
 ```
 
+## Running E2E locally against a local Supabase stack (Option A)
+
+The suite is auth-gated: almost every test signs in as a seeded Supabase user
+before exercising the UI. Locally we use a **disposable local Supabase stack**
+(the same approach CI uses) so the seeded users in
+[`supabase/seed.sql`](../../../supabase/seed.sql) can log in. That stack runs in
+Docker, which in turn requires hardware **virtualization**.
+
+### Prerequisites (Docker + virtualization)
+
+The local Supabase stack runs entirely in Docker containers, so you need:
+
+1. **Hardware virtualization enabled in firmware/BIOS** — Intel **VT-x** or
+   AMD **SVM**. On managed/corporate machines this is often disabled and must be
+   turned on by IT.
+2. **Windows virtualization features** — **Virtual Machine Platform** and
+   **WSL 2** (Docker Desktop's default backend).
+3. **Docker Desktop** installed and showing **Engine running**.
+
+Verify virtualization is on before installing anything:
+
+- **Task Manager → Performance → CPU →** the **Virtualization** line should read
+  **Enabled**.
+- Or in PowerShell: `Get-ComputerInfo -Property "HyperVRequirement*"`.
+
+Enable the Windows features (admin PowerShell), then reboot:
+
+```powershell
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+wsl --install --no-distribution   # installs/updates the WSL2 kernel
+```
+
+> **"Docker Desktop failed to start because virtualisation support wasn't
+> detected."** Virtualization is off in BIOS (or blocked by IT policy), or the
+> Virtual Machine Platform / WSL 2 features are missing. Without it, the local
+> stack cannot run — either enable virtualization (above) or run the suite in
+> **GitHub Actions**, which already provisions the local Supabase stack on the
+> runner (see [`.github/workflows/e2e-playwright.yml`](../../../.github/workflows/e2e-playwright.yml)).
+
+### One-time: install the Supabase CLI
+
+The CLI ships as a dev dependency, so `npx supabase ...` works from the repo
+root. (Standalone install: <https://supabase.com/docs/guides/cli>.)
+
+### Step-by-step
+
+Run these from the **repository root** unless noted.
+
+1. **Start Docker Desktop** and wait for **Engine running**.
+
+2. **Start the local Supabase stack** (first run pulls images — give it a few
+   minutes):
+
+   ```powershell
+   npx supabase start
+   ```
+
+3. **Apply the schema + seed the test users** (idempotent; re-runs
+   `migrations/0001_init.sql` + `seed.sql`, which creates `test-user-a/b` with
+   email confirmation disabled):
+
+   ```powershell
+   npx supabase db reset
+   ```
+
+4. **Read the local keys** and confirm they match the values committed in
+   `.env.test` / the playwright `.env`:
+
+   ```powershell
+   npx supabase status -o env
+   # API_URL=http://127.0.0.1:54321
+   # ANON_KEY=...           -> VITE_SUPABASE_PUBLISHABLE_KEY / SUPABASE_PUBLISHABLE_KEY
+   # SERVICE_ROLE_KEY=...   -> SUPABASE_SERVICE_ROLE_KEY (playwright .env only)
+   ```
+
+   The committed defaults are the standard local dev keys. If your CLI emits
+   different values, paste `ANON_KEY` into both
+   [`.env.test`](../../../.env.test) and `tests/e2e/playwright/.env`, and
+   `SERVICE_ROLE_KEY` into `tests/e2e/playwright/.env`.
+
+5. **Start the app pointed at local Supabase.** Use the dedicated e2e script so
+   your normal `npm run dev` keeps using your cloud config:
+
+   ```powershell
+   # frontend -> reads .env.test (VITE_SUPABASE_* = local stack), serves :3000
+   npm run dev:e2e
+
+   # backend (separate terminal), serves :3001
+   cd backend; npm run dev
+   ```
+
+   `npm run dev:e2e` is `vite --mode test`, which loads
+   [`.env.test`](../../../.env.test) and overrides the cloud values in `.env`
+   for the e2e session only.
+
+6. **Run the suite** from this directory using the venv:
+
+   ```powershell
+   cd tests/e2e/playwright
+   .\.venv\Scripts\python.exe -m pytest --browser chromium
+   ```
+
+### How the env files map
+
+| File | Used by | Supabase target |
+| --- | --- | --- |
+| [`.env.test`](../../../.env.test) (root) | Frontend via `npm run dev:e2e` (`VITE_SUPABASE_*`) | Local stack `127.0.0.1:54321` |
+| `tests/e2e/playwright/.env` | pytest / fixtures (`SUPABASE_*`, `E2E_USER_*`) | Local stack `127.0.0.1:54321` |
+| `.env` / `.env.local` (root) | Normal `npm run dev` | Your cloud project (unchanged) |
+
+### Tearing down
+
+```powershell
+npx supabase stop          # stop containers (keeps data)
+npx supabase stop --no-backup   # stop and discard local data
+```
+
 ## Running Tests
 
 ### Quick Start
@@ -163,9 +281,16 @@ API_URL=http://localhost:3000/api
 FORWARD_API_TO_BACKEND=false
 BACKEND_ORIGIN=http://localhost:3001
 
-# Test user (if authentication added)
-TEST_USER_EMAIL=test@example.com
-TEST_USER_PASSWORD=testpassword123
+# Supabase (local stack defaults shown)
+SUPABASE_URL=http://localhost:54321
+SUPABASE_PUBLISHABLE_KEY=your_local_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_local_service_role_key
+
+# Seeded test users (see supabase/seed.sql)
+E2E_USER_A_EMAIL=test-user-a@example.com
+E2E_USER_A_PASSWORD=test-password-a
+E2E_USER_B_EMAIL=test-user-b@example.com
+E2E_USER_B_PASSWORD=test-password-b
 
 # Test data
 TEST_RECEIPT_IMAGE=tests/fixtures/sample-receipt.png
@@ -177,6 +302,23 @@ SLOW_MO=0
 # Video recording (set to true to enable)
 RECORD_VIDEO=false
 ```
+
+> **CI vs. local — do I need to fill these in?**
+>
+> - **CI:** No. The workflow boots a disposable Supabase stack and derives
+>   `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`
+>   automatically via `supabase status -o env` — no GitHub secrets are required.
+> - **Local:** Use the **local Supabase stack** (Option A) described in
+>   ["Running E2E locally against a local Supabase stack"](#running-e2e-locally-against-a-local-supabase-stack-option-a)
+>   above — `npx supabase start` provides `SUPABASE_URL` and the keys, and
+>   `db reset` seeds `test-user-a/b`. The committed `.env.test` / `.env`
+>   defaults already match this stack. (You *can* instead point these at a cloud
+>   Supabase project, but the local stack needs no secrets.) If you don't run
+>   e2e locally at all, you can leave `SUPABASE_PUBLISHABLE_KEY` and
+>   `SUPABASE_SERVICE_ROLE_KEY` **empty** — the publishable key is only needed
+>   for login, and the service-role key only powers the between-test cleanup
+>   fixture (a silent no-op when empty). They are read solely when pytest runs;
+>   leaving them empty never affects CI or the app.
 
 ### pytest.ini
 
@@ -259,10 +401,10 @@ def test_upload_with_model(page: Page):
 
 ```python
 def test_with_mock_api(page: Page):
-    # Mock API response
-    page.route("**/api/receipts", lambda route: route.fulfill(
+    # Receipts are fetched directly from Supabase REST (/rest/v1/receipts)
+    page.route("**/rest/v1/receipts*", lambda route: route.fulfill(
         status=200,
-        body='[{"id": "123", "merchantName": "Test Store", "total": 50.00}]'
+        body='[{"id": "123", "merchant_name": "Test Store", "total": 50.00}]'
     ))
     
     page.goto("http://localhost:3000")

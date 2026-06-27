@@ -32,11 +32,11 @@ const AI_MODEL_CATALOG: AiModelConfig[] = [
         structModel: 'google/gemini-2.5-flash-lite',
     },
     {
-        id: 'qwen/qwen-vl-plus',
-        label: 'Qwen VL Plus',
+        id: 'qwen/qwen3.6-flash',
+        label: 'Qwen3.6 Flash',
         provider: 'openrouter',
-        ocrModel: 'qwen/qwen-vl-plus',
-        structModel: 'qwen/qwen-vl-plus',
+        ocrModel: 'qwen/qwen3.6-flash',
+        structModel: 'qwen/qwen3.6-flash',
     },
     {
         id: 'pixtral-12b-2409',
@@ -44,13 +44,6 @@ const AI_MODEL_CATALOG: AiModelConfig[] = [
         provider: 'mistral',
         ocrModel: 'pixtral-12b-2409',
         structModel: 'mistral-large-latest',
-    },
-    {
-        id: 'qwen/qwen3-vl-235b-a22b-instruct',
-        label: 'Qwen3 VL 235B',
-        provider: 'openrouter',
-        ocrModel: 'qwen/qwen3-vl-235b-a22b-instruct',
-        structModel: 'qwen/qwen3-vl-235b-a22b-instruct',
     },
 ];
 

@@ -18,18 +18,17 @@ class HomePage(BasePage):
     # Primary actions
     MANUAL_ENTRY_BUTTON = "button:has-text('Switch to Manual')"
     UPLOAD_BUTTON_TEXT = "Switch to Upload"
+    # The upload affordance is the dropzone label (no dedicated "Upload" button)
+    UPLOAD_BUTTON = "label[for='dropzone-file'], [data-testid='upload-section']"
     EXPORT_BUTTON = "button:has-text('Export CSV')"
     
     # Upload modal
     FILE_INPUT = "input[type='file']"
-    UPLOAD_SUBMIT = "button:has-text('Upload')" # Note: Upload is auto-triggered on drop/select usually
     UPLOAD_CANCEL = "button:has-text('Cancel')"
     AI_MODEL_SELECT = "select:has(option)"
     
-    # Export options
-    EXPORT_CSV_BUTTON = "button:has-text('CSV')"
-    EXPORT_PDF_BUTTON = "button:has-text('PDF')"
-    EXPORT_EXCEL_BUTTON = "button:has-text('Excel')"
+    # Export options (app currently supports CSV export only)
+    EXPORT_CSV_BUTTON = "button:has-text('Export CSV')"
     
     def __init__(self, page: Page):
         super().__init__(page)
@@ -106,19 +105,8 @@ class HomePage(BasePage):
     
     # Export operations
     def export_as_csv(self):
-        """Export receipts as CSV"""
+        """Export receipts as CSV (the single 'Export CSV' button triggers the download)."""
         self.click_export()
-        csv_btn = self.page.locator(self.EXPORT_CSV_BUTTON)
-        if csv_btn.is_visible():
-            csv_btn.click()
-        return self
-    
-    def export_as_pdf(self):
-        """Export receipts as PDF"""
-        self.click_export()
-        pdf_btn = self.page.locator(self.EXPORT_PDF_BUTTON)
-        if pdf_btn.is_visible():
-            pdf_btn.click()
         return self
     
     # Navigation

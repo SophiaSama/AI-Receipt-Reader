@@ -8,22 +8,22 @@ from playwright.sync_api import Page, expect
 class TestHealthCheck:
     """Test application health and basic functionality"""
     
-    def test_app_loads(self, page: Page):
-        """Test that the application loads successfully"""
+    def test_app_loads(self, unauth_page: Page):
+        """Test that the application loads successfully (auth screen)"""
         # Vite normalizes to a trailing slash.
-        expect(page).to_have_url("http://localhost:3000/")
+        expect(unauth_page).to_have_url("http://localhost:3000/")
         
         errors = []
-        page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+        unauth_page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
         
-        page.wait_for_load_state("networkidle")
+        unauth_page.wait_for_load_state("networkidle")
         
         # Filter out known WebKit-only CORS console noise.
         filtered = [e for e in errors if "due to access control checks" not in e]
         assert len(filtered) == 0, f"Console errors found: {filtered}"
     
     def test_main_sections_visible(self, page: Page):
-        """Test that main sections of the app are visible"""
+        """Test that main sections of the app are visible (authenticated dashboard)"""
         # Check upload section
         expect(page.locator("text=Click to upload receipt")).to_be_visible()
         
@@ -44,7 +44,7 @@ class TestHealthCheck:
         assert data.get("status") in ["ok", "healthy"]
         assert "timestamp" in data
     
-    def test_no_javascript_errors(self, page: Page):
+    def test_no_javascript_errors(self, unauth_page: Page):
         """Test that there are no JavaScript errors on page load"""
         errors = []
 
@@ -55,10 +55,10 @@ class TestHealthCheck:
                 return
             errors.append(text)
 
-        page.on("pageerror", _handler)
+        unauth_page.on("pageerror", _handler)
         
-        page.reload()
-        page.wait_for_load_state("networkidle")
+        unauth_page.reload()
+        unauth_page.wait_for_load_state("networkidle")
         
         assert len(errors) == 0, f"JavaScript errors found: {errors}"
     

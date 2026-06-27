@@ -24,17 +24,14 @@ Your app uses **Vite with Vercel serverless functions**, which means:
 │  └───────────────────────────────┘ │
 │                                     │
 │  ┌───────────────────────────────┐ │
-│  │   Backend API Routes          │ │
-│  │   /api/health                 │ │
-│  │   /api/receipts               │ │
-│  │   /api/receipts/manual        │ │
-│  │   /api/receipts/delete        │ │
-│  │   /api/process                │ │
-│  └───────────────────────────────┘ │
+  │   Backend API Route           │ │
+  │   /api/process (OCR only)     │ │
+  └───────────────────────────────┘ │
 └─────────────────────────────────────┘
 ```
 
-**Both frontend and backend are served by the same Vite dev server!**
+**The frontend talks directly to Supabase (Auth + REST `/rest/v1/receipts` +
+Storage); only OCR/AI processing goes through `/api/process`.**
 
 ---
 

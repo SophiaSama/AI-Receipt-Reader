@@ -1,4 +1,15 @@
-"""E2E tests for duplicate receipt upload confirmation flow."""
+"""E2E tests for duplicate receipt upload confirmation flow.
+
+Post-Supabase migration:
+- Only ``/api/process`` is server-side; we mock it to return a normal receipt
+  on the first upload and a duplicate prompt on the second.
+- The duplicate decision (ignore / save) is handled client-side directly against
+  Supabase, so there is no ``/api/receipts/confirm`` route to mock anymore.
+- "ignore" only removes a storage object when ``imageUrl`` is present; we omit it
+  so the no-op path is exercised without touching storage RLS.
+- "save" inserts a real row into Supabase, so the pending receipt id must be a
+  valid UUID.
+"""
 
 from __future__ import annotations
 
@@ -20,22 +31,11 @@ def _fulfill_json(route, status: int, payload: object):
 def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_image: str):
     """Uploading the same receipt twice should prompt and allow ignoring."""
 
-    # Keep the initial list empty
-    page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
-
-    # Allow DELETEs during test cleanup without hitting a real backend
-    def _cleanup_delete_only(route):
-        if route.request.method.upper() == "DELETE":
-            return _fulfill_json(route, 204, {})
-        return route.continue_()
-
-    page.route("**/api/receipts/**", _cleanup_delete_only)
-
     # Mock /api/process: first call returns a normal saved receipt; second call returns duplicate prompt
     process_calls = {"n": 0}
 
     receipt_1 = {
-        "id": "r-1",
+        "id": "r-1",  # never inserted (server already "saved" it), so any string is fine
         "merchantName": "E2E Coffee",
         "date": "2026-03-06",
         "total": 4.50,
@@ -46,13 +46,13 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
     }
 
     pending_2 = {
-        "id": "r-2",
+        "id": "22222222-2222-4222-8222-222222222222",
         "merchantName": "E2E Coffee",
         "date": "2026-03-06",
         "total": 4.50,
         "currency": "USD",
         "items": [],
-        "imageUrl": "https://example.com/receipts/r-2.png",
+        # No imageUrl: ignore becomes a pure no-op (no storage.remove call).
         "createdAt": 1770000001000,
         "imageHash": "deadbeef",
         "ocrFingerprint": "e2e coffee|2026-03-06|4.50|USD",
@@ -78,16 +78,6 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
         return _fulfill_json(route, 200, duplicate_payload)
 
     page.route("**/api/process", process_handler)
-
-    # Mock confirm endpoint; ignore should return ignored
-    def confirm_handler(route):
-        body = route.request.post_data or "{}"
-        data = json.loads(body)
-        if data.get("action") == "ignore":
-            return _fulfill_json(route, 200, {"ignored": True})
-        return _fulfill_json(route, 200, data.get("pendingReceipt"))
-
-    page.route("**/api/receipts/confirm", confirm_handler)
 
     # Upload twice
     home = HomePage(page)
@@ -126,14 +116,6 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
 def test_duplicate_upload_no_proceeds_and_adds_new_record(page: Page, sample_receipt_image: str):
     """If the user says it's not a duplicate, the receipt should be added."""
 
-    page.route("**/api/receipts", lambda route: _fulfill_json(route, 200, []))
-    def _cleanup_delete_only(route):
-        if route.request.method.upper() == "DELETE":
-            return _fulfill_json(route, 204, {})
-        return route.continue_()
-
-    page.route("**/api/receipts/**", _cleanup_delete_only)
-
     process_calls = {"n": 0}
 
     receipt_1 = {
@@ -148,13 +130,13 @@ def test_duplicate_upload_no_proceeds_and_adds_new_record(page: Page, sample_rec
     }
 
     pending_2 = {
-        "id": "r-2",
+        "id": "33333333-3333-4333-8333-333333333333",
         "merchantName": "E2E Pizza",
         "date": "2026-03-05",
         "total": 18.00,
         "currency": "USD",
         "items": [],
-        "imageUrl": "https://example.com/receipts/r-2.png",
+        # No imageUrl: the inserted row stores image_url = null (nullable column).
         "createdAt": 1770000001000,
     }
 
@@ -178,16 +160,6 @@ def test_duplicate_upload_no_proceeds_and_adds_new_record(page: Page, sample_rec
         return _fulfill_json(route, 200, duplicate_payload)
 
     page.route("**/api/process", process_handler)
-
-    # When user chooses save, return the pending receipt as the saved object
-    def confirm_handler(route):
-        body = route.request.post_data or "{}"
-        data = json.loads(body)
-        if data.get("action") == "save":
-            return _fulfill_json(route, 200, data.get("pendingReceipt"))
-        return _fulfill_json(route, 200, {"ignored": True})
-
-    page.route("**/api/receipts/confirm", confirm_handler)
 
     home = HomePage(page)
     receipts = ReceiptListPage(page)

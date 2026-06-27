@@ -20,12 +20,14 @@ class ReceiptListPage(BasePage):
     EDIT_BUTTON = "button:has-text(\"Edit\"), button[aria-label='Edit']"
 
     # Search and filters
+    # The filter bar only exposes a merchant search box, a single start-date
+    # input, and a Clear button (no merchant/category dropdowns or "To" date).
     SEARCH_INPUT = "input[placeholder*='Filter by merchant']"
-    FILTER_MERCHANT = "#filter-merchant, select[name='merchant']"
-    FILTER_DATE_FROM = "input[placeholder='From']"
-    FILTER_DATE_TO = "input[placeholder='To']"
-    FILTER_CATEGORY = "#filter-category, select[name='category']"
-    CLEAR_FILTERS_BUTTON = 'button:has-text("Clear"), button:has-text("Reset")'
+    # Scope to the filter bar's "From" input so it never collides with the
+    # manual entry form's own #date input (which can still be mounted while a
+    # previous save is in flight) -> avoids strict-mode "2 elements" errors.
+    FILTER_DATE_FROM = "input[type='date'][placeholder='From']"
+    CLEAR_FILTERS_BUTTON = 'button:has-text("Clear")'
 
     # Stats
     STATS_SECTION = "[data-testid='stats-overview']"
@@ -124,34 +126,19 @@ class ReceiptListPage(BasePage):
             search_input.fill("")
         return self
 
-    def filter_by_merchant(self, merchant: str):
-        """Filter by merchant"""
-        filter_select = self.page.locator(self.FILTER_MERCHANT)
-        if filter_select.is_visible():
-            filter_select.select_option(merchant)
-        return self
-
     def filter_by_date_range(
         self, date_from: Optional[str] = None, date_to: Optional[str] = None
     ):
-        """Filter by date range (YYYY-MM-DD format)"""
+        """Filter by start date (YYYY-MM-DD format).
+
+        The current UI only exposes a single start-date input, so ``date_to`` is
+        accepted for backwards compatibility but ignored.
+        """
         if date_from:
             from_input = self.page.locator(self.FILTER_DATE_FROM)
             if from_input.is_visible():
                 from_input.fill(date_from)
 
-        if date_to:
-            to_input = self.page.locator(self.FILTER_DATE_TO)
-            if to_input.is_visible():
-                to_input.fill(date_to)
-
-        return self
-
-    def filter_by_category(self, category: str):
-        """Filter by category"""
-        filter_select = self.page.locator(self.FILTER_CATEGORY)
-        if filter_select.is_visible():
-            filter_select.select_option(category)
         return self
 
     def clear_filters(self):
