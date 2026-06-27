@@ -8,12 +8,16 @@ export interface SupabaseEnv {
 /**
  * Reads Supabase config from Vite's import.meta.env.
  * VITE_SUPABASE_PUBLISHABLE_KEY is the anon/publishable key (safe for the browser).
+ *
+ * NOTE: These must be accessed as direct, static `import.meta.env.VITE_*`
+ * member expressions so Vite can inline the values at build time. Aliasing
+ * `import.meta.env` to a variable (or using optional chaining / `as any`)
+ * defeats the static replacement and yields `undefined` in the production bundle.
  */
 export function readSupabaseEnv(): SupabaseEnv {
-  const env = ((import.meta as any)?.env ?? {}) as Record<string, string | undefined>;
   return {
-    url: env.VITE_SUPABASE_URL,
-    publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    url: import.meta.env.VITE_SUPABASE_URL,
+    publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   };
 }
 
