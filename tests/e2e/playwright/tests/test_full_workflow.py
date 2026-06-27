@@ -73,15 +73,15 @@ class TestFullWorkflow:
 
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
-        search_input = page.locator("input[placeholder*='Search']").or_(
-            page.locator("input[type='search']")
-        )
-        if search_input.is_visible():
-            search_input.fill("FilterTest")
-            expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=10000)
+        # The filter bar exposes a single merchant search input (placeholder "Filter by merchant...")
+        search_input = page.locator("input[placeholder*='Filter by merchant']")
+        expect(search_input).to_be_visible(timeout=10000)
 
-            search_input.fill("NonExistent12345")
-            expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
+        search_input.fill("FilterTest")
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=10000)
+
+        search_input.fill("NonExistent12345")
+        expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
     def test_delete_cancel_keeps_receipt(self, page: Page, sample_receipt_data: dict):
         """Canceling delete should keep the receipt visible"""
