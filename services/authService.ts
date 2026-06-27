@@ -28,7 +28,15 @@ export interface AuthService {
 export function createAuthService(client: SupabaseClient): AuthService {
   return {
     async signUp(email, password) {
-      const { data, error } = await client.auth.signUp({ email, password });
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: {
+          // Send confirmed users back to the origin they signed up from.
+          // The origin must also be in the Supabase dashboard "Redirect URLs" allow-list.
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
+      });
       if (error) throw new Error(error.message);
       return { user: data.user, session: data.session };
     },
