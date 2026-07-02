@@ -9,7 +9,16 @@ let workerPromise: Promise<Worker> | null = null;
 
 const getWorker = (): Promise<Worker> => {
     if (!workerPromise) {
-        workerPromise = createWorker('eng');
+        // When TESSDATA_PREFIX is set (Docker / Cloud Run), load the baked-in
+        // language data and WASM core from the local filesystem — no runtime
+        // download. When unset (local dev), Tesseract.js falls back to CDN.
+        const tessdataPath = process.env.TESSDATA_PREFIX || undefined;
+        workerPromise = createWorker('eng', undefined, {
+            ...(tessdataPath && {
+                langPath: tessdataPath,
+                cachePath: tessdataPath,
+            }),
+        });
     }
     return workerPromise;
 };
