@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LineItem, ReceiptData } from '../types';
 import { getSupabaseClient } from './supabaseClient';
 import { getAuthService } from './authService';
+import { compressImage } from './imageCompression';
 
 const BUCKET = 'receipts';
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
@@ -142,8 +143,12 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
 
   return {
     async processAndSaveReceipt(file, options = {}) {
+      // Downscale/re-encode large photos so the request stays under the
+      // serverless body limit (Vercel rejects >4.5MB with a 413 error).
+      const uploadFile = await compressImage(file);
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile);
       if (options.modelId) formData.append('model', options.modelId);
 
       const headers: Record<string, string> = {};

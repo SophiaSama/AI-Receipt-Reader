@@ -1,10 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+/** Strip a single trailing slash so `https://x.com/` and `https://x.com` compare equal. */
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/$/, '');
+}
+
 function getAllowedOrigins(): string[] {
   const raw = process.env.CORS_ORIGINS || process.env.ALLOWED_ORIGINS || '';
   return raw
     .split(',')
-    .map((item) => item.trim())
+    .map((item) => normalizeOrigin(item))
     .filter((item) => item.length > 0);
 }
 
@@ -17,7 +22,7 @@ function setOriginHeader(req: VercelRequest, res: VercelResponse): void {
     return;
   }
 
-  if (requestOrigin && origins.includes(requestOrigin)) {
+  if (requestOrigin && origins.includes(normalizeOrigin(requestOrigin))) {
     res.setHeader('Access-Control-Allow-Origin', requestOrigin);
     res.setHeader('Vary', 'Origin');
   }
@@ -40,7 +45,7 @@ export function rejectDisallowedOriginIfNeeded(req: VercelRequest, res: VercelRe
     return false;
   }
 
-  if (!origins.includes(requestOrigin)) {
+  if (!origins.includes(normalizeOrigin(requestOrigin))) {
     res.status(403).json({ error: 'Origin not allowed' });
     return true;
   }

@@ -58,13 +58,50 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
 
 ### Prerequisites
 
-1. A GCP project with Cloud Run and Artifact Registry APIs enabled.
+1. A GCP project with Cloud Run, Secret Manager and Artifact Registry APIs enabled.
 
   ```bash
+    # Log in first
     gcloud auth login
+    gcloud config set project [PROJECT_ID]
 
-    gcloud services enable run.googleapis.com artifactregistry.googleapis.com
+    # Verify Login
 
+    gcloud auth list
+    gcloud config get-value project
+
+    # Enable APIs
+
+    gcloud services enable run.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
+
+  ```
+  And grant permission to project
+  ```bash
+    gcloud projects add-iam-policy-binding 924806699856 \
+    --member="serviceAccount:924806699856-compute@developer.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor"
+
+  ```
+  Add secret entry for supabase
+  ```bash
+  # 1. Create the secret entry
+  gcloud secrets create supabase-url --replication-policy="automatic"
+  gcloud secrets create supabase-publishable-key --replication-policy="automatic"
+  gcloud secrets create mistral-api-key --replication-policy="automatic"
+  gcloud secrets create openrouter-api-key --replication-policy="automatic"
+
+  # 2. Add the actual URL value to the secret
+  echo -n "YOUR_SUPABASE_URL" | gcloud secrets versions add supabase-url --data-file=-
+  echo -n "YOUR_ACTUAL_KEY" | gcloud secrets versions add supabase-publishable-key --data-file=-
+  echo -n "YOUR_ACTUAL_KEY" | gcloud secrets versions add mistral-api-key --data-file=-
+  echo -n "YOUR_ACTUAL_KEY" | gcloud secrets versions add openrouter-api-key --data-file=-
+
+  # 3. Grant permissions
+  PROJECT_NUMBER="924806699856"
+
+  gcloud projects add-iam-policy-binding $PROJECT_NUMBER \
+      --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+      --role="roles/secretmanager.secretAccessor"
   ```
 2. Create an Artifact Registry Docker repository:
 
@@ -77,7 +114,7 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
    and `roles/iam.serviceAccountUser`.
 
    ```bash
-   gcloud iam service-accounts create smart-receipt-deployer \
+    gcloud iam service-accounts create smart-receipt-deployer \
     --display-name="Smart Receipt Deployer" \
     --project=gen-lang-client-0181500335
 
@@ -110,9 +147,22 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
 
 6. Deploy manually on Google Cloud
   ```bash
-    gcloud builds submit --config=cloudbuild.backend.yaml --substitutions=_REGION=us-central1,_AR_REPO=smart-receipt,_SERVICE_NAME=smart-receipt-backend,_CORS_ORIGINS=https://your-frontend.vercel.app
+    cd ~
+    git clone --branch <your-feature-branch> <your-repo-url> smart-receipt
+    cd smart-receipt
+    gcloud meta list-files-for-upload | wc -l
+    gcloud builds submit --config=cloudbuild.backend.yaml --substitutions=_REGION=us-central1,_AR_REPO=smart-receipt,_SERVICE_NAME=smart-receipt-backend,_CORS_ORIGINS=https://smart-receipt-reader.vercel.app
   ```
+7.  Make the aervice public 
+  ```bash
+    gcloud run services add-iam-policy-binding smart-receipt-backend \
+        --region=us-central1 \
+        --member="allUsers" \
+        --role="roles/run.invoker"
 
+  ```
+  If you don't want it to be public, you can add the --no-allow-unauthenticated flag to your deployment command next time.
+  
 ### GitHub Secrets
 
 | Secret | Description |

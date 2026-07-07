@@ -17,14 +17,17 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+/** Strip a single trailing slash so `https://x.com/` and `https://x.com` compare equal. */
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, '');
+
 const corsOrigins = (process.env.CORS_ORIGINS || process.env.ALLOWED_ORIGINS || '')
     .split(',')
-    .map((item) => item.trim())
+    .map((item) => normalizeOrigin(item))
     .filter((item) => item.length > 0);
 
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
-        if (corsOrigins.length === 0 || !origin || corsOrigins.includes(origin)) {
+        if (corsOrigins.length === 0 || !origin || corsOrigins.includes(normalizeOrigin(origin))) {
             callback(null, true);
             return;
         }

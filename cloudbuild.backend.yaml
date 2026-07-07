@@ -1,4 +1,4 @@
-# Cloud Build pipeline: build backend image, push to Artifact Registry, deploy to Cloud Run
+# Google Cloud Build pipeline: build backend image, push to Artifact Registry, deploy to Cloud Run
 # Trigger from repo root with this config file.
 # not needed if deployment is triggered from Github Action
 

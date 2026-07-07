@@ -106,7 +106,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                   </svg>
                 </div>
                 <h3 className="text-sm font-semibold text-slate-600 mb-0.5">Click to upload receipt, or drag and drop</h3>
-                <p className="text-xs text-slate-400 font-medium text-center">Supports PNG, JPG (Max 10MB)</p>
+                <p className="text-xs text-slate-400 font-medium text-center">Supports PNG, JPG (large images are auto-compressed)</p>
               </>
             )}
           </div>
