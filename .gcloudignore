@@ -1,0 +1,18 @@
+# Reduce Cloud Build upload size. Blocklist the heavy folders that made the
+# archive 3.8 GiB; keep everything else (including the backend/ build context).
+.git/
+node_modules/
+**/node_modules/
+
+# Playwright python venv + test artifacts
+tests/e2e/playwright/.venv/
+results/
+**/videos/
+**/traces/
+**/screenshots/
+
+# Other large or unneeeded top-level areas for a backend build
+SmartReceiptReaderMobileVersion/
+dist/
+**/dist/
+.vercel/

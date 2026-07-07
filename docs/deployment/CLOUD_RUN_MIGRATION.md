@@ -3,7 +3,7 @@
 > **Status:** ✅ Implemented. Dockerfile, CI/CD workflow, and Tesseract offline
 > config are in place. Deploy by pushing `backend/` changes to `main`.
 
-## Background
+## Background: known issue in Vercel's serverless function
 
 The `/api/process` endpoint originally ran as a **Vercel serverless function**. Vercel's
 build-time file tracer does **not** include `tesseract.js-core/tesseract-core-simd.wasm`,
@@ -59,6 +59,13 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
 ### Prerequisites
 
 1. A GCP project with Cloud Run and Artifact Registry APIs enabled.
+
+  ```bash
+    gcloud auth login
+
+    gcloud services enable run.googleapis.com artifactregistry.googleapis.com
+
+  ```
 2. Create an Artifact Registry Docker repository:
 
    ```bash
@@ -66,9 +73,45 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
      --repository-format=docker \
      --location=us-central1
    ```
-
 3. Create a service account with `roles/run.admin`, `roles/artifactregistry.writer`,
    and `roles/iam.serviceAccountUser`.
+
+   ```bash
+   gcloud iam service-accounts create smart-receipt-deployer \
+    --display-name="Smart Receipt Deployer" \
+    --project=gen-lang-client-0181500335
+
+    gcloud projects add-iam-policy-binding gen-lang-client-0181500335 \
+    --member=serviceAccount:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com \
+    --role=roles/run.admin
+
+    gcloud projects add-iam-policy-binding gen-lang-client-0181500335 \
+    --member=serviceAccount:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com \
+    --role=roles/artifactregistry.writer
+
+    gcloud projects add-iam-policy-binding gen-lang-client-0181500335 \
+    --member=serviceAccount:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com \
+    --role=roles/iam.serviceAccountUser
+   ```
+4. Verify roles are assigned as expected
+
+  ```bash
+    gcloud projects get-iam-policy gen-lang-client-0181500335 \
+        --flatten="bindings[].members" \
+        --format='table(bindings.role)' \
+        --filter="bindings.members:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com"
+
+  ```
+5. Generate JSON key for this service account
+  ```bash
+    gcloud iam service-accounts keys create key.json \
+        --iam-account=smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com
+  ```
+
+6. Deploy manually on Google Cloud
+  ```bash
+    gcloud builds submit --config=cloudbuild.backend.yaml --substitutions=_REGION=us-central1,_AR_REPO=smart-receipt,_SERVICE_NAME=smart-receipt-backend,_CORS_ORIGINS=https://your-frontend.vercel.app
+  ```
 
 ### GitHub Secrets
 
@@ -90,7 +133,11 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
 
 ### Frontend wiring
 
-After the first deploy, set `VITE_API_BASE_URL` in Vercel's environment variables to the
+After the first deploy, get the deployed Cloud Run service URL:
+```bash
+gcloud run services describe smart-receipt-backend --region us-central1 --format="value(status.url)"
+```
+Then set `VITE_API_BASE_URL` in Vercel's environment variables to the
 Cloud Run service URL (printed by the workflow), e.g.:
 
 ```
