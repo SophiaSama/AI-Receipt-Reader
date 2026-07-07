@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import multer from 'multer';
 import path from 'path';
 
@@ -17,6 +17,21 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const corsOrigins = (process.env.CORS_ORIGINS || process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+const corsOptions: CorsOptions = {
+    origin: (origin, callback) => {
+        if (corsOrigins.length === 0 || !origin || corsOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error('Origin not allowed'));
+    },
+};
+
 // Configure multer for file uploads
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -24,7 +39,7 @@ const upload = multer({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 function isTruthy(value: unknown): boolean {

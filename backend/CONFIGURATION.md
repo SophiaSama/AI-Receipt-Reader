@@ -22,6 +22,10 @@ OPENROUTER_APP_NAME=SmartReceiptReader
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_publishable_key
 
+# Optional CORS allowlist for production (comma-separated origins)
+# Leave empty for local dev permissive mode
+CORS_ORIGINS=https://your-app.vercel.app,https://www.yourdomain.com
+
 # Server Port
 PORT=3001
 ```
@@ -54,6 +58,7 @@ When deploying to Vercel, set these in the Vercel dashboard:
    - `OPENROUTER_APP_NAME` (optional)
    - `SUPABASE_URL` (your Supabase project URL)
    - `SUPABASE_PUBLISHABLE_KEY` (Supabase anon/publishable key)
+   - `CORS_ORIGINS` (optional comma-separated allowlist for API origins)
 
 ## Local Development
 

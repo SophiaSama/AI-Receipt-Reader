@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readRawBody } from './_lib/readRawBody.js';
+import { applyCors, rejectDisallowedOriginIfNeeded } from './_lib/cors.js';
 
 /**
  * Vercel Serverless Function: POST /api/process
@@ -7,9 +8,11 @@ import { readRawBody } from './_lib/readRawBody.js';
  */
 export default async function (req: VercelRequest, res: VercelResponse) {
   // CORS + preflight
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  applyCors(req, res, 'POST,OPTIONS');
+
+  if (rejectDisallowedOriginIfNeeded(req, res)) {
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
