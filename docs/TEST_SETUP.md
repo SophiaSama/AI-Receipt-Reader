@@ -356,6 +356,26 @@ The test setup ensures:
 
 The project includes a comprehensive Playwright-based E2E test suite for browser automation testing. These tests are located in `tests/e2e/playwright/` and provide full end-to-end testing of the application UI and workflows.
 
+### Prerequisites: local Supabase needs Docker + virtualization
+
+The suite is auth-gated and signs in as seeded Supabase users, so locally it runs
+against a **disposable local Supabase stack** (Option A — the same approach CI
+uses). That stack runs in **Docker**, which requires hardware **virtualization**
+(Intel VT-x / AMD SVM) plus the **Virtual Machine Platform** and **WSL 2**
+Windows features. Start Docker Desktop, then:
+
+```powershell
+npx supabase start      # boots the local stack (127.0.0.1:54321)
+npx supabase db reset   # applies migrations + seeds test-user-a/b
+npm run dev:e2e         # frontend on :3000 pointed at local Supabase (.env.test)
+```
+
+If Docker reports *"virtualisation support wasn't detected,"* enable
+virtualization in BIOS/Windows features (often an IT-admin task) or run the
+suite in GitHub Actions, which provisions the local stack on the runner. See the
+full walkthrough in
+[`tests/e2e/playwright/README.md`](../tests/e2e/playwright/README.md#running-e2e-locally-against-a-local-supabase-stack-option-a).
+
 ### Quick Start
 
 **Windows (PowerShell):**
