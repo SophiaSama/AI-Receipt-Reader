@@ -3,9 +3,12 @@ import cors, { CorsOptions } from 'cors';
 import multer from 'multer';
 import path from 'path';
 
-// Load environment variables
+// Load environment variables from .env in local dev only.
+// In production (Cloud Run), env vars are injected by the platform.
 import { config } from 'dotenv';
-config({ path: path.join(__dirname, '..', '.env') });
+if (process.env.NODE_ENV !== 'production') {
+    config({ path: path.join(__dirname, '..', '.env') });
+}
 
 import { processReceiptCore } from '../src/handlers/processReceipt';
 import {

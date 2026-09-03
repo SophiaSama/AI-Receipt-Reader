@@ -7,7 +7,7 @@ import { compressImage } from './imageCompression';
 const BUCKET = 'receipts';
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
 
-const rawApiBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
+const rawApiBase: string | undefined = import.meta.env.VITE_API_BASE_URL;
 const DEFAULT_API_BASE = rawApiBase && rawApiBase.trim().length > 0
   ? rawApiBase.trim().replace(/\/$/, '')
   : '/api';

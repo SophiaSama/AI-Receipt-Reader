@@ -194,6 +194,10 @@ Cloud Run service URL (printed by the workflow), e.g.:
 VITE_API_BASE_URL=https://smart-receipt-backend-xxxxx-uc.a.run.app/api
 ```
 
+> ⚠️ Must include the `/api` suffix — the frontend appends `/process` to this base.
+> Without it, requests go to `https://...run.app/process` which won't match the
+> Express route `/api/process`.
+
 ### Local Docker testing
 
 ```bash
