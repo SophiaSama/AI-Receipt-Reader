@@ -75,6 +75,15 @@ def test_client_side_compression_reduces_upload_payload(
     """)
     
     # Mock Supabase Auth REST endpoints
+    page.route("**/auth/v1/token*", lambda r: r.fulfill(
+        status=200, content_type="application/json", body=json.dumps({
+            "access_token": "mock-e2e-jwt-token",
+            "token_type": "bearer",
+            "expires_in": 3600,
+            "refresh_token": "mock-refresh",
+            "user": mock_session["user"],
+        })
+    ))
     page.route("**/auth/v1/user*", lambda r: r.fulfill(
         status=200, content_type="application/json", body=json.dumps(mock_session["user"])
     ))
@@ -121,6 +130,13 @@ def test_client_side_compression_reduces_upload_payload(
     
     # Navigate to app
     page.goto(base_url)
+    
+    # If the login form is shown, log in with mock credentials
+    email_input = page.locator("input#email")
+    if email_input.is_visible():
+        email_input.fill("e2e-compression@example.com")
+        page.locator("input#password").fill("Password123!")
+        page.locator("button[type='submit']").click()
     
     # Find file input and upload large camera photo
     file_input = page.locator("input[type='file']#dropzone-file")
