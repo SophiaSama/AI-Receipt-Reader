@@ -20,22 +20,27 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-/** Strip a single trailing slash so `https://x.com/` and `https://x.com` compare equal. */
-const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, '');
+import {
+    normalizeOrigin,
+    isOriginAllowed,
+    getCorsOrigins,
+} from './corsHelper';
 
-const corsOrigins = (process.env.CORS_ORIGINS || process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((item) => normalizeOrigin(item))
-    .filter((item) => item.length > 0);
+export { normalizeOrigin, isOriginAllowed, getCorsOrigins };
 
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
-        if (corsOrigins.length === 0 || !origin || corsOrigins.includes(normalizeOrigin(origin))) {
+        const origins = getCorsOrigins();
+        if (isOriginAllowed(origin, origins)) {
             callback(null, true);
             return;
         }
-        callback(new Error('Origin not allowed'));
+        console.warn(`[CORS] Disallowed origin: "${origin}". Allowed origins/patterns:`, origins);
+        callback(null, false);
     },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    optionsSuccessStatus: 204,
 };
 
 // Configure multer for file uploads
@@ -46,6 +51,7 @@ const upload = multer({
 
 // Middleware
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 function isTruthy(value: unknown): boolean {
@@ -115,6 +121,12 @@ app.all('/api/health', (req: Request, res: Response) => {
 // Catch-all for unknown API endpoints (so they become 404, not 500)
 app.all('/api/*', (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Not Found' });
+});
+
+// Global error handler for JSON responses
+app.use((err: any, req: Request, res: Response, _next: any) => {
+    console.error('Unhandled server error:', err);
+    res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 // Start server only if not running in a serverless environment

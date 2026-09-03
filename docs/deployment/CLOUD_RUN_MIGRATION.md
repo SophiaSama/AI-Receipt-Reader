@@ -150,8 +150,9 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
     cd ~
     git clone --branch <your-feature-branch> <your-repo-url> smart-receipt
     cd smart-receipt
-    gcloud meta list-files-for-upload | wc -l
-    gcloud builds submit --config=cloudbuild.backend.yaml --substitutions=_REGION=us-central1,_AR_REPO=smart-receipt,_SERVICE_NAME=smart-receipt-backend,_CORS_ORIGINS=https://smart-receipt-reader.vercel.app
+    # Note: Using https://*.vercel.app allows dynamic Vercel preview and branch deployments.
+    # You can also use _CORS_ORIGINS="*" or leave it empty for fully permissive mode.
+    gcloud builds submit --config=cloudbuild.backend.yaml --substitutions=_REGION=us-central1,_AR_REPO=smart-receipt,_SERVICE_NAME=smart-receipt-backend,_CORS_ORIGINS="https://smart-receipt-reader.vercel.app,https://*.vercel.app"
   ```
 7.  Make the aervice public 
   ```bash
