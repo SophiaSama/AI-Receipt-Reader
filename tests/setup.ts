@@ -31,16 +31,16 @@ beforeAll(async () => {
   );
 
   if (missingHandlers.length > 0) {
-    console.error('❌ Missing backend build artifacts:');
+    console.error('FAIL: Missing backend build artifacts:');
     missingHandlers.forEach(handler => console.error(`   - ${handler}`));
-    console.error('\n💡 Run "npm run pretest" or "npm run build:backend" first\n');
+    console.error('\nHint: Run "npm run pretest" or "npm run build:backend" first\n');
     throw new Error('Backend build artifacts not found. Tests cannot run without compiled backend.');
   }
 
-  console.log('✓ Backend build artifacts verified');
-  console.log('✓ Environment variables configured');
-  console.log('✓ MSW Server initialized');
-  console.log('✓ Test environment ready\n');
+  console.log('OK: Backend build artifacts verified');
+  console.log('OK: Environment variables configured');
+  console.log('OK: MSW Server initialized');
+  console.log('OK: Test environment ready\n');
 });
 
 // Reset MSW handlers before each test
@@ -51,5 +51,5 @@ beforeEach(async () => {
 afterAll(() => {
   // Close MSW server
   server.close();
-  console.log('\n✓ Test cleanup completed\n');
+  console.log('\nOK: Test cleanup completed\n');
 });
