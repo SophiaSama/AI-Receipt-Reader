@@ -91,6 +91,7 @@ export interface ReceiptServiceDeps {
   generateId?: () => string;
   apiBase?: string;
   signedUrlTtlSeconds?: number;
+  compressFn?: (file: File) => Promise<File>;
 }
 
 export interface ReceiptService {
@@ -109,6 +110,7 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
     generateId = () => crypto.randomUUID(),
     apiBase = DEFAULT_API_BASE,
     signedUrlTtlSeconds = DEFAULT_SIGNED_URL_TTL_SECONDS,
+    compressFn = compressImage,
   } = deps;
   const getAccessToken = deps.getAccessToken ?? (() => Promise.resolve(null));
 
@@ -145,7 +147,7 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
     async processAndSaveReceipt(file, options = {}) {
       // Downscale/re-encode large photos so the request stays under the
       // serverless body limit (Vercel rejects >4.5MB with a 413 error).
-      const uploadFile = await compressImage(file);
+      const uploadFile = await compressFn(file);
 
       const formData = new FormData();
       formData.append('file', uploadFile);
@@ -205,7 +207,8 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
       const userId = await getUserId();
       let imagePath: string | null = null;
       if (file) {
-        imagePath = await uploadImage(file, userId);
+        const uploadFile = await compressFn(file);
+        imagePath = await uploadImage(uploadFile, userId);
       }
 
       const insertPayload: ReceiptInsert = {

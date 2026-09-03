@@ -111,7 +111,7 @@ function App() {
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
-    setStatus({ isProcessing: true, step: 'analyzing', message: 'Uploading to cloud for AI analysis...' });
+    setStatus({ isProcessing: true, step: 'uploading', message: 'Optimizing and uploading receipt...' });
 
     try {
       // Backend now handles S3, Mistral OCR, and DynamoDB in one go

@@ -38,6 +38,10 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
         alert("Only image files are allowed");
         return;
       }
+      if (file.size > 50 * 1024 * 1024) {
+        alert("File exceeds 50MB. Please select a receipt photo.");
+        return;
+      }
       onFileSelect(file);
     }
   }, [onFileSelect]);
@@ -45,13 +49,18 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
-      onFileSelect(e.target.files[0]);
+      const file = e.target.files[0];
+      if (file.size > 50 * 1024 * 1024) {
+        alert("File exceeds 50MB. Please select a receipt photo.");
+        return;
+      }
+      onFileSelect(file);
       // Allow selecting the same file again (browser may not fire change otherwise)
       e.target.value = '';
     }
   };
 
-  const isProcessing = status.step === 'uploading' || status.step === 'analyzing';
+  const isProcessing = Boolean(status.isProcessing || status.step === 'uploading' || status.step === 'analyzing');
 
   return (
     <div className="w-full" data-testid="upload-section">
@@ -92,7 +101,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                   <div className="absolute inset-0 w-8 h-8 border-t-2 border-primary rounded-full animate-spin"></div>
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-slate-700">{status.step === 'analyzing' ? 'AI Analyzing' : 'Uploading...'}</p>
+                  <p className="text-sm font-semibold text-slate-700">{status.step === 'analyzing' ? 'AI Analyzing' : 'Processing...'}</p>
                   <p className="text-xs text-slate-400 italic">
                     "{status.message || 'Extracting data...'}"
                   </p>
