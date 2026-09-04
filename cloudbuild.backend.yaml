@@ -1,0 +1,76 @@
+# Google Cloud Build pipeline: build backend image, push to Artifact Registry, deploy to Cloud Run
+# Trigger from repo root with this config file.
+# not needed if deployment is triggered from Github Action
+
+substitutions:
+  _REGION: us-central1
+  _SERVICE_NAME: smart-receipt-backend
+  _AR_REPO: smart-receipt
+  _IMAGE_NAME: backend
+  _MEMORY: 1Gi
+  _TIMEOUT: "300"
+  _MIN_INSTANCES: "0"
+  _MAX_INSTANCES: "5"
+  _OPENROUTER_BASE_URL: https://openrouter.ai/api/v1
+  _OPENROUTER_HTTP_REFERER: ""
+  _OPENROUTER_APP_NAME: SmartReceiptReader
+  _CORS_ORIGINS: ""
+
+steps:
+  - id: Build backend image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - backend/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$BUILD_ID
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:latest
+      - backend
+
+  - id: Push backend image (sha)
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$BUILD_ID
+
+  - id: Push backend image (latest)
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:latest
+
+  - id: Deploy to Cloud Run
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run deploy ${_SERVICE_NAME} \
+          --image ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$BUILD_ID \
+          --region ${_REGION} \
+          --platform managed \
+          --allow-unauthenticated \
+          --memory ${_MEMORY} \
+          --timeout ${_TIMEOUT} \
+          --min-instances ${_MIN_INSTANCES} \
+          --max-instances ${_MAX_INSTANCES} \
+          --set-env-vars NODE_ENV=production,OPENROUTER_BASE_URL=${_OPENROUTER_BASE_URL},OPENROUTER_HTTP_REFERER=${_OPENROUTER_HTTP_REFERER},OPENROUTER_APP_NAME=${_OPENROUTER_APP_NAME},CORS_ORIGINS=${_CORS_ORIGINS} \
+          --set-secrets SUPABASE_URL=supabase-url:latest,SUPABASE_PUBLISHABLE_KEY=supabase-publishable-key:latest,MISTRAL_API_KEY=mistral-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest
+
+  - id: Print Cloud Run URL
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        URL=$(gcloud run services describe ${_SERVICE_NAME} --region ${_REGION} --format='value(status.url)')
+        echo "Cloud Run URL: $${URL}"
+        echo "Set VITE_API_BASE_URL=$${URL}/api in frontend hosting env vars."
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$BUILD_ID
+
+options:
+  logging: CLOUD_LOGGING_ONLY

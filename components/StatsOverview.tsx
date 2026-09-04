@@ -31,28 +31,77 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ receipts }) => {
   }, [receipts]);
 
   const totalSpent = useMemo(() => receipts.reduce((acc, curr) => acc + curr.total, 0), [receipts]);
+  const receiptCount = receipts.length;
+  const avgExpense = receiptCount > 0 ? totalSpent / receiptCount : 0;
 
   if (receipts.length === 0) {
-    return null;
+    return (
+      <div className="p-4" data-testid="stats-overview">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Analytics Overview</h3>
+          <span className="text-[11px] font-medium text-slate-400">Ready for data</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="p-2.5 rounded-xl bg-white/50 border border-pink-100/50">
+            <span className="text-[10px] font-medium text-slate-400 block mb-0.5">Total Spent</span>
+            <span className="text-sm font-bold text-slate-700" data-testid="total-amount">$0.00</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/50 border border-pink-100/50">
+            <span className="text-[10px] font-medium text-slate-400 block mb-0.5">Receipts</span>
+            <span className="text-sm font-bold text-slate-700" data-testid="total-receipts">0</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/50 border border-pink-100/50">
+            <span className="text-[10px] font-medium text-slate-400 block mb-0.5">Avg / Scan</span>
+            <span className="text-sm font-bold text-slate-700">$0.00</span>
+          </div>
+        </div>
+        <p className="text-xs text-slate-400 text-center py-2">
+          Upload or log your first receipt to generate spending insights.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-3" data-testid="stats-overview">
-      <div className="flex justify-between items-end mb-3">
+    <div className="p-4" data-testid="stats-overview">
+      <div className="flex justify-between items-center mb-3">
         <div>
-          <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-0.5">Total Expenses</h3>
-          <p className="text-2xl font-semibold text-slate-800 tracking-tight">
-            ${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Financial Summary</h3>
+          <p className="text-[11px] text-slate-400">Aggregated spending analytics</p>
         </div>
-        <div className="bg-lavender-50 rounded-lg px-2 py-0.5">
-          <span className="text-[10px] font-mono text-secondary">Last 30 Days</span>
+        <div className="bg-lavender-50 rounded-lg px-2.5 py-1 border border-lavender-100/60">
+          <span className="text-[11px] font-semibold text-secondary">
+            {receiptCount} {receiptCount === 1 ? 'Record' : 'Records'}
+          </span>
         </div>
       </div>
 
+      {/* 3 Metric Cards */}
+      <div className="grid grid-cols-3 gap-2.5 mb-4">
+        <div className="p-2.5 rounded-xl bg-white/70 border border-pink-100/70 shadow-sm">
+          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">Total</span>
+          <p className="text-base sm:text-lg font-bold text-slate-800 tracking-tight" data-testid="total-amount">
+            ${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        </div>
+        <div className="p-2.5 rounded-xl bg-white/70 border border-pink-100/70 shadow-sm">
+          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">Scans</span>
+          <p className="text-base sm:text-lg font-bold text-slate-800 tracking-tight" data-testid="total-receipts">
+            {receiptCount}
+          </p>
+        </div>
+        <div className="p-2.5 rounded-xl bg-white/70 border border-pink-100/70 shadow-sm">
+          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">Average</span>
+          <p className="text-base sm:text-lg font-bold text-slate-800 tracking-tight">
+            ${avgExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        </div>
+      </div>
+
+      {/* Spending Trend Bar Chart */}
       <div className="h-32 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={dailyData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
+          <BarChart data={dailyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#E879A0" stopOpacity={0.9} />
@@ -61,34 +110,39 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ receipts }) => {
             </defs>
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 9, fill: '#94a3b8' }}
-              axisLine={false}
+              tick={{ fontSize: 10, fill: '#64748B' }}
+              axisLine={{ stroke: '#FCE7F3' }}
               tickLine={false}
               tickFormatter={(value) => {
                 const d = new Date(value);
                 return !isNaN(d.getTime()) ? `${d.getDate()}/${d.getMonth() + 1}` : '';
               }}
-              minTickGap={10}
+              minTickGap={12}
             />
             <YAxis
-              tick={{ fontSize: 9, fill: '#94a3b8' }}
+              tick={{ fontSize: 10, fill: '#64748B' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `${value / 1000}k`}
+              tickFormatter={(value) => {
+                if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+                return `$${Math.round(value)}`;
+              }}
             />
             <Tooltip
-              cursor={{ fill: 'rgba(232, 121, 160, 0.06)' }}
+              cursor={{ fill: 'rgba(232, 121, 160, 0.08)' }}
               contentStyle={{
                 backgroundColor: '#ffffff',
                 borderColor: '#FFE4E9',
-                borderRadius: '8px',
-                fontSize: '11px',
-                boxShadow: '0 4px 12px rgba(232, 121, 160, 0.1)',
+                borderRadius: '12px',
+                fontSize: '12px',
+                boxShadow: '0 8px 24px rgba(232, 121, 160, 0.15)',
+                padding: '8px 12px',
               }}
-              labelStyle={{ color: '#64748b' }}
-              itemStyle={{ color: '#E879A0' }}
+              labelStyle={{ color: '#475569', fontWeight: 600, marginBottom: '2px' }}
+              itemStyle={{ color: '#E879A0', fontWeight: 700 }}
+              formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Total']}
             />
-            <Bar dataKey="total" radius={[4, 4, 0, 0]} fill="url(#barGradient)" maxBarSize={32} />
+            <Bar dataKey="total" radius={[4, 4, 0, 0]} fill="url(#barGradient)" maxBarSize={28} />
           </BarChart>
         </ResponsiveContainer>
       </div>

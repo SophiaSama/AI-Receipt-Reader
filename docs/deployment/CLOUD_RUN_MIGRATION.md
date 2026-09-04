@@ -1,12 +1,11 @@
-# Future Change: Containerized Backend on Cloud Run (Tesseract-enabled)
+# Containerized Backend on Cloud Run (Tesseract-enabled)
 
-> **Status:** Planned / not yet implemented. Tracked separately from the current
-> feature branch to keep that branch's scope limited to the Supabase migration and
-> the serverless Tesseract guard fix.
+> **Status:** ✅ Implemented. Dockerfile, CI/CD workflow, and Tesseract offline
+> config are in place. Deploy by pushing `backend/` changes to `main`.
 
-## Background
+## Background: known issue in Vercel's serverless function
 
-The `/api/process` endpoint currently runs as a **Vercel serverless function**. Vercel's
+The `/api/process` endpoint originally ran as a **Vercel serverless function**. Vercel's
 build-time file tracer does **not** include `tesseract.js-core/tesseract-core-simd.wasm`,
 because that file is loaded at runtime by a dynamic path rather than a static `import`.
 In production this produces:
@@ -21,21 +20,14 @@ The WASM `Aborted(...)` surfaces as an **uncaught exception** that crashes the w
 function process, so the request dies (504 / crash) **before** the OpenRouter call runs —
 i.e. the receipt is never processed by AI.
 
-### Current mitigation (already on this branch)
+### Vercel fallback (still available)
 
 `analyzeImage` skips Tesseract when `process.env.VERCEL === '1'` (or
-`DISABLE_TESSERACT_OCR === 'true'`) and routes straight to the **Vision LLM** path. This
-keeps production working but **disables the local/free Tesseract cost-optimization route**
-on Vercel. See [backend/src/services/imageAnalysisService.ts](../../backend/src/services/imageAnalysisService.ts).
+`DISABLE_TESSERACT_OCR === 'true'`) and routes straight to the **Vision LLM** path. The
+Vercel serverless functions in `api/` are kept as a fallback. See
+[imageAnalysisService.ts](../../backend/src/services/imageAnalysisService.ts).
 
-## Goal of this future change
-
-Run the backend API in a **Docker container on Google Cloud Run** so we fully control the
-filesystem, bundle the Tesseract WASM core, and bake in the `eng.traineddata` language
-file. This **re-enables the Tesseract / Hybrid OCR routes** (restoring the cost savings)
-and removes the serverless function timeout cap.
-
-## Target architecture
+## Architecture
 
 ```
 Frontend (Vite static build) ──► Vercel (static hosting)
@@ -49,49 +41,187 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
 ```
 
 - **Only the API moves.** The React frontend stays on Vercel as static hosting and simply
-  points `API_BASE` at the Cloud Run URL.
-- The existing Express app in [backend/local/server.ts](../../backend/local/server.ts) is
-  the container entrypoint — it already exposes `POST /api/process` + `GET /api/health` and
-  only calls `listen()` when `VERCEL !== '1'`.
+  points `VITE_API_BASE_URL` at the Cloud Run URL.
+- The existing Express app in [server.ts](../../backend/local/server.ts) is the container
+  entrypoint.
 
-## Implementation checklist (when picked up)
+## Files
 
-1. **Dockerfile** (multi-stage) in `backend/`:
-   - Stage 1: `npm ci` + `npm run build` (TS → `dist/`).
-   - Stage 2: copy `dist/`, install production deps only, run `node dist/local/server.js`.
-   - Copy/keep `node_modules/tesseract.js-core/*.wasm` in the final image.
-   - Bake `eng.traineddata` into the image (e.g. `/app/tessdata`).
-2. **Tesseract offline config** — set `langPath`/`cachePath`/`corePath` in `createWorker`
-   so it loads the baked-in WASM + traineddata and performs **no runtime download**.
-   Ensure the serverless guard does **not** disable Tesseract in the container (it won't:
-   `VERCEL` is unset there; do not set `DISABLE_TESSERACT_OCR`).
-3. **`.dockerignore`** — exclude `dist/`, test artifacts, `.env`, `node_modules` from the
-   build context as appropriate to keep the image lean.
-4. **Cloud Run service**:
-   - Listen on `process.env.PORT` (Cloud Run injects `PORT`, default 8080) — confirm the
-     server reads it (currently defaults to `3001`).
-   - Set runtime env vars: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `MISTRAL_API_KEY`,
-     `OPENROUTER_API_KEY` (+ optional `OPENROUTER_*`).
-   - Tune memory (Tesseract WASM needs headroom; start ~512MB–1GB) and request timeout.
-5. **Frontend wiring** — point `API_BASE` (see `services/receiptService.ts`) at the Cloud
-   Run URL via a `VITE_` env var; keep the Vercel `/api/process` function or remove it.
-6. **CORS** — currently open (`app.use(cors())`); optionally restrict to the Vercel
-   frontend origin.
-7. **CI/CD** — build + push the image (Artifact Registry) and `gcloud run deploy` on merge.
+| File | Purpose |
+|---|---|
+| [`backend/Dockerfile`](../../backend/Dockerfile) | Multi-stage build: compile TS, install prod deps, bake `eng.traineddata` |
+| [`backend/.dockerignore`](../../backend/.dockerignore) | Excludes `node_modules`, `dist`, `.env`, etc. from build context |
+| [`imageAnalysisService.ts`](../../backend/src/services/imageAnalysisService.ts) | `TESSDATA_PREFIX` env var configures offline Tesseract paths |
+| [`.github/workflows/deploy-cloud-run.yml`](../../.github/workflows/deploy-cloud-run.yml) | CI/CD: build → push to Artifact Registry → `gcloud run deploy` |
+
+## Deploying
+
+### Prerequisites
+
+1. A GCP project with Cloud Run, Secret Manager and Artifact Registry APIs enabled.
+
+  ```bash
+    # Log in first
+    gcloud auth login
+    gcloud config set project [PROJECT_ID]
+
+    # Verify Login
+
+    gcloud auth list
+    gcloud config get-value project
+
+    # Enable APIs
+
+    gcloud services enable run.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
+
+  ```
+  And grant permission to project
+  ```bash
+    gcloud projects add-iam-policy-binding 924806699856 \
+    --member="serviceAccount:924806699856-compute@developer.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor"
+
+  ```
+  Add secret entry for supabase
+  ```bash
+  # 1. Create the secret entry
+  gcloud secrets create supabase-url --replication-policy="automatic"
+  gcloud secrets create supabase-publishable-key --replication-policy="automatic"
+  gcloud secrets create mistral-api-key --replication-policy="automatic"
+  gcloud secrets create openrouter-api-key --replication-policy="automatic"
+
+  # 2. Add the actual URL value to the secret
+  echo -n "YOUR_SUPABASE_URL" | gcloud secrets versions add supabase-url --data-file=-
+  echo -n "YOUR_ACTUAL_KEY" | gcloud secrets versions add supabase-publishable-key --data-file=-
+  echo -n "YOUR_ACTUAL_KEY" | gcloud secrets versions add mistral-api-key --data-file=-
+  echo -n "YOUR_ACTUAL_KEY" | gcloud secrets versions add openrouter-api-key --data-file=-
+
+  # 3. Grant permissions
+  PROJECT_NUMBER="924806699856"
+
+  gcloud projects add-iam-policy-binding $PROJECT_NUMBER \
+      --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+      --role="roles/secretmanager.secretAccessor"
+  ```
+2. Create an Artifact Registry Docker repository:
+
+   ```bash
+   gcloud artifacts repositories create smart-receipt \
+     --repository-format=docker \
+     --location=us-central1
+   ```
+3. Create a service account with `roles/run.admin`, `roles/artifactregistry.writer`,
+   and `roles/iam.serviceAccountUser`.
+
+   ```bash
+    gcloud iam service-accounts create smart-receipt-deployer \
+    --display-name="Smart Receipt Deployer" \
+    --project=gen-lang-client-0181500335
+
+    gcloud projects add-iam-policy-binding gen-lang-client-0181500335 \
+    --member=serviceAccount:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com \
+    --role=roles/run.admin
+
+    gcloud projects add-iam-policy-binding gen-lang-client-0181500335 \
+    --member=serviceAccount:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com \
+    --role=roles/artifactregistry.writer
+
+    gcloud projects add-iam-policy-binding gen-lang-client-0181500335 \
+    --member=serviceAccount:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com \
+    --role=roles/iam.serviceAccountUser
+   ```
+4. Verify roles are assigned as expected
+
+  ```bash
+    gcloud projects get-iam-policy gen-lang-client-0181500335 \
+        --flatten="bindings[].members" \
+        --format='table(bindings.role)' \
+        --filter="bindings.members:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com"
+
+  ```
+5. Generate JSON key for this service account
+  ```bash
+    gcloud iam service-accounts keys create key.json \
+        --iam-account=smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com
+  ```
+
+6. Deploy manually on Google Cloud
+  ```bash
+    cd ~
+    git clone --branch <your-feature-branch> <your-repo-url> smart-receipt
+    cd smart-receipt
+    # Note: Using https://*.vercel.app allows dynamic Vercel preview and branch deployments.
+    # You can also use _CORS_ORIGINS="*" or leave it empty for fully permissive mode.
+    gcloud builds submit --config=cloudbuild.backend.yaml --substitutions=_REGION=us-central1,_AR_REPO=smart-receipt,_SERVICE_NAME=smart-receipt-backend,_CORS_ORIGINS="https://smart-receipt-reader.vercel.app,https://*.vercel.app"
+  ```
+7.  Make the aervice public 
+  ```bash
+    gcloud run services add-iam-policy-binding smart-receipt-backend \
+        --region=us-central1 \
+        --member="allUsers" \
+        --role="roles/run.invoker"
+
+  ```
+  If you don't want it to be public, you can add the --no-allow-unauthenticated flag to your deployment command next time.
+  
+### GitHub Secrets
+
+| Secret | Description |
+|---|---|
+| `GCP_PROJECT_ID` | Your GCP project ID |
+| `GCP_SA_KEY` | Service account JSON key |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Supabase anon/publishable key |
+| `MISTRAL_API_KEY` | Mistral AI API key |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `OPENROUTER_BASE_URL` | OpenRouter base URL (optional) |
+
+### GitHub Variables (optional)
+
+| Variable | Default |
+|---|---|
+| `GCP_REGION` | `us-central1` |
+
+### Frontend wiring
+
+After the first deploy, get the deployed Cloud Run service URL:
+```bash
+gcloud run services describe smart-receipt-backend --region us-central1 --format="value(status.url)"
+```
+Then set `VITE_API_BASE_URL` in Vercel's environment variables to the
+Cloud Run service URL (printed by the workflow), e.g.:
+
+```
+VITE_API_BASE_URL=https://smart-receipt-backend-xxxxx-uc.a.run.app/api
+```
+
+> ⚠️ Must include the `/api` suffix — the frontend appends `/process` to this base.
+> Without it, requests go to `https://...run.app/process` which won't match the
+> Express route `/api/process`.
+
+### Local Docker testing
+
+```bash
+cd backend
+docker build -t smart-receipt-backend:test .
+docker run --rm -p 8080:8080 \
+  -e PORT=8080 \
+  -e SUPABASE_URL=http://localhost:54321 \
+  -e SUPABASE_PUBLISHABLE_KEY=your-local-key \
+  -e MISTRAL_API_KEY=your-key \
+  smart-receipt-backend:test
+
+# Health check
+curl http://localhost:8080/api/health
+```
 
 ## Tradeoffs
 
-| | Vercel function (current) | Cloud Run container (future) |
+| | Vercel function (fallback) | Cloud Run container |
 |---|---|---|
 | Tesseract OCR | ❌ disabled (WASM not bundled) | ✅ works (baked into image) |
 | Cost-optimized routing | Vision LLM only | Tesseract / Hybrid / Vision |
-| Timeout | Function cap (`maxDuration`) | No hard function cap |
+| Timeout | Function cap (`maxDuration`) | Configurable (default 300s) |
 | Cold start | Per-request | Warm if min-instances ≥ 1; scale-to-zero optional |
-| Ops | Zero-ops | Manage image, registry, service, TLS/domain |
-| Cost | Included in Vercel | Cloud Run usage (small; scale-to-zero available) |
-
-## Out of scope for the current branch
-
-This document is intentionally **planning only**. No Dockerfile, Cloud Run config, or
-frontend `API_BASE` change is made on the current branch. The current branch keeps the
-Vercel deployment working via the serverless Tesseract guard described above.
+| Ops | Zero-ops | Manage image, registry, service |
+| Cost | Included in Vercel | Cloud Run usage (small; scale-to-zero) |

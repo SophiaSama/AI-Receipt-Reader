@@ -2,11 +2,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LineItem, ReceiptData } from '../types';
 import { getSupabaseClient } from './supabaseClient';
 import { getAuthService } from './authService';
+import { compressImage } from './imageCompression';
 
 const BUCKET = 'receipts';
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
 
-const rawApiBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
+const rawApiBase: string | undefined = import.meta.env.VITE_API_BASE_URL;
 const DEFAULT_API_BASE = rawApiBase && rawApiBase.trim().length > 0
   ? rawApiBase.trim().replace(/\/$/, '')
   : '/api';
@@ -90,6 +91,7 @@ export interface ReceiptServiceDeps {
   generateId?: () => string;
   apiBase?: string;
   signedUrlTtlSeconds?: number;
+  compressFn?: (file: File) => Promise<File>;
 }
 
 export interface ReceiptService {
@@ -108,6 +110,7 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
     generateId = () => crypto.randomUUID(),
     apiBase = DEFAULT_API_BASE,
     signedUrlTtlSeconds = DEFAULT_SIGNED_URL_TTL_SECONDS,
+    compressFn = compressImage,
   } = deps;
   const getAccessToken = deps.getAccessToken ?? (() => Promise.resolve(null));
 
@@ -142,8 +145,12 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
 
   return {
     async processAndSaveReceipt(file, options = {}) {
+      // Downscale/re-encode large photos so the request stays under the
+      // serverless body limit (Vercel rejects >4.5MB with a 413 error).
+      const uploadFile = await compressFn(file);
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile);
       if (options.modelId) formData.append('model', options.modelId);
 
       const headers: Record<string, string> = {};
@@ -200,7 +207,8 @@ export function createReceiptService(deps: ReceiptServiceDeps): ReceiptService {
       const userId = await getUserId();
       let imagePath: string | null = null;
       if (file) {
-        imagePath = await uploadImage(file, userId);
+        const uploadFile = await compressFn(file);
+        imagePath = await uploadImage(uploadFile, userId);
       }
 
       const insertPayload: ReceiptInsert = {

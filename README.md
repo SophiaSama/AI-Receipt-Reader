@@ -159,6 +159,7 @@ OPENROUTER_HTTP_REFERER=http://localhost:3000
 OPENROUTER_APP_NAME=SmartReceiptReader
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your-anon-publishable-key
+CORS_ORIGINS=https://your-app.vercel.app,https://www.yourdomain.com
 PORT=3001
 ```
 
@@ -389,6 +390,7 @@ Serverless `/api/process` (runtime):
 - `OPENROUTER_APP_NAME` - Optional app name
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_PUBLISHABLE_KEY` - Supabase anon/publishable key
+- `CORS_ORIGINS` - Optional comma-separated allowlist for API origins
 
 > The `service_role` key is never required \u2014 `/api/process` acts on behalf of the
 > caller using their forwarded Supabase JWT, and RLS enforces per-user access.

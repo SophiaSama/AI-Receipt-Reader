@@ -14,6 +14,13 @@ export default defineConfig(({ mode }) => {
       `VITE_SUPABASE_PUBLISHABLE_KEY: ${supabaseKeySet ? 'set' : 'MISSING'}`
   );
 
+  // Build-time diagnostic for the backend API base. When MISSING, the frontend
+  // falls back to the relative `/api` (Vercel serverless), where Tesseract is
+  // auto-disabled. Must be `set` (pointing at Cloud Run) for Tesseract OCR.
+  console.log(
+    `[vite] API base at build → VITE_API_BASE_URL: ${env.VITE_API_BASE_URL ? env.VITE_API_BASE_URL : 'MISSING (will fall back to /api on Vercel)'}`
+  );
+
   return {
     server: {
       port: 3000,

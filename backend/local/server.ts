@@ -1,11 +1,14 @@
 import express, { Request, Response } from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import multer from 'multer';
 import path from 'path';
 
-// Load environment variables
+// Load environment variables from .env in local dev only.
+// In production (Cloud Run), env vars are injected by the platform.
 import { config } from 'dotenv';
-config({ path: path.join(__dirname, '..', '.env') });
+if (process.env.NODE_ENV !== 'production') {
+    config({ path: path.join(__dirname, '..', '.env') });
+}
 
 import { processReceiptCore } from '../src/handlers/processReceipt';
 import {
@@ -17,6 +20,29 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+import {
+    normalizeOrigin,
+    isOriginAllowed,
+    getCorsOrigins,
+} from './corsHelper';
+
+export { normalizeOrigin, isOriginAllowed, getCorsOrigins };
+
+const corsOptions: CorsOptions = {
+    origin: (origin, callback) => {
+        const origins = getCorsOrigins();
+        if (isOriginAllowed(origin, origins)) {
+            callback(null, true);
+            return;
+        }
+        console.warn(`[CORS] Disallowed origin: "${origin}". Allowed origins/patterns:`, origins);
+        callback(null, false);
+    },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    optionsSuccessStatus: 204,
+};
+
 // Configure multer for file uploads
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -24,7 +50,8 @@ const upload = multer({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 function isTruthy(value: unknown): boolean {
@@ -94,6 +121,12 @@ app.all('/api/health', (req: Request, res: Response) => {
 // Catch-all for unknown API endpoints (so they become 404, not 500)
 app.all('/api/*', (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Not Found' });
+});
+
+// Global error handler for JSON responses
+app.use((err: any, req: Request, res: Response, _next: any) => {
+    console.error('Unhandled server error:', err);
+    res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 // Start server only if not running in a serverless environment
