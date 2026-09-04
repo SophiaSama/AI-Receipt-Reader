@@ -202,7 +202,8 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path>
               </svg>
-              Add Item
+              <span>Add Item</span>
+              <span className="sr-only">Add Definition</span>
             </button>
           </div>
 
@@ -211,7 +212,7 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
               <div key={idx} className="flex gap-2 items-center group/item animate-in fade-in duration-200">
                 <input
                   type="text"
-                  placeholder="Item description (e.g. Latte)"
+                  placeholder="Classification description"
                   className="flex-grow px-3 py-2 text-xs bg-white/90 border border-pink-100 rounded-xl text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   value={item.description}
                   onChange={e => handleItemChange(idx, 'description', e.target.value)}
