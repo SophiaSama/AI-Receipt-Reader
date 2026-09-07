@@ -14,7 +14,7 @@ substitutions:
   _OPENROUTER_BASE_URL: https://openrouter.ai/api/v1
   _OPENROUTER_HTTP_REFERER: ""
   _OPENROUTER_APP_NAME: SmartReceiptReader
-  _CORS_ORIGINS: ""
+  _CORS_ORIGINS: ${{ vars.CORS_ORIGINS || '' }}
 
 steps:
   - id: Build backend image
