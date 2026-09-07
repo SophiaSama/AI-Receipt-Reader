@@ -21,9 +21,9 @@ class ReceiptListPage(BasePage):
 
     # Search and filters
     SEARCH_INPUT = "input[placeholder*='Search by merchant'], input[placeholder*='Filter by merchant'], [data-testid='merchant-search-input']"
-    FILTER_TOGGLE_BUTTON = "button:has-text('Filters')"
-    FILTER_DATE_FROM = "input[data-testid='filter-date-from'], input[aria-label='From Date'], input[type='date'][placeholder='From'], input[type='date']"
-    FILTER_DATE_TO = "input[data-testid='filter-date-to'], input[aria-label='To Date'], input[type='date'][placeholder='To']"
+    FILTER_TOGGLE_BUTTON = "[data-testid='filter-toggle-button'], button:has-text('Filters')"
+    FILTER_DATE_FROM = "[data-testid='filter-date-from'], input[aria-label='From Date'], input[placeholder='From']"
+    FILTER_DATE_TO = "[data-testid='filter-date-to'], input[aria-label='To Date'], input[placeholder='To']"
     CLEAR_FILTERS_BUTTON = 'button:has-text("Reset"), button:has-text("Clear"), [data-testid="clear-filters-button"]'
 
     # Stats
@@ -130,24 +130,23 @@ class ReceiptListPage(BasePage):
         self, date_from: Optional[str] = None, date_to: Optional[str] = None
     ):
         """Filter by date range (YYYY-MM-DD format)."""
-        from_input = self.page.locator(self.FILTER_DATE_FROM)
+        from_input = self.page.locator(self.FILTER_DATE_FROM).first
         if not from_input.is_visible():
-            toggle_btn = self.page.locator(self.FILTER_TOGGLE_BUTTON)
+            toggle_btn = self.page.locator(self.FILTER_TOGGLE_BUTTON).first
             if toggle_btn.is_visible():
                 toggle_btn.click()
                 try:
-                    from_input.first.wait_for(state="visible", timeout=3000)
+                    from_input.wait_for(state="visible", timeout=5000)
                 except Exception:
                     pass
 
-        if date_from:
-            if from_input.first.is_visible():
-                from_input.first.fill(date_from)
+        if date_from and from_input.is_visible():
+            from_input.fill(date_from)
 
         if date_to:
-            to_input = self.page.locator(self.FILTER_DATE_TO)
-            if to_input.first.is_visible():
-                to_input.first.fill(date_to)
+            to_input = self.page.locator(self.FILTER_DATE_TO).first
+            if to_input.is_visible():
+                to_input.fill(date_to)
 
         return self
 

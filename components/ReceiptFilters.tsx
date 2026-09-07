@@ -80,6 +80,7 @@ export const ReceiptFilters: React.FC<ReceiptFiltersProps> = ({ filters, onFilte
         <div className="flex items-center gap-2">
           <button
             type="button"
+            data-testid="filter-toggle-button"
             onClick={() => setIsExpanded(!isExpanded)}
             className={`px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer shadow-sm ${
               isExpanded || activeFilterCount > 0

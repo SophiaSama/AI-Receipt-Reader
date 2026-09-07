@@ -166,12 +166,17 @@ class TestFullWorkflow:
         page.locator("button:has-text('Manual')").first.click()
         page.wait_for_selector("input[name='merchantName'], #merchantName")
 
-        page.fill("input[name='merchantName'], #merchantName", f"StatsTest {page.evaluate('Date.now()')}")
+        unique_merchant = f"StatsTest {page.evaluate('Date.now()')}"
+        page.fill("input[name='merchantName'], #merchantName", unique_merchant)
         page.fill("input[name='date'], #date, input[type='date']", sample_receipt_data["date"])
         page.fill("input[name='total'], #total", str(sample_receipt_data["total"]))
         page.locator("button[type='submit']").click()
 
+        # Wait for receipt to appear in list
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
+
         # Check stats updated
+        expect(page.locator("[data-testid='total-receipts']")).not_to_have_text("0", timeout=10000)
         new_stats = stats_section.text_content() if stats_section.is_visible() else ""
         assert new_stats != initial_stats or initial_stats == "", "Statistics should update"
 
