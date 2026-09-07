@@ -129,6 +129,14 @@ app.use((err: any, req: Request, res: Response, _next: any) => {
     res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception in backend server:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled Rejection in backend server:', reason);
+});
+
 // Start server only if not running in a serverless environment
 if (process.env.VERCEL !== '1') {
     app.listen(PORT, () => {

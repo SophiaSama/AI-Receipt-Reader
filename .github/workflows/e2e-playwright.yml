@@ -141,6 +141,7 @@ jobs:
           SUPABASE_URL: ${{ env.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ env.SUPABASE_PUBLISHABLE_KEY }}
           MISTRAL_API_KEY: test-key
+          DISABLE_TESSERACT_OCR: 'true'
 
       - name: Start frontend server
         run: |

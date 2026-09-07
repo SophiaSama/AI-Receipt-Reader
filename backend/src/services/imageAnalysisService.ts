@@ -14,10 +14,17 @@ const getWorker = (): Promise<Worker> => {
         // download. When unset (local dev), Tesseract.js falls back to CDN.
         const tessdataPath = process.env.TESSDATA_PREFIX || undefined;
         workerPromise = createWorker('eng', undefined, {
+            errorHandler: (err: any) => {
+                console.warn('Tesseract worker error handled safely:', err);
+            },
             ...(tessdataPath && {
                 langPath: tessdataPath,
                 cachePath: tessdataPath,
             }),
+        }).catch((err) => {
+            console.warn('Failed to initialize Tesseract worker, resetting promise:', err);
+            workerPromise = null;
+            throw err;
         });
     }
     return workerPromise;
