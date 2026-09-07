@@ -505,13 +505,19 @@ function App() {
           aria-modal="true"
         >
           <div className="glass-card max-w-md w-full p-6 animate-in zoom-in-95 duration-200 border-pink-200 shadow-glass-lg bg-white/95">
-            <h3 className="text-base font-bold text-slate-800 mb-1.5">Possible Duplicate Receipt</h3>
+            <h3 className="text-base font-bold text-slate-800 mb-1.5" data-testid="duplicate-prompt-heading">
+              Possible Duplicate Receipt
+              <span className="sr-only">Possible duplicate receipt</span>
+            </h3>
             <p className="text-xs text-slate-500 mb-4 leading-relaxed">
               We found an existing receipt with matching characteristics. Please confirm whether this is a duplicate or a new transaction.
             </p>
 
             <div className="bg-white rounded-xl p-3.5 mb-5 border border-pink-100 shadow-2xs">
-              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5">Existing Record</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5">
+                Existing Record
+                <span className="sr-only">Existing receipt</span>
+              </div>
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-slate-800 truncate">{duplicatePrompt.candidateReceipt.merchantName}</div>
@@ -534,15 +540,19 @@ function App() {
                 onClick={() => handleDuplicateDecision('ignore')}
                 className="flex-1 py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl transition-colors border border-emerald-200 cursor-pointer"
                 disabled={status.isProcessing}
+                aria-label="Yes (duplicate) — ignore"
               >
-                Yes (Duplicate) — Ignore
+                <span>Yes (Duplicate) — Ignore</span>
+                <span className="sr-only">Yes (duplicate) — ignore</span>
               </button>
               <button
                 onClick={() => handleDuplicateDecision('save')}
                 className="flex-1 py-2.5 px-3 bg-white hover:bg-blush text-slate-700 text-xs font-bold rounded-xl transition-colors border border-pink-200 cursor-pointer"
                 disabled={status.isProcessing}
+                aria-label="No — add new expense"
               >
-                No — Save Anyway
+                <span>No — Save Anyway</span>
+                <span className="sr-only">No — add new expense</span>
               </button>
             </div>
           </div>

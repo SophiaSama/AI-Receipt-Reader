@@ -32,12 +32,20 @@ export function createSupabaseClient(env: SupabaseEnv = readSupabaseEnv()): Supa
     );
   }
 
+  // When running in Node.js < 22 (e.g. during SSR or unit tests), native WebSocket
+  // is not present on globalThis. Provide a lightweight transport stub so that
+  // @supabase/realtime-js does not throw during client initialization.
+  const realtime = typeof globalThis.WebSocket === 'undefined'
+    ? { transport: class WebSocketStub {} as any }
+    : undefined;
+
   return createClient(env.url, env.publishableKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
+    ...(realtime ? { realtime } : {}),
   });
 }
 

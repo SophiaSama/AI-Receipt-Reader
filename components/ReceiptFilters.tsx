@@ -56,6 +56,8 @@ export const ReceiptFilters: React.FC<ReceiptFiltersProps> = ({ filters, onFilte
           </div>
           <input
             type="text"
+            data-testid="merchant-search-input"
+            aria-label="Filter by merchant"
             className="block w-full pl-10 pr-9 py-2.5 bg-white/90 border border-pink-100 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
             placeholder="Search by merchant name..."
             value={filters.search}

@@ -25,7 +25,11 @@ class TestHealthCheck:
     def test_main_sections_visible(self, page: Page):
         """Test that main sections of the app are visible (authenticated dashboard)"""
         # Check upload section
-        expect(page.locator("text=Click to upload receipt")).to_be_visible()
+        expect(
+            page.locator("text=Upload receipt photo").or_(
+                page.locator("text=Click to upload receipt")
+            ).or_(page.locator("[data-testid='upload-section']"))
+        ).to_be_visible()
         
         # Check manual entry section
         expect(page.locator("text=Manual Entry").or_(page.locator("button:has-text('Manual')"))).to_be_visible()

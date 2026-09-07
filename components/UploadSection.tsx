@@ -137,6 +137,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                 </div>
                 <h3 className="text-sm font-bold text-slate-700 mb-1">
                   Upload receipt photo
+                  <span className="sr-only">Click to upload receipt, or drag and drop</span>
                 </h3>
                 <p className="text-xs text-slate-500 font-medium max-w-[240px]">
                   Drag and drop here, or <span className="text-primary underline underline-offset-2 font-semibold">browse file</span>

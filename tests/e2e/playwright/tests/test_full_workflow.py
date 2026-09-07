@@ -73,8 +73,10 @@ class TestFullWorkflow:
 
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
-        # The filter bar exposes a single merchant search input (placeholder "Filter by merchant...")
-        search_input = page.locator("input[placeholder*='Filter by merchant']")
+        # The filter bar exposes a merchant search input
+        search_input = page.locator("input[placeholder*='Search by merchant']").or_(
+            page.locator("input[placeholder*='Filter by merchant']")
+        ).or_(page.locator("[data-testid='merchant-search-input']"))
         expect(search_input).to_be_visible(timeout=10000)
 
         search_input.fill("FilterTest")

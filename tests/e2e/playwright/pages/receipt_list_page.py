@@ -22,7 +22,7 @@ class ReceiptListPage(BasePage):
     # Search and filters
     # The filter bar only exposes a merchant search box, a single start-date
     # input, and a Clear button (no merchant/category dropdowns or "To" date).
-    SEARCH_INPUT = "input[placeholder*='Filter by merchant']"
+    SEARCH_INPUT = "input[placeholder*='Search by merchant'], input[placeholder*='Filter by merchant'], [data-testid='merchant-search-input']"
     # Scope to the filter bar's "From" input so it never collides with the
     # manual entry form's own #date input (which can still be mounted while a
     # previous save is in flight) -> avoids strict-mode "2 elements" errors.

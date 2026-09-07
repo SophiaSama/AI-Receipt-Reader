@@ -58,9 +58,17 @@ export function createUserClient(
             'Supabase is not configured. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY.'
         );
     }
+    // When running in Node.js < 22 (e.g. Node 20 Docker containers or unit tests),
+    // native WebSocket is not present on globalThis. Provide a lightweight transport
+    // stub so that @supabase/realtime-js does not throw during client initialization.
+    const realtime = typeof globalThis.WebSocket === 'undefined'
+        ? { transport: class WebSocketStub {} as any }
+        : undefined;
+
     return clientFactory(url, key, {
         global: { headers: { Authorization: `Bearer ${jwt}` } },
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        ...(realtime ? { realtime } : {}),
     });
 }
 

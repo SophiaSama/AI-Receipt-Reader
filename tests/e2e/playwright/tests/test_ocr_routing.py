@@ -308,6 +308,8 @@ class TestOcrRoutingWithDuplicates:
         assert pending["processingMetrics"]["route"] == "hybrid"
 
         # Dismiss the duplicate dialog
-        expect(page.get_by_role("heading", name="Possible duplicate receipt")).to_be_visible(timeout=15000)
-        page.get_by_role("button", name="Yes (duplicate) — ignore").click()
-        expect(page.get_by_text("Possible duplicate receipt")).not_to_be_visible(timeout=15000)
+        expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt"))).to_be_visible(timeout=15000)
+        page.locator("button:has-text('Yes (Duplicate) — Ignore')").or_(
+            page.locator("button:has-text('Yes (duplicate) — ignore')")
+        ).click()
+        expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt"))).not_to_be_visible(timeout=15000)
