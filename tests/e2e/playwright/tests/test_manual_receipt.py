@@ -87,14 +87,16 @@ class TestManualReceipt:
         page.fill("#date, input[name='date']", sample_receipt_data["date"])
         
         # Add a couple of line items
-        add_item = page.locator("button:has-text('Add Definition')")
+        add_item = page.locator("button:has-text('Add Definition')").or_(
+            page.locator("button:has-text('Add Item')")
+        )
         if add_item.is_visible():
             add_item.click()
             add_item.click()
             
             # Fill the first two description/price inputs if present
             desc_inputs = page.locator("input[placeholder='Classification description']")
-            price_inputs = page.locator("input[placeholder='Price']")
+            price_inputs = page.locator("input[placeholder='Price'], input[placeholder='0.00'], [data-testid='item-price-input']")
             
             if desc_inputs.count() >= 2 and price_inputs.count() >= 2:
                 desc_inputs.nth(0).fill("Milk")

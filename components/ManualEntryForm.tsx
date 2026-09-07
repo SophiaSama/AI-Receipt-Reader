@@ -224,6 +224,9 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onSave, onCanc
                     step="0.01"
                     min="0"
                     placeholder="0.00"
+                    aria-label="Price"
+                    data-testid="item-price-input"
+                    title="Price"
                     className="w-full pl-6 pr-2.5 py-2 text-xs bg-white/90 border border-pink-100 rounded-xl text-slate-800 font-mono font-semibold text-right focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     value={item.price || ''}
                     onChange={e => handleItemChange(idx, 'price', Number(e.target.value))}

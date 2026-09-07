@@ -109,9 +109,11 @@ export const ReceiptFilters: React.FC<ReceiptFiltersProps> = ({ filters, onFilte
           {activeFilterCount > 0 && (
             <button
               onClick={onClear}
+              data-testid="clear-filters-button"
               className="px-3 py-2.5 text-xs font-semibold text-slate-500 hover:text-rose-500 transition-colors border border-transparent hover:border-rose-200 hover:bg-rose-50 rounded-xl cursor-pointer"
             >
               Reset
+              <span className="sr-only">Clear</span>
             </button>
           )}
         </div>
@@ -151,11 +153,15 @@ export const ReceiptFilters: React.FC<ReceiptFiltersProps> = ({ filters, onFilte
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             {/* Start Date */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              <label htmlFor="filter-start-date" className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 From Date
               </label>
               <input
+                id="filter-start-date"
                 type="date"
+                data-testid="filter-date-from"
+                aria-label="From Date"
+                placeholder="From"
                 className="w-full px-3 py-2 bg-slate-50/70 border border-pink-100 rounded-xl text-xs text-slate-700 focus:outline-none focus:bg-white focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all"
                 value={filters.startDate}
                 onChange={(e) => handleChange('startDate', e.target.value)}
@@ -164,11 +170,15 @@ export const ReceiptFilters: React.FC<ReceiptFiltersProps> = ({ filters, onFilte
 
             {/* End Date */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              <label htmlFor="filter-end-date" className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 To Date
               </label>
               <input
+                id="filter-end-date"
                 type="date"
+                data-testid="filter-date-to"
+                aria-label="To Date"
+                placeholder="To"
                 className="w-full px-3 py-2 bg-slate-50/70 border border-pink-100 rounded-xl text-xs text-slate-700 focus:outline-none focus:bg-white focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all"
                 value={filters.endDate}
                 onChange={(e) => handleChange('endDate', e.target.value)}

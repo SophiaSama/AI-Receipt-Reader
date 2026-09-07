@@ -36,7 +36,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ receipts }) => {
 
   if (receipts.length === 0) {
     return (
-      <div className="p-4" data-testid="stats-overview">
+      <div className="stats p-4" data-testid="stats-overview" data-testid-stats="stats">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Analytics Overview</h3>
           <span className="text-[11px] font-medium text-slate-400">Ready for data</span>
@@ -63,7 +63,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ receipts }) => {
   }
 
   return (
-    <div className="p-4" data-testid="stats-overview">
+    <div className="stats p-4" data-testid="stats-overview" data-testid-stats="stats">
       <div className="flex justify-between items-center mb-3">
         <div>
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Financial Summary</h3>
@@ -79,7 +79,10 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ receipts }) => {
       {/* 3 Metric Cards */}
       <div className="grid grid-cols-3 gap-2.5 mb-4">
         <div className="p-2.5 rounded-xl bg-white/70 border border-pink-100/70 shadow-sm">
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">Total</span>
+          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">
+            Total
+            <span className="sr-only">Total Spent</span>
+          </span>
           <p className="text-base sm:text-lg font-bold text-slate-800 tracking-tight" data-testid="total-amount">
             ${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>

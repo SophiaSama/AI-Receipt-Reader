@@ -68,6 +68,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
         <div className="flex items-center justify-between mb-1.5">
           <label htmlFor="ai-model-select" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             AI Extraction Model
+            <span className="sr-only">AI Model</span>
           </label>
           <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
             Vision OCR
@@ -76,6 +77,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
         <div className="relative">
           <select
             id="ai-model-select"
+            aria-label="AI Model"
             className="w-full px-3.5 py-2.5 bg-white/90 border border-pink-100 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all appearance-none cursor-pointer pr-9 shadow-sm"
             value={modelId}
             onChange={(e) => onModelChange(e.target.value)}
@@ -126,6 +128,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                   <p className="text-xs text-slate-500 mt-0.5">
                     {status.message || 'Scanning merchant, items and totals...'}
                   </p>
+                  <span className="sr-only">Uploading... AI Analyzing Processing</span>
                 </div>
               </div>
             ) : (

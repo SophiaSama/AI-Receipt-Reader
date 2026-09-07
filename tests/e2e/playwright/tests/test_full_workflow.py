@@ -37,18 +37,23 @@ class TestFullWorkflow:
         receipt_row.hover()
         
         # Wait for delete button to become visible after hover, then click
-        delete_button = receipt_row.locator("button[title='Purge Record']")
+        delete_button = receipt_row.locator("button[title='Delete Record'], button[title='Purge Record'], [data-testid='delete-receipt-button']")
         delete_button.wait_for(state="visible", timeout=3000)
         delete_button.click()
 
-        # The confirmation modal has a "Delete" button, not "Confirm"
+        # The confirmation modal has a "Delete" / "Delete Record" button
         confirm_button = page.locator("div[role='dialog'] button:has-text('Delete')").or_(
-            page.locator("button:has-text('Confirm')").or_(
-                page.locator("button:has-text('Yes')")
+            page.locator("div[role='dialog'] [data-testid='confirm-delete-button']").or_(
+                page.locator("button:has-text('Confirm')").or_(
+                    page.locator("button:has-text('Yes')")
+                )
             )
         )
-        if confirm_button.is_visible():
-            confirm_button.click()
+        try:
+            confirm_button.first.wait_for(state="visible", timeout=5000)
+            confirm_button.first.click()
+        except Exception:
+            pass
 
         expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
@@ -103,7 +108,7 @@ class TestFullWorkflow:
         # Trigger delete
         receipt_row = page.locator("[data-testid='receipt-item']").filter(has_text=unique_merchant).first
         receipt_row.hover()
-        delete_button = receipt_row.locator("button[title='Purge Record']")
+        delete_button = receipt_row.locator("button[title='Delete Record'], button[title='Purge Record'], [data-testid='delete-receipt-button']")
         delete_button.wait_for(state="visible", timeout=3000)
         delete_button.click()
 
@@ -154,7 +159,7 @@ class TestFullWorkflow:
         """Test that statistics update after adding receipt"""
 
         # Get initial stats (if visible) - use more specific selector
-        stats_section = page.locator(".stats, [data-testid='stats']").or_(
+        stats_section = page.locator(".stats, [data-testid='stats'], [data-testid='stats-overview']").or_(
             page.get_by_text("Total Spent")
         )
         initial_stats = stats_section.first.text_content() if stats_section.first.is_visible() else ""
