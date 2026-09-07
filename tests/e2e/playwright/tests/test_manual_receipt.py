@@ -13,7 +13,7 @@ class TestManualReceipt:
         # Find and click manual entry button
         manual_button = page.locator("button:has-text('Manual')").or_(
             page.locator("text=Manual Entry")
-        )
+        ).first
         manual_button.click()
         
         # Verify form appears

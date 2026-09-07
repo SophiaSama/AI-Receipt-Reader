@@ -28,11 +28,11 @@ class TestHealthCheck:
         expect(
             page.locator("text=Upload receipt photo").or_(
                 page.locator("text=Click to upload receipt")
-            ).or_(page.locator("[data-testid='upload-section']"))
+            ).or_(page.locator("[data-testid='upload-section']")).first
         ).to_be_visible()
         
         # Check manual entry section
-        expect(page.locator("text=Manual Entry").or_(page.locator("button:has-text('Manual')"))).to_be_visible()
+        expect(page.locator("text=Manual Entry").or_(page.locator("button:has-text('Manual')")).first).to_be_visible()
         
         # Check receipts list section
         expect(page.locator("text=Receipt").first).to_be_visible()

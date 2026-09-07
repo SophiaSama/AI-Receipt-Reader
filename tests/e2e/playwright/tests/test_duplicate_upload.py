@@ -99,8 +99,8 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
     assert second_json.get("duplicateDetected") is True
 
     # Duplicate modal should appear
-    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt"))).to_be_visible(timeout=15000)
-    expect(page.locator("text=Existing Record").or_(page.locator("text=Existing receipt"))).to_be_visible()
+    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt")).first).to_be_visible(timeout=15000)
+    expect(page.locator("text=Existing Record").or_(page.locator("text=Existing receipt")).first).to_be_visible()
     dialog = page.get_by_role("dialog")
     expect(dialog.get_by_text("E2E Coffee")).to_be_visible()
     expect(dialog.get_by_text("2026-03-06")).to_be_visible()
@@ -108,10 +108,10 @@ def test_duplicate_upload_ignore_does_not_add_record(page: Page, sample_receipt_
     # User confirms it's a duplicate -> ignore
     page.locator("button:has-text('Yes (Duplicate) — Ignore')").or_(
         page.locator("button:has-text('Yes (duplicate) — ignore')")
-    ).click()
+    ).first.click()
 
     # Modal closes and list count stays the same
-    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt"))).not_to_be_visible(timeout=15000)
+    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt")).first).not_to_be_visible(timeout=15000)
     expect(receipts.get_receipt_rows()).to_have_count(1)
 
 
@@ -178,10 +178,10 @@ def test_duplicate_upload_no_proceeds_and_adds_new_record(page: Page, sample_rec
     second_json = second_resp.value.json()
     assert second_json.get("duplicateDetected") is True
 
-    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt"))).to_be_visible(timeout=15000)
+    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt")).first).to_be_visible(timeout=15000)
     page.locator("button:has-text('No — Save Anyway')").or_(
         page.locator("button:has-text('No — add new expense')")
-    ).click()
+    ).first.click()
 
-    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt"))).not_to_be_visible(timeout=15000)
+    expect(page.locator("text=Possible Duplicate Receipt").or_(page.locator("text=Possible duplicate receipt")).first).not_to_be_visible(timeout=15000)
     expect(receipts.get_receipt_rows()).to_have_count(2)

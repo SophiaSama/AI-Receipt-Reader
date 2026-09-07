@@ -358,6 +358,7 @@ function App() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
+                <span className="sr-only">Sign Out</span>
               </button>
             </div>
           </div>
@@ -440,6 +441,7 @@ function App() {
                   <span className="text-xs font-bold text-rose-600">{selectedIds.length} Selected</span>
                   <button
                     onClick={() => setShowBulkDeleteConfirm(true)}
+                    data-testid="bulk-purge-button"
                     className="px-2.5 py-1 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -514,9 +516,8 @@ function App() {
             </p>
 
             <div className="bg-white rounded-xl p-3.5 mb-5 border border-pink-100 shadow-2xs">
-              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5" data-testid="duplicate-prompt-heading">
                 Existing Record
-                <span className="sr-only">Existing receipt</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">

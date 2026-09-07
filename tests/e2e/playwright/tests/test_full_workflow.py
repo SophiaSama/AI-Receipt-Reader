@@ -159,10 +159,8 @@ class TestFullWorkflow:
         """Test that statistics update after adding receipt"""
 
         # Get initial stats (if visible) - use more specific selector
-        stats_section = page.locator(".stats, [data-testid='stats'], [data-testid='stats-overview']").or_(
-            page.get_by_text("Total Spent")
-        )
-        initial_stats = stats_section.first.text_content() if stats_section.first.is_visible() else ""
+        stats_section = page.locator("[data-testid='stats-overview']").first
+        initial_stats = stats_section.text_content() if stats_section.is_visible() else ""
 
         # Add receipt
         page.locator("button:has-text('Manual')").first.click()
