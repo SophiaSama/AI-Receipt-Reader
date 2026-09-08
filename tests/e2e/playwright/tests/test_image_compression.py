@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import pytest
-from playwright.sync_api import BrowserContext, Page, expect
+from playwright.sync_api import Page, expect
 from PIL import Image
 
 
@@ -41,60 +41,13 @@ def large_camera_photo(tmp_path: Path) -> str:
 
 
 def test_client_side_compression_reduces_upload_payload(
-    context: BrowserContext,
-    base_url: str,
+    page: Page,
     large_camera_photo: str,
 ):
     """Verify that a large camera photo is compressed client-side before sending to /api/process."""
     
     original_size = Path(large_camera_photo).stat().st_size
     print(f"Original photo size: {original_size / 1024 / 1024:.2f} MB")
-    
-    # Inject mock session into localStorage before any page script executes
-    mock_session = {
-        "access_token": "mock-e2e-jwt-token",
-        "token_type": "bearer",
-        "expires_in": 3600,
-        "refresh_token": "mock-refresh",
-        "user": {
-            "id": "e2e-mock-user",
-            "aud": "authenticated",
-            "role": "authenticated",
-            "email": "e2e-compression@example.com",
-        },
-    }
-    
-    # Initialize page with pre-authenticated state
-    page = context.new_page()
-    page.add_init_script(f"""
-        try {{
-            const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token')) || 'sb-127-auth-token';
-            localStorage.setItem(key, JSON.stringify({json.dumps(mock_session)}));
-            localStorage.setItem('sb-localhost-auth-token', JSON.stringify({json.dumps(mock_session)}));
-        }} catch (e) {{}}
-    """)
-    
-    # Mock Supabase Auth REST endpoints
-    page.route("**/auth/v1/token*", lambda r: r.fulfill(
-        status=200, content_type="application/json", body=json.dumps({
-            "access_token": "mock-e2e-jwt-token",
-            "token_type": "bearer",
-            "expires_in": 3600,
-            "refresh_token": "mock-refresh",
-            "user": mock_session["user"],
-        })
-    ))
-    page.route("**/auth/v1/user*", lambda r: r.fulfill(
-        status=200, content_type="application/json", body=json.dumps(mock_session["user"])
-    ))
-    page.route("**/auth/v1/session*", lambda r: r.fulfill(
-        status=200, content_type="application/json", body=json.dumps(mock_session)
-    ))
-    
-    # Mock receipts list to return empty array initially
-    page.route("**/rest/v1/receipts*", lambda r: r.fulfill(
-        status=200, content_type="application/json", body="[]"
-    ))
     
     # Track outgoing request payload to /api/process
     intercepted_requests = []
@@ -128,16 +81,6 @@ def test_client_side_compression_reduces_upload_payload(
         
     page.route("**/api/process*", handle_process)
     
-    # Navigate to app
-    page.goto(base_url)
-    
-    # If the login form is shown, log in with mock credentials
-    email_input = page.locator("input#email")
-    if email_input.is_visible():
-        email_input.fill("e2e-compression@example.com")
-        page.locator("input#password").fill("Password123!")
-        page.locator("button[type='submit']").click()
-    
     # Find file input and upload large camera photo
     file_input = page.locator("input[type='file']#dropzone-file")
     file_input.wait_for(state="attached", timeout=15000)
@@ -159,5 +102,4 @@ def test_client_side_compression_reduces_upload_payload(
     assert transmitted_size < original_size * 0.5, (
         f"Transmitted size ({transmitted_size}) was not substantially smaller than original ({original_size})"
     )
-    
-    page.close()
+
