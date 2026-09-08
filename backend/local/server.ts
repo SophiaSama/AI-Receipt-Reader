@@ -113,13 +113,15 @@ app.get('/api/health', (req: Request, res: Response) => {
     });
 });
 
-app.all('/api/health', (req: Request, res: Response) => {
+app.all('/api/health', (req: Request, res: Response, next) => {
+    if (req.method === 'OPTIONS') return next();
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method Not Allowed' });
 });
 
 // Catch-all for unknown API endpoints (so they become 404, not 500)
-app.all('/api/*', (req: Request, res: Response) => {
+app.all('/api/*', (req: Request, res: Response, next) => {
+    if (req.method === 'OPTIONS') return next();
     return res.status(404).json({ error: 'Not Found' });
 });
 

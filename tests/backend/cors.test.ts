@@ -164,5 +164,71 @@ describe('CORS Origin Matching (Backend & Serverless)', () => {
 
       expect(headers['access-control-allow-origin']).toBeUndefined();
     });
+
+    it('OPTIONS /api/health is not blocked by app.all catch-all (returns CORS headers, not 405)', async () => {
+      const previewOrigin = 'https://smart-receipt-reader-abc123-sophiawangs-projects.vercel.app';
+      const headers: Record<string, string> = {};
+
+      const req: any = {
+        method: 'OPTIONS',
+        url: '/api/health',
+        headers: {
+          origin: previewOrigin,
+          'access-control-request-method': 'GET',
+        },
+      };
+
+      const res: any = {
+        statusCode: 200,
+        setHeader(k: string, v: string) {
+          headers[k.toLowerCase()] = v;
+        },
+        getHeader(k: string) {
+          return headers[k.toLowerCase()];
+        },
+        end: vi.fn(),
+      };
+
+      await new Promise<void>((resolve) => {
+        res.end = vi.fn(() => resolve());
+        app(req, res, () => resolve());
+      });
+
+      expect(res.statusCode).toBe(204);
+      expect(headers['access-control-allow-origin']).toBe(previewOrigin);
+    });
+
+    it('OPTIONS to unknown /api/* path is not blocked by catch-all (returns CORS headers, not 404)', async () => {
+      const previewOrigin = 'https://smart-receipt-reader-xyz-sophiawangs-projects.vercel.app';
+      const headers: Record<string, string> = {};
+
+      const req: any = {
+        method: 'OPTIONS',
+        url: '/api/nonexistent',
+        headers: {
+          origin: previewOrigin,
+          'access-control-request-method': 'POST',
+        },
+      };
+
+      const res: any = {
+        statusCode: 200,
+        setHeader(k: string, v: string) {
+          headers[k.toLowerCase()] = v;
+        },
+        getHeader(k: string) {
+          return headers[k.toLowerCase()];
+        },
+        end: vi.fn(),
+      };
+
+      await new Promise<void>((resolve) => {
+        res.end = vi.fn(() => resolve());
+        app(req, res, () => resolve());
+      });
+
+      expect(res.statusCode).toBe(204);
+      expect(headers['access-control-allow-origin']).toBe(previewOrigin);
+    });
   });
 });
