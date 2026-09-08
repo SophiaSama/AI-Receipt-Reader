@@ -42,7 +42,7 @@ class TestBulkDelete:
         card2.locator("input[type='checkbox']").click()
         
         # Verify "PURGE" button appears
-        purge_btn = page.locator("button:has-text('PURGE')")
+        purge_btn = page.locator("[data-testid='bulk-purge-button'], button:has-text('PURGE')").first
         expect(purge_btn).to_be_visible()
         expect(page.locator("text=2 Selected")).to_be_visible()
         
@@ -87,9 +87,9 @@ class TestBulkDelete:
         header_checkbox.check()
         
         # All items should be selected
-        expect(page.locator("button:has-text('PURGE')")).to_be_visible()
+        expect(page.locator("[data-testid='bulk-purge-button'], button:has-text('PURGE')").first).to_be_visible()
         expect(page.locator(f"text={new_count} Selected")).to_be_visible()
         
         # Uncheck header checkbox
         header_checkbox.uncheck()
-        expect(page.locator("button:has-text('PURGE')")).not_to_be_visible()
+        expect(page.locator("[data-testid='bulk-purge-button'], button:has-text('PURGE')")).not_to_be_visible()

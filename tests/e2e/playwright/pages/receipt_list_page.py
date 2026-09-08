@@ -16,18 +16,15 @@ class ReceiptListPage(BasePage):
     RECEIPT_MERCHANT = "[data-testid='merchant-name']"
     RECEIPT_DATE = "[data-testid='receipt-date']"
     RECEIPT_TOTAL = "[data-testid='receipt-total']"
-    DELETE_BUTTON = "button[title='Purge Record']"
+    DELETE_BUTTON = "button[title='Delete Record'], button[title='Purge Record'], [data-testid='delete-receipt-button'], button[aria-label='Delete Record']"
     EDIT_BUTTON = "button:has-text(\"Edit\"), button[aria-label='Edit']"
 
     # Search and filters
-    # The filter bar only exposes a merchant search box, a single start-date
-    # input, and a Clear button (no merchant/category dropdowns or "To" date).
-    SEARCH_INPUT = "input[placeholder*='Filter by merchant']"
-    # Scope to the filter bar's "From" input so it never collides with the
-    # manual entry form's own #date input (which can still be mounted while a
-    # previous save is in flight) -> avoids strict-mode "2 elements" errors.
-    FILTER_DATE_FROM = "input[type='date'][placeholder='From']"
-    CLEAR_FILTERS_BUTTON = 'button:has-text("Clear")'
+    SEARCH_INPUT = "input[placeholder*='Search by merchant'], input[placeholder*='Filter by merchant'], [data-testid='merchant-search-input']"
+    FILTER_TOGGLE_BUTTON = "[data-testid='filter-toggle-button'], button:has-text('Filters')"
+    FILTER_DATE_FROM = "[data-testid='filter-date-from'], input[aria-label='From Date'], input[placeholder='From']"
+    FILTER_DATE_TO = "[data-testid='filter-date-to'], input[aria-label='To Date'], input[placeholder='To']"
+    CLEAR_FILTERS_BUTTON = 'button:has-text("Reset"), button:has-text("Clear"), [data-testid="clear-filters-button"]'
 
     # Stats
     STATS_SECTION = "[data-testid='stats-overview']"
@@ -94,10 +91,13 @@ class ReceiptListPage(BasePage):
         # Handle confirmation modal - the confirm button also says "Delete" in the modal
         # Look for the Delete button in the modal (not the one in the receipt row)
         confirm_btn = self.page.locator(
-            "div[role='dialog'] button:has-text('Delete'), button:has-text('Confirm'), button:has-text('Yes'), button:has-text('OK')"
+            "div[role='dialog'] button:has-text('Delete'), div[role='dialog'] [data-testid='confirm-delete-button'], button:has-text('Confirm'), button:has-text('Yes'), button:has-text('OK')"
         )
-        if confirm_btn.is_visible(timeout=2000):
-            confirm_btn.click()
+        try:
+            confirm_btn.first.wait_for(state="visible", timeout=5000)
+            confirm_btn.first.click()
+        except Exception:
+            pass
 
         return self
 
@@ -129,15 +129,24 @@ class ReceiptListPage(BasePage):
     def filter_by_date_range(
         self, date_from: Optional[str] = None, date_to: Optional[str] = None
     ):
-        """Filter by start date (YYYY-MM-DD format).
+        """Filter by date range (YYYY-MM-DD format)."""
+        from_input = self.page.locator(self.FILTER_DATE_FROM).first
+        if not from_input.is_visible():
+            toggle_btn = self.page.locator(self.FILTER_TOGGLE_BUTTON).first
+            if toggle_btn.is_visible():
+                toggle_btn.click()
+                try:
+                    from_input.wait_for(state="visible", timeout=5000)
+                except Exception:
+                    pass
 
-        The current UI only exposes a single start-date input, so ``date_to`` is
-        accepted for backwards compatibility but ignored.
-        """
-        if date_from:
-            from_input = self.page.locator(self.FILTER_DATE_FROM)
-            if from_input.is_visible():
-                from_input.fill(date_from)
+        if date_from and from_input.is_visible():
+            from_input.fill(date_from)
+
+        if date_to:
+            to_input = self.page.locator(self.FILTER_DATE_TO).first
+            if to_input.is_visible():
+                to_input.fill(date_to)
 
         return self
 

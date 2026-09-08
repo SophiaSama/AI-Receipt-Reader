@@ -1,30 +1,4 @@
-import { createWorker, Worker } from 'tesseract.js';
 import { ImageAnalysisResult } from '../types';
-
-/**
- * Singleton Tesseract worker — initialized lazily, reused across requests.
- * Workers are expensive to create (~2-4s) but subsequent calls are fast.
- */
-let workerPromise: Promise<Worker> | null = null;
-
-const getWorker = (): Promise<Worker> => {
-    if (!workerPromise) {
-        workerPromise = createWorker('eng');
-    }
-    return workerPromise;
-};
-
-/**
- * Tesseract.js relies on a WASM core + downloaded language data that are not
- * bundled into serverless deployments (e.g. Vercel's `/var/task`), where a
- * missing `tesseract-core-simd.wasm` aborts the WASM runtime and crashes the
- * whole function process. In those environments we skip the local Tesseract
- * pass entirely and let the vision-LLM route handle OCR.
- *
- * Auto-disabled on Vercel; can also be forced off via DISABLE_TESSERACT_OCR.
- */
-const isTesseractDisabled = (): boolean =>
-    process.env.DISABLE_TESSERACT_OCR === 'true' || process.env.VERCEL === '1';
 
 /**
  * Decode raw image bytes into a flat array of RGBA pixels.
@@ -122,109 +96,29 @@ const computeSharpness = (luminance: Float32Array, width: number, height: number
 };
 
 /**
- * Detect complex layout from Tesseract word-level data.
- * Heuristic: if words span more than 3 distinct horizontal zones → complex layout.
- */
-const detectComplexLayout = (words: Array<{ bbox: { x0: number; x1: number }; text: string }>): boolean => {
-    if (words.length < 5) return false;
-
-    // Bucket word x0-positions into zones (every 50 pixels)
-    const zones = new Set<number>();
-    for (const w of words) {
-        if (w.text.trim().length > 0) {
-            zones.add(Math.floor(w.bbox.x0 / 50));
-        }
-    }
-    return zones.size > 5;
-};
-
-/**
- * Detect handwriting heuristic.
- * Handwriting typically shows: low average confidence and high per-word confidence variance.
- */
-const detectHandwriting = (
-    words: Array<{ confidence: number; text: string }>,
-    overallConfidence: number
-): boolean => {
-    if (overallConfidence >= 70) return false;
-
-    const validWords = words.filter((w) => w.text.trim().length > 1);
-    if (validWords.length < 3) return false;
-
-    const confidences = validWords.map((w) => w.confidence);
-    const mean = confidences.reduce((a, b) => a + b, 0) / confidences.length;
-    const variance = confidences.reduce((a, c) => a + (c - mean) ** 2, 0) / confidences.length;
-    const stdDev = Math.sqrt(variance);
-
-    // High variance in per-word confidence + low overall → handwriting
-    return stdDev > 20 && overallConfidence < 60;
-};
-
-/**
  * Phase 1: Analyze an image to determine its quality characteristics.
  * Returns metrics used by the routing decision in Phase 2.
+ *
+ * Tesseract.js has been removed to reduce Docker image size (~3GB → ~300MB).
+ * All OCR now routes through the Vision LLM, which is more accurate.
+ * Pixel-level analysis (contrast, sharpness) is still performed for diagnostics.
  */
 export const analyzeImage = async (
     imageBuffer: Buffer,
     mimeType: string
 ): Promise<ImageAnalysisResult> => {
-    // Run pixel analysis and Tesseract in parallel. When Tesseract is disabled
-    // (serverless), skip it and force the vision-LLM route via confidence 0.
-    const tesseractEnabled = !isTesseractDisabled();
-    const [pixelData, tesseractResult] = await Promise.all([
-        decodePixels(imageBuffer, mimeType),
-        tesseractEnabled
-            ? runQuickTesseract(imageBuffer)
-            : Promise.resolve({ confidence: 0, text: '', words: [] }),
-    ]);
-
-    if (!tesseractEnabled) {
-        console.log('Tesseract OCR disabled in this environment; routing to vision LLM.');
-    }
-
+    const pixelData = await decodePixels(imageBuffer, mimeType);
     const luminance = extractLuminance(pixelData.data);
 
     return {
         contrast: computeContrast(luminance),
         sharpness: computeSharpness(luminance, pixelData.width, pixelData.height),
-        tesseractConfidence: tesseractResult.confidence,
-        isComplexLayout: detectComplexLayout(tesseractResult.words),
-        isHandwriting: detectHandwriting(tesseractResult.words, tesseractResult.confidence),
-        quickOcrText: tesseractResult.text,
+        tesseractConfidence: 0,
+        isComplexLayout: false,
+        isHandwriting: false,
+        quickOcrText: '',
     };
 };
 
-/**
- * Run a quick Tesseract recognition pass on the image.
- */
-const runQuickTesseract = async (
-    imageBuffer: Buffer
-): Promise<{
-    confidence: number;
-    text: string;
-    words: Array<{ confidence: number; text: string; bbox: { x0: number; x1: number } }>;
-}> => {
-    try {
-        const worker = await getWorker();
-        const result = await worker.recognize(imageBuffer);
-
-        const words =
-            result.data.words?.map((w: any) => ({
-                confidence: w.confidence ?? 0,
-                text: w.text ?? '',
-                bbox: w.bbox ?? { x0: 0, x1: 0 },
-            })) ?? [];
-
-        return {
-            confidence: result.data.confidence ?? 0,
-            text: result.data.text ?? '',
-            words,
-        };
-    } catch (error) {
-        console.error('Quick Tesseract scan failed:', error);
-        return { confidence: 0, text: '', words: [] };
-    }
-};
-
 // Export for testing
-export { computeContrast, computeSharpness, detectComplexLayout, detectHandwriting };
+export { computeContrast, computeSharpness };

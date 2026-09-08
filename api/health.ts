@@ -1,9 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { applyCors, rejectDisallowedOriginIfNeeded } from './_lib/cors.js';
 
 export default async function (req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  applyCors(req, res, 'GET,OPTIONS');
+
+  if (rejectDisallowedOriginIfNeeded(req, res)) {
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');

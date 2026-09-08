@@ -25,7 +25,7 @@ class AuthPage(BasePage):
     # Dashboard markers (shown only when authenticated)
     DASHBOARD_MARKER = "button:has-text('Switch to Manual')"
     UPLOAD_SECTION = "[data-testid='upload-section']"
-    SIGN_OUT_BUTTON = "button:has-text('Sign Out')"
+    SIGN_OUT_BUTTON = "button:has-text('Sign Out'), button[title='Sign Out'], button[aria-label='Sign Out']"
 
     def __init__(self, page: Page):
         super().__init__(page)

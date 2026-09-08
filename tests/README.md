@@ -77,10 +77,15 @@ npx supabase stop
 The Playwright `conftest.py` reads these environment variables (defaults shown):
 
 - `SUPABASE_URL` (fallback `VITE_SUPABASE_URL`, default `http://localhost:54321`)
-- `SUPABASE_PUBLISHABLE_KEY` (fallback `VITE_SUPABASE_PUBLISHABLE_KEY`)
-- `SUPABASE_SERVICE_ROLE_KEY` — used only by the autouse cleanup fixture
+- `SUPABASE_PUBLISHABLE_KEY` (fallback `VITE_SUPABASE_PUBLISHABLE_KEY`) — needed for login
+- `SUPABASE_SERVICE_ROLE_KEY` — used only by the autouse cleanup fixture (no-op if empty)
 - `E2E_USER_A_EMAIL` / `E2E_USER_A_PASSWORD`
 - `E2E_USER_B_EMAIL` / `E2E_USER_B_PASSWORD`
+
+> In CI these keys are generated automatically from the disposable Supabase stack
+> (`supabase status -o env`), so no secrets are required. They only need to be set
+> when you run the e2e suite locally using cloud Supabase; if you don't, you can leave
+> `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SERVICE_ROLE_KEY` empty.
 
 The seeded users (see `supabase/seed.sql`) are:
 

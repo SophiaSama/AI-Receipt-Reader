@@ -33,7 +33,7 @@ function logStep(step) {
 }
 
 function logSuccess(message) {
-  log(`${colors.green}✓ ${message}${colors.reset}`);
+  log(`${colors.green}PASS: ${message}${colors.reset}`);
 }
 
 function logWarning(message) {
@@ -41,7 +41,7 @@ function logWarning(message) {
 }
 
 function logError(message) {
-  log(`${colors.red}✗ ${message}${colors.reset}`);
+  log(`${colors.red}FAIL: ${message}${colors.reset}`);
 }
 
 function checkBackendDist() {

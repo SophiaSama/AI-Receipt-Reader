@@ -37,18 +37,23 @@ class TestFullWorkflow:
         receipt_row.hover()
         
         # Wait for delete button to become visible after hover, then click
-        delete_button = receipt_row.locator("button[title='Purge Record']")
+        delete_button = receipt_row.locator("button[title='Delete Record'], button[title='Purge Record'], [data-testid='delete-receipt-button']")
         delete_button.wait_for(state="visible", timeout=3000)
         delete_button.click()
 
-        # The confirmation modal has a "Delete" button, not "Confirm"
+        # The confirmation modal has a "Delete" / "Delete Record" button
         confirm_button = page.locator("div[role='dialog'] button:has-text('Delete')").or_(
-            page.locator("button:has-text('Confirm')").or_(
-                page.locator("button:has-text('Yes')")
+            page.locator("div[role='dialog'] [data-testid='confirm-delete-button']").or_(
+                page.locator("button:has-text('Confirm')").or_(
+                    page.locator("button:has-text('Yes')")
+                )
             )
         )
-        if confirm_button.is_visible():
-            confirm_button.click()
+        try:
+            confirm_button.first.wait_for(state="visible", timeout=5000)
+            confirm_button.first.click()
+        except Exception:
+            pass
 
         expect(page.locator(f"text={unique_merchant}")).not_to_be_visible(timeout=10000)
 
@@ -73,8 +78,10 @@ class TestFullWorkflow:
 
         expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
 
-        # The filter bar exposes a single merchant search input (placeholder "Filter by merchant...")
-        search_input = page.locator("input[placeholder*='Filter by merchant']")
+        # The filter bar exposes a merchant search input
+        search_input = page.locator("input[placeholder*='Search by merchant']").or_(
+            page.locator("input[placeholder*='Filter by merchant']")
+        ).or_(page.locator("[data-testid='merchant-search-input']"))
         expect(search_input).to_be_visible(timeout=10000)
 
         search_input.fill("FilterTest")
@@ -101,7 +108,7 @@ class TestFullWorkflow:
         # Trigger delete
         receipt_row = page.locator("[data-testid='receipt-item']").filter(has_text=unique_merchant).first
         receipt_row.hover()
-        delete_button = receipt_row.locator("button[title='Purge Record']")
+        delete_button = receipt_row.locator("button[title='Delete Record'], button[title='Purge Record'], [data-testid='delete-receipt-button']")
         delete_button.wait_for(state="visible", timeout=3000)
         delete_button.click()
 
@@ -152,21 +159,24 @@ class TestFullWorkflow:
         """Test that statistics update after adding receipt"""
 
         # Get initial stats (if visible) - use more specific selector
-        stats_section = page.locator(".stats, [data-testid='stats']").or_(
-            page.get_by_text("Total Spent")
-        )
-        initial_stats = stats_section.first.text_content() if stats_section.first.is_visible() else ""
+        stats_section = page.locator("[data-testid='stats-overview']").first
+        initial_stats = stats_section.text_content() if stats_section.is_visible() else ""
 
         # Add receipt
         page.locator("button:has-text('Manual')").first.click()
         page.wait_for_selector("input[name='merchantName'], #merchantName")
 
-        page.fill("input[name='merchantName'], #merchantName", f"StatsTest {page.evaluate('Date.now()')}")
+        unique_merchant = f"StatsTest {page.evaluate('Date.now()')}"
+        page.fill("input[name='merchantName'], #merchantName", unique_merchant)
         page.fill("input[name='date'], #date, input[type='date']", sample_receipt_data["date"])
         page.fill("input[name='total'], #total", str(sample_receipt_data["total"]))
         page.locator("button[type='submit']").click()
 
+        # Wait for receipt to appear in list
+        expect(page.locator(f"text={unique_merchant}")).to_be_visible(timeout=20000)
+
         # Check stats updated
+        expect(page.locator("[data-testid='total-receipts']")).not_to_have_text("0", timeout=10000)
         new_stats = stats_section.text_content() if stats_section.is_visible() else ""
         assert new_stats != initial_stats or initial_stats == "", "Statistics should update"
 

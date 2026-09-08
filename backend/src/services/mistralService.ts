@@ -3,10 +3,18 @@ import { MistralOCRResult, MistralStructuredResult, LineItem } from '../types';
 
 const apiKey = process.env.MISTRAL_API_KEY;
 
-// Initialize Mistral client only if API key is provided
-const mistralClient = apiKey && apiKey !== 'your_mistral_api_key_here'
-    ? new Mistral({ apiKey })
-    : null;
+const isConfiguredApiKey = (key: string | undefined): boolean => {
+    return Boolean(key && key !== 'your_mistral_api_key_here' && key !== 'test-key');
+};
+
+// Initialize Mistral client only if a valid real API key is provided
+const getMistralClient = (): Mistral | null => {
+    const key = process.env.MISTRAL_API_KEY;
+    if (!isConfiguredApiKey(key)) {
+        return null;
+    }
+    return new Mistral({ apiKey: key! });
+};
 
 /**
  * Extract text from a receipt image using Mistral AI vision capabilities
@@ -16,13 +24,14 @@ export const extractTextFromImage = async (
     mimeType: string,
     model: string = 'pixtral-12b-2409'
 ): Promise<MistralOCRResult> => {
-    if (!mistralClient) {
+    const client = getMistralClient();
+    if (!client) {
         console.warn('Mistral API key not configured - using mock OCR response');
         return mockOCRResponse();
     }
 
     try {
-        const response = await mistralClient.chat.complete({
+        const response = await client.chat.complete({
             model,
             messages: [
                 {
@@ -56,13 +65,14 @@ export const structureReceiptData = async (
     rawText: string,
     model: string = 'mistral-large-latest'
 ): Promise<MistralStructuredResult> => {
-    if (!mistralClient) {
+    const client = getMistralClient();
+    if (!client) {
         console.warn('Mistral API key not configured - using mock structured response');
         return mockStructuredResponse(rawText);
     }
 
     try {
-        const response = await mistralClient.chat.complete({
+        const response = await client.chat.complete({
             model,
             messages: [
                 {

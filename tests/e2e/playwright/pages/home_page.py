@@ -88,12 +88,21 @@ class HomePage(BasePage):
 
     def select_ai_model(self, model_label: str):
         """Select an AI model from the dropdown"""
-        self.page.get_by_label("AI Model").select_option(label=model_label)
+        select = self.page.locator("#ai-model-select").or_(
+            self.page.get_by_label("AI Model")
+        ).or_(
+            self.page.get_by_label("AI Extraction Model")
+        ).first
+        select.select_option(label=model_label)
         return self
 
     def get_selected_ai_model_value(self) -> Optional[str]:
         """Return the selected AI model id"""
-        select = self.page.get_by_label("AI Model")
+        select = self.page.locator("#ai-model-select").or_(
+            self.page.get_by_label("AI Model")
+        ).or_(
+            self.page.get_by_label("AI Extraction Model")
+        ).first
         return select.input_value()
     
     def cancel_upload(self):

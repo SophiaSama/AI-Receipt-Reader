@@ -14,6 +14,7 @@ import { analyzeImage } from '../services/imageAnalysisService';
 import { decideRoute, executeRoute } from '../services/ocrRoutingService';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export type ProcessReceiptResult =
     | ReceiptData
@@ -51,6 +52,10 @@ export async function processReceiptCore(params: ProcessReceiptParams): Promise<
 
     if (!ALLOWED_MIME_TYPES.includes(contentType)) {
         throw new Error(`Invalid file type: ${contentType}. Only JPEG, PNG, and WebP images are supported.`);
+    }
+
+    if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
+        throw new Error(`File too large (${(fileBuffer.length / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
     }
 
     // Compute image hash early (exact-duplicate signal).
@@ -151,6 +156,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const file = parsed.files[0];
         if (!ALLOWED_MIME_TYPES.includes(file.contentType)) {
             return badRequest(`Invalid file type: ${file.contentType}. Only JPEG, PNG, and WebP images are supported.`);
+        }
+
+        if (file.content.length > MAX_FILE_SIZE_BYTES) {
+            return badRequest(`File too large (${(file.content.length / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
         }
 
         const client = createUserClient(token);
