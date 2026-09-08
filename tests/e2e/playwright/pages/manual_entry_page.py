@@ -130,6 +130,7 @@ class ManualEntryPage(BasePage):
             self.fill_notes(notes)
         
         self.submit_form()
+        self.assert_form_closed(timeout=15000)
         return self
     
     # Assertions
@@ -138,9 +139,9 @@ class ManualEntryPage(BasePage):
         expect(self.page.locator(self.MERCHANT_INPUT)).to_be_visible(timeout=5000)
         return self
     
-    def assert_form_closed(self):
+    def assert_form_closed(self, timeout: int = 15000):
         """Assert that manual entry form is closed"""
-        expect(self.page.locator(self.MERCHANT_INPUT)).not_to_be_visible()
+        expect(self.page.locator(self.MERCHANT_INPUT)).not_to_be_visible(timeout=timeout)
         return self
     
     def assert_validation_error_shown(self):
