@@ -1,6 +1,10 @@
+# AWS Deployment is obsolete
+
+Deployment in AWS has been removed due to free tier account expiry.
+
 ## Infrastructure as Code (IaC)
 
-Your project uses **AWS SAM** which automatically creates ALL infrastructure when you deploy:
+This project uses **AWS SAM** which automatically creates ALL infrastructure when you deploy:
 
 1. ✅ **5 Lambda Functions** (automatically created)
 2. ✅ **API Gateway** (automatically created)
@@ -30,6 +34,7 @@ That's it! No manual AWS Console work needed. 🎉
 The SAM template defines these functions that are **automatically created**:
 
 #### **ProcessReceiptFunction**
+
 - **Purpose:** Process receipt images with AI
 - **Endpoint:** `POST /api/process`
 - **Handler:** `src/handlers/processReceipt.handler`
@@ -39,6 +44,7 @@ The SAM template defines these functions that are **automatically created**:
 - **Permissions:** DynamoDB + S3 read/write
 
 #### **ManualSaveFunction**
+
 - **Purpose:** Save manual receipt entries
 - **Endpoint:** `POST /api/receipts/manual`
 - **Handler:** `src/handlers/manualSave.handler`
@@ -48,6 +54,7 @@ The SAM template defines these functions that are **automatically created**:
 - **Permissions:** DynamoDB + S3 read/write
 
 #### **GetReceiptsFunction**
+
 - **Purpose:** Retrieve all receipts
 - **Endpoint:** `GET /api/receipts`
 - **Handler:** `src/handlers/getReceipts.handler`
@@ -57,6 +64,7 @@ The SAM template defines these functions that are **automatically created**:
 - **Permissions:** DynamoDB read
 
 #### **DeleteReceiptFunction**
+
 - **Purpose:** Delete receipt and image
 - **Endpoint:** `DELETE /api/receipts/{id}`
 - **Handler:** `src/handlers/deleteReceipt.handler`
@@ -66,6 +74,7 @@ The SAM template defines these functions that are **automatically created**:
 - **Permissions:** DynamoDB + S3 read/write
 
 #### **ConfirmReceiptFunction**
+
 - **Purpose:** Confirm or ignore a possible duplicate receipt
 - **Endpoint:** `POST /api/receipts/confirm`
 - **Handler:** `src/handlers/confirmReceipt.handler`
@@ -109,6 +118,7 @@ The SAM template defines these functions that are **automatically created**:
 ### Prerequisites
 
 1. **Install AWS CLI**
+
    ```powershell
    # Download from: https://aws.amazon.com/cli/
    # Or use Chocolatey:
@@ -116,6 +126,7 @@ The SAM template defines these functions that are **automatically created**:
    ```
 
 2. **Install SAM CLI**
+
    ```powershell
    # Using npm (recommended):
    npm install -g aws-sam-cli
@@ -125,6 +136,7 @@ The SAM template defines these functions that are **automatically created**:
    ```
 
 3. **Configure AWS Credentials**
+
    ```powershell
    aws configure
    # Enter:
@@ -135,6 +147,7 @@ The SAM template defines these functions that are **automatically created**:
    ```
 
 4. **Verify Setup**
+
    ```powershell
    aws --version
    sam --version
@@ -144,6 +157,7 @@ The SAM template defines these functions that are **automatically created**:
 ### Deployment Process
 
 #### Step 1: Build Backend Code
+
 ```powershell
 cd backend
 
@@ -158,18 +172,21 @@ dir dist
 ```
 
 #### Step 2: Build SAM Package
+
 ```powershell
 # This prepares the deployment package
 sam build
 ```
 
 **What happens:**
+
 - ✅ Copies compiled code to `.aws-sam/build/`
 - ✅ Packages dependencies
 - ✅ Prepares CloudFormation template
 - ✅ Validates template syntax
 
 #### Step 3: Deploy to AWS (First Time)
+
 ```powershell
 # Guided deployment (interactive)
 sam deploy --guided
@@ -193,6 +210,7 @@ sam deploy --guided
 14. **Config environment:** `default` (default)
 
 #### Step 4: Subsequent Deployments
+
 ```powershell
 # After first deployment, just use:
 sam deploy
@@ -206,12 +224,15 @@ npm run deploy
 ## 📊 What Happens During Deployment
 
 ### Phase 1: Package Upload
+
 ```
 Uploading to smart-receipt-stack/xxxxx  XXXXXX KB
 ```
+
 - Code uploaded to S3 (temporary)
 
 ### Phase 2: CloudFormation Stack Creation
+
 ```
 CloudFormation stack changeset
 ---------------------------------
@@ -228,6 +249,7 @@ Operation                   LogicalResourceId             ResourceType
 ```
 
 ### Phase 3: Resource Creation (5-10 minutes)
+
 ```
 CREATE_IN_PROGRESS   AWS::CloudFormation::Stack    smart-receipt-stack
 CREATE_IN_PROGRESS   AWS::DynamoDB::Table          ReceiptsTable
@@ -242,6 +264,7 @@ CREATE_COMPLETE      AWS::CloudFormation::Stack    smart-receipt-stack
 ```
 
 ### Phase 4: Outputs
+
 ```
 Key                 ApiEndpoint
 Description         API Gateway endpoint URL
@@ -263,7 +286,8 @@ Value               smart-receipt-images-123456789
 ### Check in AWS Console
 
 #### Lambda Functions
-1. Go to: https://console.aws.amazon.com/lambda/
+
+1. Go to: <https://console.aws.amazon.com/lambda/>
 2. You should see 4 functions:
    - `smart-receipt-stack-ProcessReceiptFunction-xxxxx`
    - `smart-receipt-stack-ManualSaveFunction-xxxxx`
@@ -271,17 +295,20 @@ Value               smart-receipt-images-123456789
    - `smart-receipt-stack-DeleteReceiptFunction-xxxxx`
 
 #### API Gateway
-1. Go to: https://console.aws.amazon.com/apigateway/
+
+1. Go to: <https://console.aws.amazon.com/apigateway/>
 2. You should see: `smart-receipt-stack-ReceiptApi-xxxxx`
 3. Click → Stages → prod
 4. Note the Invoke URL
 
 #### DynamoDB
-1. Go to: https://console.aws.amazon.com/dynamodb/
+
+1. Go to: <https://console.aws.amazon.com/dynamodb/>
 2. You should see table: `smart-receipts`
 
 #### S3
-1. Go to: https://console.aws.amazon.com/s3/
+
+1. Go to: <https://console.aws.amazon.com/s3/>
 2. You should see bucket: `smart-receipt-images-{account-id}`
 
 ### Test API Endpoints
@@ -323,6 +350,7 @@ npm run deploy
 ```
 
 **SAM automatically:**
+
 - ✅ Updates only changed Lambda functions
 - ✅ Preserves data in DynamoDB
 - ✅ Keeps S3 bucket and images
@@ -334,21 +362,25 @@ npm run deploy
 ## 💰 Cost Estimation
 
 ### Lambda Functions
+
 - **Free Tier:** 1M requests + 400,000 GB-seconds per month
 - **After Free Tier:** ~$0.20 per 1M requests
 - **Your Usage:** Likely stays in free tier
 
 ### API Gateway
+
 - **Free Tier:** 1M API calls per month (first 12 months)
 - **After Free Tier:** $3.50 per 1M requests
 - **Your Usage:** Minimal cost
 
 ### DynamoDB
+
 - **Free Tier:** 25 GB storage + 25 WCU + 25 RCU
 - **Pay-per-request:** Likely stays in free tier
 - **Your Usage:** < $1/month
 
 ### S3
+
 - **Free Tier:** 5 GB storage (first 12 months)
 - **After Free Tier:** $0.023 per GB/month
 - **Your Usage:** < $1/month
@@ -370,6 +402,7 @@ aws cloudformation delete-stack --stack-name smart-receipt-stack
 ```
 
 **This removes:**
+
 - ✅ All 5 Lambda functions
 - ✅ API Gateway
 - ✅ DynamoDB table (⚠️ data will be lost!)
@@ -390,6 +423,7 @@ aws s3 rm s3://smart-receipt-images-{account-id}/ --recursive
 ### Issue: SAM deploy fails with "Unable to upload artifact"
 
 **Solution:**
+
 ```powershell
 # Clear SAM cache
 Remove-Item -Recurse -Force .aws-sam
@@ -402,11 +436,13 @@ sam deploy
 ### Issue: "CREATE_FAILED" for Lambda function
 
 **Causes:**
+
 - Code compilation errors
 - Missing dependencies
 - Invalid handler path
 
 **Solution:**
+
 ```powershell
 # Check build output
 cd backend
@@ -422,6 +458,7 @@ sam logs -n ProcessReceiptFunction --stack-name smart-receipt-stack --tail
 **Cause:** Lambda function error
 
 **Solution:**
+
 ```powershell
 # View Lambda logs
 sam logs -n ProcessReceiptFunction --stack-name smart-receipt-stack --tail
@@ -435,6 +472,7 @@ sam logs -n ProcessReceiptFunction --stack-name smart-receipt-stack --tail
 **Cause:** Bucket names must be globally unique
 
 **Solution:**
+
 ```yaml
 # Edit backend/template.yaml
 BucketName: !Sub 'smart-receipt-images-${AWS::AccountId}-${AWS::Region}'
@@ -444,14 +482,16 @@ BucketName: !Sub 'smart-receipt-images-${AWS::AccountId}-${AWS::Region}'
 
 ## ✅ Summary
 
-### What You Need to Do:
+### What You Need to Do
+
 1. ✅ Install AWS CLI
 2. ✅ Install SAM CLI
 3. ✅ Configure AWS credentials
 4. ✅ Build backend: `npm run build`
 5. ✅ Deploy: `sam deploy --guided`
 
-### What AWS SAM Does Automatically:
+### What AWS SAM Does Automatically
+
 1. ✅ Creates 5 Lambda functions
 2. ✅ Creates API Gateway
 3. ✅ Creates DynamoDB table
@@ -460,7 +500,8 @@ BucketName: !Sub 'smart-receipt-images-${AWS::AccountId}-${AWS::Region}'
 6. ✅ Sets up CORS
 7. ✅ Connects everything together
 
-### What You DON'T Need to Do:
+### What You DON'T Need to Do
+
 - ❌ Manually create Lambda functions in Console
 - ❌ Manually create API Gateway
 - ❌ Manually create DynamoDB table
@@ -507,7 +548,7 @@ aws cloudformation describe-stacks --stack-name smart-receipt-stack
 
 ## 📚 Additional Resources
 
-- **AWS SAM Documentation:** https://docs.aws.amazon.com/serverless-application-model/
-- **AWS Lambda Documentation:** https://docs.aws.amazon.com/lambda/
-- **SAM CLI Reference:** https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-command-reference.html
+- **AWS SAM Documentation:** <https://docs.aws.amazon.com/serverless-application-model/>
+- **AWS Lambda Documentation:** <https://docs.aws.amazon.com/lambda/>
+- **SAM CLI Reference:** <https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-command-reference.html>
 - **Your SAM Template:** `backend/template.yaml`

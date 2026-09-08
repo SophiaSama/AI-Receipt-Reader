@@ -48,7 +48,7 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
 ## Files
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | [`backend/Dockerfile`](../../backend/Dockerfile) | Multi-stage build: compile TS, install prod deps, bake `eng.traineddata` |
 | [`backend/.dockerignore`](../../backend/.dockerignore) | Excludes `node_modules`, `dist`, `.env`, etc. from build context |
 | [`imageAnalysisService.ts`](../../backend/src/services/imageAnalysisService.ts) | `TESSDATA_PREFIX` env var configures offline Tesseract paths |
@@ -75,14 +75,18 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
     gcloud services enable run.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
 
   ```
+
   And grant permission to project
+
   ```bash
     gcloud projects add-iam-policy-binding 924806699856 \
     --member="serviceAccount:924806699856-compute@developer.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"
 
   ```
+
   Add secret entry for supabase
+
   ```bash
   # 1. Create the secret entry
   gcloud secrets create supabase-url --replication-policy="automatic"
@@ -103,14 +107,16 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
       --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
       --role="roles/secretmanager.secretAccessor"
   ```
-2. Create an Artifact Registry Docker repository:
+
+1. Create an Artifact Registry Docker repository:
 
    ```bash
    gcloud artifacts repositories create smart-receipt \
      --repository-format=docker \
      --location=us-central1
    ```
-3. Create a service account with `roles/run.admin`, `roles/artifactregistry.writer`,
+
+2. Create a service account with `roles/run.admin`, `roles/artifactregistry.writer`,
    and `roles/iam.serviceAccountUser`.
 
    ```bash
@@ -130,7 +136,8 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
     --member=serviceAccount:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com \
     --role=roles/iam.serviceAccountUser
    ```
-4. Verify roles are assigned as expected
+
+3. Verify roles are assigned as expected
 
   ```bash
     gcloud projects get-iam-policy gen-lang-client-0181500335 \
@@ -139,22 +146,30 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
         --filter="bindings.members:smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com"
 
   ```
-5. Generate JSON key for this service account
+
+1. Generate JSON key for this service account
+
   ```bash
     gcloud iam service-accounts keys create key.json \
         --iam-account=smart-receipt-deployer@gen-lang-client-0181500335.iam.gserviceaccount.com
   ```
 
-6. Deploy manually on Google Cloud
+1. Deploy manually on Google Cloud
+
   ```bash
     cd ~
     git clone --branch <your-feature-branch> <your-repo-url> smart-receipt
     cd smart-receipt
     # Note: Using https://*.vercel.app allows dynamic Vercel preview and branch deployments.
     # You can also use _CORS_ORIGINS="*" or leave it empty for fully permissive mode.
-    gcloud builds submit --config=cloudbuild.backend.yaml --substitutions=_REGION=us-central1,_AR_REPO=smart-receipt,_SERVICE_NAME=smart-receipt-backend,_CORS_ORIGINS="https://smart-receipt-reader.vercel.app,https://*.vercel.app"
+    # You can also directly change in `cloudbuild.backend.yaml`
+    gcloud run services update smart-receipt-backend \
+    --region us-central1 \
+    --update-env-vars "^||^CORS_ORIGINS=https://smart-receipt-reader.vercel.app,https://smart-receipt-reader-*.vercel.app"
   ```
-7.  Make the aervice public 
+
+1. Make the aervice public
+
   ```bash
     gcloud run services add-iam-policy-binding smart-receipt-backend \
         --region=us-central1 \
@@ -162,12 +177,30 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
         --role="roles/run.invoker"
 
   ```
+
   If you don't want it to be public, you can add the --no-allow-unauthenticated flag to your deployment command next time.
   
+1. Confirm the service URL
+
+  ```bash
+  gcloud run services describe smart-receipt-backend --region us-central1 --format='value(status.url)'
+  ```
+
+  This is the url you need to set in front-end config `VITE_API_BASE_URL`. And it is stable between deployments.
+
+1. Verify CORS works
+
+  ```bash
+    curl -i -X OPTIONS \
+    -H "Origin: https://smart-receipt-reader-xxx-projects.vercel.app" \
+    -H "Access-Control-Request-Method: POST" \
+    https://smart-receipt-backend-xxxx-uc.a.run.app/api/process
+  ```
+
 ### GitHub Secrets
 
 | Secret | Description |
-|---|---|
+| --- | --- |
 | `GCP_PROJECT_ID` | Your GCP project ID |
 | `GCP_SA_KEY` | Service account JSON key |
 | `SUPABASE_URL` | Supabase project URL |
@@ -185,9 +218,11 @@ Supabase (Auth + Postgres + Storage, RLS)  +  Mistral / OpenRouter
 ### Frontend wiring
 
 After the first deploy, get the deployed Cloud Run service URL:
+
 ```bash
 gcloud run services describe smart-receipt-backend --region us-central1 --format="value(status.url)"
 ```
+
 Then set `VITE_API_BASE_URL` in Vercel's environment variables to the
 Cloud Run service URL (printed by the workflow), e.g.:
 
@@ -218,8 +253,8 @@ curl http://localhost:8080/api/health
 ## Tradeoffs
 
 | | Vercel function (fallback) | Cloud Run container |
-|---|---|---|
-| Tesseract OCR | ❌ disabled (WASM not bundled) | ✅ works (baked into image) |
+| --- | --- | --- |
+| Tesseract OCR | ❌ disabled (WASM not bundled) | ✅ works (baked into image, but currently removed for lighter build) |
 | Cost-optimized routing | Vision LLM only | Tesseract / Hybrid / Vision |
 | Timeout | Function cap (`maxDuration`) | Configurable (default 300s) |
 | Cold start | Per-request | Warm if min-instances ≥ 1; scale-to-zero optional |

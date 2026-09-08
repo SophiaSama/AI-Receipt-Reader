@@ -68,10 +68,10 @@ SmartReceiptReader/
 │   │   ├── AddReceiptUI.png
 │   │   └── HistoryUI.png
 │   │
-│   ├── deployment/                   # Deployment guides
-│   │   ├── AWS_DEPLOYMENT_GUIDE.md   # Legacy (pre-Supabase AWS deployment)
+│   ├── deployment/                    # Deployment guides
+│   │   ├── AWS_DEPLOYMENT_GUIDE.md    # Legacy (pre-Supabase AWS deployment)
 │   │   ├── VERCEL_DEPLOYMENT_GUIDE.md # Vercel deployment
-│   │   └── DEPLOYMENT.md             # General deployment
+│   │   └── CLOUD_RUN_MIGRATION.md     # Google Cloud backend deployment
 │   │
 │   ├── development/                  # Development guides
 │   │   ├── BACKEND_API_GUIDE.md      # Backend API guide
@@ -129,6 +129,7 @@ SmartReceiptReader/
   RLS enforcing access. The `service_role` key is never used.
 
 Key files:
+
 - `services/supabaseClient.ts` - Supabase browser client
 - `services/authService.ts` / `services/receiptService.ts` - auth + CRUD
 - `backend/src/services/supabaseService.ts` - server-side Postgres + Storage
@@ -136,6 +137,7 @@ Key files:
 - `supabase/` - schema, RLS policies, private bucket, seed users
 
 Testing:
+
 - Unit/integration tests mock the network (MSW + `vi.mock`) - no credentials.
 - E2E tests run against a local Supabase stack via the Supabase CLI.
 
@@ -144,14 +146,17 @@ See `tests/README.md` for testing details.
 ## 📚 Quick Navigation
 
 ### 🚀 Getting Started
+
 - [README.md](../README.md) - Main project documentation
 
 ### 🔧 Development
+
 - [docs/development/BACKEND_API_GUIDE.md](docs/development/BACKEND_API_GUIDE.md) - Backend API development
 - [docs/development/VERCEL_DEVELOPMENT_GUIDE.md](docs/development/VERCEL_DEVELOPMENT_GUIDE.md) - Vercel best practices
 - [docs/development/TESTING_GUIDE.md](docs/development/TESTING_GUIDE.md) - Testing documentation
 
 ### 🚢 Deployment
+
 - [docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md](docs/deployment/VERCEL_DEPLOYMENT_GUIDE.md) - Vercel deployment
 - [docs/deployment/DEPLOYMENT.md](docs/deployment/DEPLOYMENT.md) - General deployment checklist
 
@@ -159,6 +164,7 @@ See `tests/README.md` for testing details.
 > `docs/deployment/AWS_DEPLOYMENT_GUIDE.md`, `docs/development/DYNAMODB_SCHEMA.md`.
 
 ### 🧪 Testing
+
 - [tests/README.md](tests/README.md) - Test suite overview
 - Run tests: `npm test`
 - Run E2E: `npm run test:e2e`
@@ -197,6 +203,7 @@ See `tests/README.md` for testing details.
 ## 🔄 File Organization Benefits
 
 ### Before (Cluttered Root)
+
 ```
 SmartReceiptReader/
 ├── AWS_DEPLOYMENT_GUIDE.md
@@ -211,6 +218,7 @@ SmartReceiptReader/
 ```
 
 ### After (Organized)
+
 ```
 SmartReceiptReader/
 ├── docs/           # All documentation (deployment, development, assets)
@@ -227,6 +235,7 @@ SmartReceiptReader/
 ## 📝 Maintenance
 
 When adding new files:
+
 - **Documentation?** → `docs/deployment/` or `docs/development/`
 - **Images/Assets?** → `docs/assets/`
 - **Test file?** → `tests/integration/` or `tests/e2e/`
